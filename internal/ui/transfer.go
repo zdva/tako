@@ -6,6 +6,7 @@ import (
 	"path"
 	"path/filepath"
 	"slices"
+	"strconv"
 	"strings"
 	"time"
 
@@ -45,10 +46,9 @@ type transferUI struct {
 	resume bool
 	// cancel stops listings still in flight.
 	cancel context.CancelFunc
-	ctx    context.Context
+	ctx    context.Context //nolint:containedctx // the sheet's lifetime: every folder listing it starts ends with it
 	// ready is set once the panes have their first folders.
 	ready bool
-	badge int
 }
 
 // remote reports whether the pane shows a host's files.
@@ -372,7 +372,7 @@ func (a *App) fileTable(c *ui.Context, p *xferPane, source bool) {
 			a.caption(c, a.T(kXferModified)).Width(96)
 		})
 		ui.Divider(c)
-		body := ui.Scroll(c).Key("files-" + fmt.Sprint(source)).Grow(1).MinHeight(0)
+		body := ui.Scroll(c).Key("files-" + strconv.FormatBool(source)).Grow(1).MinHeight(0)
 		body.Children(func() {
 			switch {
 			case p.loading:
@@ -555,8 +555,8 @@ func (a *App) queuePanel(c *ui.Context) {
 			a.caption(c, a.T(kXferPaused, paused))
 			a.caption(c, a.T(kXferDone, done))
 			ui.Spacer(c)
-			clear := ui.Button(c, a.T(kXferClear)).FontSize(12).Height(26).Padding(0, 10).Disabled(done == 0)
-			if clear.Clicked() {
+			clearBtn := ui.Button(c, a.T(kXferClear)).FontSize(12).Height(26).Padding(0, 10).Disabled(done == 0)
+			if clearBtn.Clicked() {
 				a.d.Transfers.ClearFinished()
 			}
 		})
@@ -703,7 +703,7 @@ func (a *App) verifiedText(j transfer.JobInfo) string {
 // jobButtons are the icon buttons at the right of a row.
 func (a *App) jobButtons(c *ui.Context, j transfer.JobInfo) {
 	q := a.d.Transfers
-	key := fmt.Sprintf("%d", j.ID)
+	key := strconv.Itoa(j.ID)
 	ui.Row(c).Gap(2).Shrink(0).Children(func() {
 		switch j.State {
 		case transfer.StateRunning, transfer.StateQueued:

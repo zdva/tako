@@ -159,10 +159,8 @@ func wait(t *testing.T, q *Queue, id int, states ...State) JobInfo {
 		if !ok {
 			t.Fatalf("job %d vanished", id)
 		}
-		for _, s := range states {
-			if info.State == s {
-				return info
-			}
+		if slices.Contains(states, info.State) {
+			return info
 		}
 		if time.Now().After(deadline) {
 			t.Fatalf("job %d is %v (%s), waiting for %v", id, info.State, info.Err, states)
@@ -274,6 +272,7 @@ func TestDownloadAndLocalCopy(t *testing.T) {
 
 func TestPolicies(t *testing.T) {
 	setup := func(t *testing.T) (string, string, Spec) {
+		t.Helper()
 		dir := t.TempDir()
 		src := filepath.Join(dir, "src", "f.txt")
 		randomFile(t, src, 1000)
@@ -492,7 +491,7 @@ func TestPauseResumeCancel(t *testing.T) {
 	remote := newFlaky()
 	gate := make(chan struct{})
 	remote.gate.Store(&gate)
-	q, _ := newQueue(t, map[model.ID]Endpoint{hostB: remote}, Options{})
+	q, prov := newQueue(t, map[model.ID]Endpoint{hostB: remote}, Options{})
 	spec := Spec{Src: Location{Path: filepath.Join(dir, "s", "f.bin")}, Dst: Location{Host: hostB, Path: filepath.Join(dir, "d")}}
 	id, _ := q.Add(spec)
 	wait(t, q, id, StateRunning)
@@ -534,7 +533,7 @@ func TestPauseResumeCancel(t *testing.T) {
 	slow := newFlaky()
 	g3 := make(chan struct{})
 	slow.gate.Store(&g3)
-	q.opts.Provider.(*provider).hosts["slow"] = slow
+	prov.hosts["slow"] = slow
 	a, _ := q.Add(Spec{Src: spec.Src, Dst: Location{Host: "slow", Path: filepath.Join(dir, "d3")}})
 	wait(t, q, a, StateRunning)
 	b, _ := q.Add(spec)
@@ -709,7 +708,7 @@ func TestRemoteEndpointHashFallsBackToReading(t *testing.T) {
 	dir := t.TempDir()
 	randomFile(t, filepath.Join(dir, "f"), 5000)
 	want, _ := Local().Hash(t.Context(), filepath.Join(dir, "f"))
-	viaExec := Remote(localFS{}, func(_ context.Context, cmd string) ([]byte, error) {
+	viaExec := Remote(localFS{}, func(context.Context, string) ([]byte, error) {
 		return []byte(want + "  " + filepath.Join(dir, "f") + "\n"), nil
 	})
 	if got, err := viaExec.Hash(t.Context(), filepath.Join(dir, "f")); err != nil || got != want {

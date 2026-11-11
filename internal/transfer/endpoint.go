@@ -122,7 +122,7 @@ func (localFS) Open(name string) (transport.File, error) {
 }
 
 func (localFS) OpenFile(name string, flag int) (transport.File, error) {
-	f, err := os.OpenFile(name, flag, 0o644)
+	f, err := os.OpenFile(name, flag, 0o644) //nolint:gosec // the user's own files: the umask decides, as for cp
 	if err != nil {
 		return nil, fmt.Errorf("opening: %w", err)
 	}
@@ -157,7 +157,8 @@ func (localFS) ReadDir(name string) ([]fs.FileInfo, error) {
 }
 
 func (localFS) MkdirAll(name string) error {
-	if err := os.MkdirAll(name, 0o755); err != nil {
+	err := os.MkdirAll(name, 0o755) //nolint:gosec // the user's own folders: the umask decides, as for mkdir -p
+	if err != nil {
 		return fmt.Errorf("creating: %w", err)
 	}
 	return nil

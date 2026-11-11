@@ -1,6 +1,7 @@
 package monitor
 
 import (
+	"slices"
 	"sync"
 	"time"
 )
@@ -64,9 +65,9 @@ func (s *Series) Failing() (bool, error) {
 func (s *Series) Latest() (Sample, bool) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
-	for i := len(s.points) - 1; i >= 0; i-- {
-		if s.points[i].Rates {
-			return s.points[i], true
+	for _, p := range slices.Backward(s.points) {
+		if p.Rates {
+			return p, true
 		}
 	}
 	if n := len(s.points); n > 0 {

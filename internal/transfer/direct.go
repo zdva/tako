@@ -143,21 +143,11 @@ func (d *Direct) Run(ctx context.Context, spec Spec, h DirectHooks) error {
 		return err
 	}
 
-	lines := d.Env.HostKeyLines(src)
-	if len(lines) == 0 {
-		return ErrNoHostKey
-	}
-	home, err := bfs.Home()
+	kh, cleanup, err := d.trustSource(bfs, src)
 	if err != nil {
 		return err
 	}
-	kh := bfs.Join(home, ".tako-kh-"+rand.Text())
-	if err := writeSmall(bfs, kh, strings.Join(lines, "\n")+"\n"); err != nil {
-		return err
-	}
-	defer func() {
-		_ = bfs.Remove(kh) // the file holds only a public key; failing here is harmless
-	}()
+	defer cleanup()
 
 	useRsync := d.hasRsync(ctx, spec.Src.Host) && d.hasRsync(ctx, spec.Dst.Host)
 	target := final + PartSuffix
@@ -166,14 +156,8 @@ func (d *Direct) Run(ctx context.Context, spec Spec, h DirectHooks) error {
 	}
 	cmd := directCommand(src, spec.Src.Path, target, kh, isDir, useRsync)
 
-	stopPoll := d.poll(ctx, epB, target, isDir, total, h)
-	out, err := d.Env.ExecAgent(ctx, spec.Dst.Host, cmd)
-	stopPoll()
-	if err != nil {
-		if ctx.Err() != nil {
-			return context.Cause(ctx)
-		}
-		return fmt.Errorf("the server-to-server copy failed: %w: %s", err, tail(out))
+	if err := d.pull(ctx, epB, spec.Dst.Host, cmd, target, isDir, total, h); err != nil {
+		return err
 	}
 	if !isDir {
 		if err := bfs.Rename(target, final); err != nil {
@@ -185,6 +169,42 @@ func (d *Direct) Run(ctx context.Context, spec Spec, h DirectHooks) error {
 	}
 	h.Done(total)
 	return nil
+}
+
+// pull runs the copy command on the destination, with the agent forwarded for
+// that command only, while polling the destination's size for progress.
+func (d *Direct) pull(ctx context.Context, b Endpoint, dst model.ID, cmd, target string, isDir bool, total int64, h DirectHooks) error {
+	stopPoll := d.poll(ctx, b, target, isDir, total, h)
+	out, err := d.Env.ExecAgent(ctx, dst, cmd)
+	stopPoll()
+	if err == nil {
+		return nil
+	}
+	if ctx.Err() != nil {
+		return context.Cause(ctx)
+	}
+	return fmt.Errorf("the server-to-server copy failed: %w: %s", err, tail(out))
+}
+
+// trustSource writes, on the destination, a known_hosts file that holds only
+// the source's key (the destination has never met it). The returned function
+// removes the file.
+func (d *Direct) trustSource(bfs transport.FS, src model.Host) (path string, cleanup func(), err error) {
+	lines := d.Env.HostKeyLines(src)
+	if len(lines) == 0 {
+		return "", nil, ErrNoHostKey
+	}
+	home, err := bfs.Home()
+	if err != nil {
+		return "", nil, err
+	}
+	kh := bfs.Join(home, ".tako-kh-"+rand.Text())
+	if err := writeSmall(bfs, kh, strings.Join(lines, "\n")+"\n"); err != nil {
+		return "", nil, err
+	}
+	return kh, func() {
+		_ = bfs.Remove(kh) // the file holds only a public key; failing here is harmless
+	}, nil
 }
 
 // conflict applies the same-name policy to the destination root. It reports

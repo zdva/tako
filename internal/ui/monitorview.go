@@ -2,6 +2,7 @@ package ui
 
 import (
 	"fmt"
+	"strconv"
 	"strings"
 	"time"
 
@@ -121,26 +122,11 @@ func (a *App) monitorBody(c *ui.Context, s *monitor.Series, os model.OSKind) {
 		})
 	}
 	ui.Row(c).Key("mon-charts").Gap(12).Height(220).Shrink(0).AlignItems(ui.Stretch).Children(func() {
-		a.panel(c, "cpu", iconChip, a.T(kMonCardCPU), a.legend(c, legendItem{kMonUser, a.tk.Blue}, legendItem{kMonSystem, a.tk.Purple}), 1, func() {
-			a.chart(c, true, samples, window, now, []line{
-				{color: a.tk.Blue, fill: true, at: func(p monitor.Sample) float64 { return p.CPU }},
-				{color: a.tk.Purple, at: func(p monitor.Sample) float64 { return p.CPUSystem }},
+		for _, ch := range a.charts() {
+			a.panel(c, ch.key, iconChip, a.T(ch.title), a.legend(c, ch.legend...), 1, func() {
+				a.chart(c, ch.percent, samples, window, now, ch.lines)
 			})
-		})
-		a.panel(c, "mem", iconChip, a.T(kMonCardMem), a.legend(c, legendItem{kMonUsed, a.tk.Purple}, legendItem{kMonCached, a.tk.Text3}), 1, func() {
-			a.chart(c, true, samples, window, now, []line{
-				{color: a.tk.Purple, fill: true, at: func(p monitor.Sample) float64 { return p.MemPercent() }},
-				{color: a.tk.Text3, at: func(p monitor.Sample) float64 {
-					return percentOf(float64(p.MemUsed+p.MemCached), float64(p.MemTotal))
-				}},
-			})
-		})
-		a.panel(c, "net", iconChip, a.T(kMonCardNet), a.legend(c, legendItem{kMonDown, a.tk.Green}, legendItem{kMonUp, a.tk.Blue}), 1, func() {
-			a.chart(c, false, samples, window, now, []line{
-				{color: a.tk.Green, fill: true, at: func(p monitor.Sample) float64 { return p.NetRx }},
-				{color: a.tk.Blue, at: func(p monitor.Sample) float64 { return p.NetTx }},
-			})
-		})
+		}
 	})
 	ui.Row(c).Key("mon-bottom").Gap(12).Shrink(0).AlignItems(ui.Stretch).Children(func() {
 		a.panel(c, "disks", iconChip, a.T(kMonDisks), nil, 3, func() { a.diskBars(c, latest) })
@@ -173,7 +159,7 @@ func (a *App) statCards(c *ui.Context, p monitor.Sample, info monitor.Info, gpus
 		cores = info.Cores
 	}
 	ui.Row(c).Key("mon-cards").Gap(12).Children(func() {
-		a.card(c, "cpu", a.tk.Blue, a.T(kMonCardCPU), fmt.Sprintf("%d", pct(p.CPU)), "%", a.T(kMonLoad, p.Load[0], cores))
+		a.card(c, "cpu", a.tk.Blue, a.T(kMonCardCPU), strconv.Itoa(pct(p.CPU)), "%", a.T(kMonLoad, p.Load[0], cores))
 		memV, memU := splitBytes(float64(p.MemUsed))
 		a.card(c, "mem", a.tk.Purple, a.T(kMonCardMem), memV, memU,
 			a.T(kMonMemOf, humanBytes(float64(p.MemTotal)), pct(p.MemPercent())))
@@ -182,10 +168,10 @@ func (a *App) statCards(c *ui.Context, p monitor.Sample, info monitor.Info, gpus
 			for _, g := range p.GPUs {
 				peak = max(peak, g.Util)
 			}
-			a.card(c, "gpu", a.tk.Teal, a.T(kMonCardGPU), fmt.Sprintf("%d", pct(p.GPUUtil())), "%",
+			a.card(c, "gpu", a.tk.Teal, a.T(kMonCardGPU), strconv.Itoa(pct(p.GPUUtil())), "%",
 				a.T(kMonGPUAvg, len(p.GPUs), pct(peak)))
 			used, total := p.GPUMem()
-			a.card(c, "vram", a.tk.Red, a.T(kMonCardVRAM), fmt.Sprintf("%d", pct(percentOf(float64(used), float64(total)))), "%",
+			a.card(c, "vram", a.tk.Red, a.T(kMonCardVRAM), strconv.Itoa(pct(percentOf(float64(used), float64(total)))), "%",
 				humanBytes(float64(used))+" / "+humanBytes(float64(total)))
 		}
 		ioV, ioU := splitBytes(p.DiskRead + p.DiskWrite)
@@ -357,4 +343,44 @@ func (a *App) gpuLines(samples []monitor.Sample) []line {
 		}}
 	}
 	return lines
+}
+
+// chartSpec is one of the three small charts.
+type chartSpec struct {
+	key, title string
+	percent    bool
+	legend     []legendItem
+	lines      []line
+}
+
+// charts lists the CPU, memory and network charts.
+func (a *App) charts() []chartSpec {
+	return []chartSpec{
+		{
+			key: "cpu", title: kMonCardCPU, percent: true,
+			legend: []legendItem{{kMonUser, a.tk.Blue}, {kMonSystem, a.tk.Purple}},
+			lines: []line{
+				{color: a.tk.Blue, fill: true, at: func(p monitor.Sample) float64 { return p.CPU }},
+				{color: a.tk.Purple, at: func(p monitor.Sample) float64 { return p.CPUSystem }},
+			},
+		},
+		{
+			key: "mem", title: kMonCardMem, percent: true,
+			legend: []legendItem{{kMonUsed, a.tk.Purple}, {kMonCached, a.tk.Text3}},
+			lines: []line{
+				{color: a.tk.Purple, fill: true, at: func(p monitor.Sample) float64 { return p.MemPercent() }},
+				{color: a.tk.Text3, at: func(p monitor.Sample) float64 {
+					return percentOf(float64(p.MemUsed+p.MemCached), float64(p.MemTotal))
+				}},
+			},
+		},
+		{
+			key: "net", title: kMonCardNet,
+			legend: []legendItem{{kMonDown, a.tk.Green}, {kMonUp, a.tk.Blue}},
+			lines: []line{
+				{color: a.tk.Green, fill: true, at: func(p monitor.Sample) float64 { return p.NetRx }},
+				{color: a.tk.Blue, at: func(p monitor.Sample) float64 { return p.NetTx }},
+			},
+		},
+	}
 }

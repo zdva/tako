@@ -32,6 +32,7 @@ type fleetConn struct {
 }
 
 func newFleet(t *testing.T, e *env) *fleet {
+	t.Helper()
 	f := &fleet{t: t, e: e, conns: map[model.ID]*fleetConn{}, dials: map[model.ID]int{}}
 	t.Cleanup(func() {
 		f.mu.Lock()

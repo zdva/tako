@@ -319,8 +319,8 @@ func wrapTools(t testing.TB, in install, dir string) string {
 	must(t, os.MkdirAll(bin, 0o755))
 	lib := filepath.Join(in.root, "usr", "lib", "x86_64-linux-gnu")
 	for _, name := range []string{"ssh", "scp", "sftp", "ssh-add"} {
-		real := filepath.Join(in.root, "usr", "bin", name)
-		script := fmt.Sprintf("#!/bin/sh\nLD_LIBRARY_PATH=%s exec %s \"$@\"\n", lib, real)
+		target := filepath.Join(in.root, "usr", "bin", name)
+		script := fmt.Sprintf("#!/bin/sh\nLD_LIBRARY_PATH=%s exec %s \"$@\"\n", lib, target)
 		must(t, os.WriteFile(filepath.Join(bin, name), []byte(script), 0o755))
 	}
 	return bin

@@ -7,6 +7,7 @@ import (
 	"bytes"
 	"context"
 	"crypto/sha256"
+	"encoding/hex"
 	"fmt"
 	"io"
 	"math/rand/v2"
@@ -14,6 +15,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"slices"
 	"strconv"
 	"strings"
 	"sync"
@@ -65,7 +67,7 @@ func sum(t testing.TB, path string) string {
 	if _, err := io.Copy(h, f); err != nil {
 		t.Fatal(err)
 	}
-	return fmt.Sprintf("%x", h.Sum(nil))
+	return hex.EncodeToString(h.Sum(nil))
 }
 
 func newQueue(t *testing.T, f *fleet, o transfer.Options) *transfer.Queue {
@@ -84,10 +86,8 @@ func waitJob(t *testing.T, q *transfer.Queue, id int, timeout time.Duration, sta
 	deadline := time.Now().Add(timeout)
 	for {
 		info, _ := q.Job(id)
-		for _, s := range states {
-			if info.State == s {
-				return info
-			}
+		if slices.Contains(states, info.State) {
+			return info
 		}
 		if time.Now().After(deadline) {
 			t.Fatalf("job %d is %v (%s), waiting for %v", id, info.State, info.Err, states)
@@ -178,6 +178,7 @@ func TestTransferRelayThroughputAndMemory(t *testing.T) {
 }
 
 func relayThroughput(t *testing.T, rate float64, strict bool) {
+	t.Helper()
 	e, f, a, b := twoHosts(t)
 	behindLink(t, e, a.ID, rate)
 	behindLink(t, e, b.ID, rate)
@@ -211,11 +212,12 @@ func relayThroughput(t *testing.T, rate float64, strict bool) {
 	var wg sync.WaitGroup
 	start := time.Now()
 	wg.Go(func() {
-		rn, rerr = rf.(io.WriterTo).WriteTo(io.Discard)
+		rn, rerr = rf.(io.WriterTo).WriteTo(io.Discard) //nolint:errcheck,forcetypeassert // sftp files implement WriterTo
 		readTook = time.Since(start)
 	})
 	wg.Go(func() {
-		wn, werr = wf.(io.ReaderFrom).ReadFrom(io.LimitReader(zeroReader{}, size))
+		wn, werr = wf.(io.ReaderFrom).ReadFrom( //nolint:errcheck,forcetypeassert // sftp files implement ReaderFrom
+			io.LimitReader(zeroReader{}, size))
 		writeTook = time.Since(start)
 	})
 	wg.Wait()

@@ -222,7 +222,10 @@ func newBufPipe() *bufPipe {
 func (b *bufPipe) Write(p []byte) (int, error) {
 	total := 0
 	for len(p) > 0 {
-		chunk := chunkPool.Get().(*[]byte) //nolint:forcetypeassert // the pool only holds *[]byte
+		chunk, ok := chunkPool.Get().(*[]byte)
+		if !ok {
+			chunk = new([]byte)
+		}
 		n := min(len(p), pipeChunk)
 		*chunk = append((*chunk)[:0], p[:n]...)
 		select {

@@ -44,7 +44,7 @@ func powershell(script string) string {
 	u := utf16.Encode([]rune(script))
 	b := make([]byte, 0, 2*len(u))
 	for _, c := range u {
-		b = append(b, byte(c), byte(c>>8))
+		b = append(b, byte(c&0xff), byte(c>>8))
 	}
 	return "powershell -NoProfile -NonInteractive -ExecutionPolicy Bypass -EncodedCommand " + base64.StdEncoding.EncodeToString(b)
 }

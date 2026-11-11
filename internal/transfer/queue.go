@@ -64,7 +64,6 @@ type Queue struct {
 	nextID  int
 	conc    int
 	closed  bool
-	tickOn  bool
 	wg      sync.WaitGroup
 	subsMu  sync.Mutex
 	subs    map[int]func(JobInfo)
@@ -125,8 +124,10 @@ func (q *Queue) Add(spec Spec) (int, error) {
 	}
 	q.nextID++
 	j := &job{
-		info: JobInfo{ID: q.nextID, Spec: spec, State: StateQueued,
-			Name: baseName(spec.Src.Path, !spec.Src.Local())},
+		info: JobInfo{
+			ID: q.nextID, Spec: spec, State: StateQueued,
+			Name: baseName(spec.Src.Path, !spec.Src.Local()),
+		},
 		policy: spec.Policy, done: map[string]bool{}, decide: make(chan Decision, 1),
 	}
 	q.jobs = append(q.jobs, j)

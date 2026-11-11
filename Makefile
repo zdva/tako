@@ -6,7 +6,7 @@ MILESTONE ?= m3
 PLATFORMS ?= windows/amd64,windows/arm64,darwin/universal,linux/amd64,linux/arm64
 COVER_PKGS := ./internal/model/... ./internal/hostlib/... ./internal/session/... ./internal/layout/... \
 	./internal/inputbus/... ./internal/workspace/... ./internal/transport/... ./internal/store/... \
-	./internal/secrets/... ./internal/importer/... ./internal/settings/...
+	./internal/secrets/... ./internal/importer/... ./internal/settings/... ./internal/monitor/... ./internal/transfer/...
 
 help: ## List the targets
 	@grep -E '^[a-z-]+:.*##' $(MAKEFILE_LIST) | awk -F':.*## ' '{printf "  %-12s %s\n", $$1, $$2}'

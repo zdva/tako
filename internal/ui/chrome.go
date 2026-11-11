@@ -2,6 +2,7 @@ package ui
 
 import (
 	"fmt"
+	"strconv"
 
 	"github.com/egoist/mygo/ui"
 
@@ -36,7 +37,7 @@ func (a *App) toolbar(c *ui.Context) {
 			}
 			if n > 0 {
 				ui.Box(c).Key("xfer-badge").Absolute().Top(-2).Right(-2).MinWidth(15).Height(15).Padding(0, 4).Radius(8).Background(a.tk.Accent).Center().Children(func() {
-					ui.Text(c, fmt.Sprint(n)).FontSize(9.5).Bold().TextColor(ui.RGB(255, 255, 255))
+					ui.Text(c, strconv.Itoa(n)).FontSize(9.5).Bold().TextColor(ui.RGB(255, 255, 255))
 				})
 			}
 		})

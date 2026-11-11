@@ -121,13 +121,7 @@ func parseVMStat(s string, total uint64) (used, cached uint64) {
 	pages := map[string]uint64{}
 	for line := range strings.Lines(s) {
 		if strings.HasPrefix(line, "Mach Virtual Memory Statistics") {
-			if _, rest, ok := strings.Cut(line, "page size of "); ok {
-				if f := strings.Fields(rest); len(f) > 0 {
-					if n, err := strconv.ParseUint(f[0], 10, 64); err == nil && n > 0 {
-						page = n
-					}
-				}
-			}
+			page = pageSizeOf(line, page)
 			continue
 		}
 		name, val, ok := strings.Cut(line, ":")
@@ -238,4 +232,21 @@ func (Darwin) ParseInfo(out []byte) (Info, error) {
 		return Info{}, ErrNoData
 	}
 	return in, nil
+}
+
+// pageSizeOf reads "... (page size of 16384 bytes)" from the header of
+// vm_stat; it returns def when the line has no usable size.
+func pageSizeOf(line string, def uint64) uint64 {
+	_, rest, ok := strings.Cut(line, "page size of ")
+	if !ok {
+		return def
+	}
+	f := strings.Fields(rest)
+	if len(f) == 0 {
+		return def
+	}
+	if n, err := strconv.ParseUint(f[0], 10, 64); err == nil && n > 0 {
+		return n
+	}
+	return def
 }

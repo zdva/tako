@@ -36,7 +36,7 @@ type HubOptions struct {
 // redraws.
 type Hub struct {
 	opts HubOptions
-	ctx  context.Context
+	ctx  context.Context //nolint:containedctx // the lifetime of every sampler the hub starts
 	stop context.CancelFunc
 	wg   sync.WaitGroup
 
