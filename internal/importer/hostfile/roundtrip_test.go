@@ -31,17 +31,21 @@ func TestExportImportMovesHostsToAnotherComputerWithoutSecrets(t *testing.T) {
 	t.Parallel()
 	src, sec := openLibrary(t)
 	const secret = "s3cr3t-P@ssw0rd-Sentinel"
-	bastion, err := src.Add(model.Host{Name: "bastion", Addr: "203.0.113.1", User: "ops", Tags: []string{"prod"},
-		Auth: []model.Auth{{Kind: model.AuthPassword, SecretRef: model.SecretRef("b1", "password")}}})
+	bastion, err := src.Add(model.Host{
+		Name: "bastion", Addr: "203.0.113.1", User: "ops", Tags: []string{"prod"},
+		Auth: []model.Auth{{Kind: model.AuthPassword, SecretRef: model.SecretRef("b1", "password")}},
+	})
 	if err != nil {
 		t.Fatal(err)
 	}
 	if err := sec.Set(t.Context(), bastion.Auth[0].SecretRef, []byte(secret)); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := src.Add(model.Host{Name: "db", Addr: "10.0.0.5", User: "pg", Port: 5022, Jump: []model.Hop{{HostID: bastion.ID}},
+	if _, err := src.Add(model.Host{
+		Name: "db", Addr: "10.0.0.5", User: "pg", Port: 5022, Jump: []model.Hop{{HostID: bastion.ID}},
 		Proxy: &model.Proxy{Kind: model.ProxySOCKS5, Addr: "127.0.0.1:1080", User: "u", SecretRef: model.SecretRef("p1", "proxy")},
-		Auth:  []model.Auth{{Kind: model.AuthKey, KeyPath: "~/.ssh/id_ed25519", SecretRef: model.SecretRef("k1", "passphrase")}}}); err != nil {
+		Auth:  []model.Auth{{Kind: model.AuthKey, KeyPath: "~/.ssh/id_ed25519", SecretRef: model.SecretRef("k1", "passphrase")}},
+	}); err != nil {
 		t.Fatal(err)
 	}
 	src.SetTagColor("prod", "#E5484D")

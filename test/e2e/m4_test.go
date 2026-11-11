@@ -39,8 +39,10 @@ func TestScreenshots_M4(t *testing.T) {
 	shot(t, dir, "main-dark-zh")
 	xdo(t, "key", "ctrl+shift+comma")
 	time.Sleep(400 * time.Millisecond)
-	for i, name := range []string{"settings-general", "settings-terminal", "settings-connection", "settings-monitor",
-		"settings-transfer", "settings-data", "settings-about"} {
+	for i, name := range []string{
+		"settings-general", "settings-terminal", "settings-connection", "settings-monitor",
+		"settings-transfer", "settings-data", "settings-about",
+	} {
 		openSettingsPage(t, i)
 		shot(t, dir, name+"-dark-zh")
 	}

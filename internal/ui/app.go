@@ -203,8 +203,10 @@ func (a *App) syncPrefs(c *ui.Context) {
 	}
 	// Terminals keep their own copy of the colors and the font, so a change
 	// is pushed to them once, not drawn from the tokens every frame.
-	look := termLook{dark: dark, scheme: v.Terminal.Scheme, font: v.Terminal.Font(),
-		copyOnSelect: v.Terminal.CopyOnSelect, contrast: v.Terminal.KeepContrast}
+	look := termLook{
+		dark: dark, scheme: v.Terminal.Scheme, font: v.Terminal.Font(),
+		copyOnSelect: v.Terminal.CopyOnSelect, contrast: v.Terminal.KeepContrast,
+	}
 	if len(v.Terminal.Custom) > 0 && tk.Scheme != nil {
 		look.custom = tk.Scheme.Background + tk.Scheme.Foreground + tk.Scheme.Palette[1]
 	}

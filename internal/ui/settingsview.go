@@ -167,8 +167,13 @@ func (a *App) settingsNav(c *ui.Context) {
 				id   string
 				icon *ui.SVG
 			}{
-				{pageGeneral, iconSettings}, {pageTerminal, iconTerminal}, {pageConnection, iconLink},
-				{pageMonitor, iconChip}, {pageTransfer, iconTransfer}, {pageData, iconFolder}, {pageAbout, iconCheck},
+				{pageGeneral, iconSettings},
+				{pageTerminal, iconTerminal},
+				{pageConnection, iconLink},
+				{pageMonitor, iconChip},
+				{pageTransfer, iconTransfer},
+				{pageData, iconFolder},
+				{pageAbout, iconCheck},
 			} {
 				ui.SidebarItem(c, it.id, it.icon, a.pageTitle(it.id))
 			}

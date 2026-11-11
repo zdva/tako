@@ -55,8 +55,13 @@ func TestSettings_PagesAreReachableAndShowTheirControls(t *testing.T) {
 	h := newHarness(t, harnessOpts{})
 	h.openSettings("")
 	for _, page := range []struct{ nav, text string }{
-		{"Terminal", "Color scheme"}, {"Connection", "Keepalive every (seconds)"}, {"Monitoring", "Amber from (%)"},
-		{"File transfer", "Same name"}, {"Data", "Export hosts"}, {"About", "Copy diagnostics"}, {"General", "Language"},
+		{"Terminal", "Color scheme"},
+		{"Connection", "Keepalive every (seconds)"},
+		{"Monitoring", "Amber from (%)"},
+		{"File transfer", "Same name"},
+		{"Data", "Export hosts"},
+		{"About", "Copy diagnostics"},
+		{"General", "Language"},
 	} {
 		h.click(page.nav)
 		if !h.tt.HasText(page.text) {
@@ -264,8 +269,11 @@ func TestSettings_ExportHasNoSecretsAndImportsOnAnotherComputer(t *testing.T) {
 
 func TestSettings_ImportsTheOtherToolsAndSaysPasswordsWereLeftOut(t *testing.T) {
 	for _, tc := range []struct{ name, path string }{
-		{"xshell", "web-01.xsh"}, {"xshell sessions", "sessions.xts"}, {"securecrt folder", "web-01.ini"},
-		{"securecrt xml", "securecrt-export.xml"}, {"termius", "termius.csv"},
+		{"xshell", "web-01.xsh"},
+		{"xshell sessions", "sessions.xts"},
+		{"securecrt folder", "web-01.ini"},
+		{"securecrt xml", "securecrt-export.xml"},
+		{"termius", "termius.csv"},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			h := newHarness(t, harnessOpts{})

@@ -338,8 +338,8 @@ cd src && node build.js && ./render.sh main-light main-dark empty-state add-host
 
 # M4 补充（深色模式、配色方案、设置窗口）
 
-- **深色**：色值以 `internal/theme` 里的 token 为准，并有测试对照本文与 `docs/design/mockups/main-dark.png`；
-  `docs/screenshots/m4/main-dark-zh.png` 是真实窗口的对照截图。
+- **深色**：色值以 `internal/theme` 里的 token 为准，并有测试对照本文的色值表；
+  `docs/screenshots/m4/main-dark-zh.png` 是真实窗口截图，可与 `docs/design/mockups/main-dark.png` 目视对照。
 - **终端配色方案**只改终端区域的前景、背景、光标、选区和 16 色；界面（侧栏、块头、底部栏）永远用
   上面的 token，不随方案变。默认的 “Tako（跟随外观）” 使用 token。
 - **设置窗口**：760 × 最高 560 的模态窗口，左侧是页面导航（常规、终端、连接、监控、文件传输、数据、关于），
