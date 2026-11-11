@@ -30,7 +30,7 @@ func (h *harness) reveal(name string) {
 		if r, ok := h.tt.Find(name); ok && r.W > 0 && r.H > 0 && r.Y+r.H < winH-60 {
 			return
 		}
-		h.tt.Scroll(560, 380, 0, -160)
+		h.tt.Scroll(560, 380, 0, 160)
 	}
 	h.shot("reveal-fail")
 	h.t.Fatalf("%q never became visible; screen %q", name, h.tt.Texts())

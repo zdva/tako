@@ -85,6 +85,15 @@ func (a *App) number(c *ui.Context, label string, cur, lo, hi, step int, set fun
 	}
 }
 
+// pfield is a labelled group on a settings page. It never shrinks: the page
+// scrolls instead of squeezing its groups into each other.
+func (a *App) pfield(c *ui.Context, label string, body func()) {
+	ui.Column(c).Gap(6).Shrink(0).Children(func() {
+		ui.Text(c, label).FontSize(12).Bold().TextColor(a.tk.Text2)
+		body()
+	})
+}
+
 func (a *App) settingsView(c *ui.Context) {
 	if !a.settings.open {
 		return
@@ -169,16 +178,16 @@ func (a *App) settingsPage(c *ui.Context, page string) {
 func (a *App) generalPage(c *ui.Context, v settings.Values) {
 	langs := []i18n.Language{"", i18n.English, i18n.Chinese}
 	apps := []settings.Appearance{settings.AppearanceSystem, settings.AppearanceLight, settings.AppearanceDark}
-	a.field(c, a.T(kSetLanguage), func() {
+	a.pfield(c, a.T(kSetLanguage), func() {
 		a.choice(c, a.T(kSetLanguage), slices.Index(langs, v.Language), []string{a.T(kLangSystem), "English", "简体中文"},
 			func(i int) { a.setPref(func(x *settings.Values) { x.Language = langs[i] }) })
 	})
-	a.field(c, a.T(kSetAppearance), func() {
+	a.pfield(c, a.T(kSetAppearance), func() {
 		a.choice(c, a.T(kSetAppearance), slices.Index(apps, v.ResolveAppearance()), []string{a.T(kAppSystem), a.T(kAppLight), a.T(kAppDark)},
 			func(i int) { a.setPref(func(x *settings.Values) { x.Appearance = apps[i] }) })
 		a.caption(c, a.T(kSetAppearanceHint))
 	})
-	a.field(c, a.T(kSetCompact), func() {
+	a.pfield(c, a.T(kSetCompact), func() {
 		a.toggle(c, a.T(kSetCompact), v.CompactBlocks, func(on bool) { a.setPref(func(x *settings.Values) { x.CompactBlocks = on }) })
 		a.caption(c, a.T(kSetCompactHint))
 	})
@@ -186,10 +195,10 @@ func (a *App) generalPage(c *ui.Context, v settings.Values) {
 
 func (a *App) terminalPage(c *ui.Context, v settings.Values) {
 	t := v.Terminal
-	a.field(c, a.T(kSetScheme), func() {
+	a.pfield(c, a.T(kSetScheme), func() {
 		a.schemeGrid(c, t)
 	})
-	a.field(c, a.T(kSetImportColors), func() {
+	a.pfield(c, a.T(kSetImportColors), func() {
 		a.pathRow(c, "colors", &a.settings.colorsPath, a.T(kSetColorsPlaceholder), a.T(kSetImport), false, func(path string) {
 			a.settings.colorsMsg = a.importColors(path)
 		})
@@ -197,13 +206,13 @@ func (a *App) terminalPage(c *ui.Context, v settings.Values) {
 			a.caption(c, a.settings.colorsMsg).Role(ui.RoleStatus)
 		}
 	})
-	a.field(c, a.T(kSetFont), func() {
+	a.pfield(c, a.T(kSetFont), func() {
 		ui.Row(c).Gap(10).AlignItems(ui.Center).Children(func() {
 			a.number(c, a.T(kSetFontSize), t.Font(), settings.MinFontSize, settings.MaxFontSize, 1,
 				func(n int) { a.setPref(func(x *settings.Values) { x.Terminal.FontSize = n }) })
 		})
 	})
-	a.field(c, a.T(kSetBehavior), func() {
+	a.pfield(c, a.T(kSetBehavior), func() {
 		a.toggle(c, a.T(kSetCopyOnSelect), t.CopyOnSelect, func(on bool) { a.setPref(func(x *settings.Values) { x.Terminal.CopyOnSelect = on }) })
 		a.toggle(c, a.T(kSetKeepContrast), t.KeepContrast, func(on bool) { a.setPref(func(x *settings.Values) { x.Terminal.KeepContrast = on }) })
 		a.caption(c, a.T(kSetKeepContrastHint))
@@ -332,20 +341,20 @@ func (a *App) pathRow(c *ui.Context, key string, path *string, placeholder, acti
 }
 
 func (a *App) connectionPage(c *ui.Context, v settings.Values) {
-	a.field(c, a.T(kSetKeepAlive), func() {
+	a.pfield(c, a.T(kSetKeepAlive), func() {
 		ui.Row(c).Gap(10).AlignItems(ui.Center).Children(func() {
 			a.number(c, a.T(kSetKeepAliveEvery), v.Connection.KeepAlive(), 5, 300, 5,
 				func(n int) { a.setPref(func(x *settings.Values) { x.Connection.KeepAliveSec = n }) })
 		})
 		a.caption(c, a.T(kSetKeepAliveHint))
 	})
-	a.field(c, a.T(kSetHostKeys), func() {
+	a.pfield(c, a.T(kSetHostKeys), func() {
 		a.caption(c, a.T(kSetHostKeysHint))
 	})
 }
 
 func (a *App) monitorSettings(c *ui.Context, m settings.Monitor) {
-	a.field(c, a.T(kSetMonitor), func() {
+	a.pfield(c, a.T(kSetMonitor), func() {
 		a.toggle(c, a.T(kSetMonitorOn), !m.Off, func(on bool) { a.setPref(func(x *settings.Values) { x.Monitor.Off = !on }) })
 		ui.Row(c).Gap(10).AlignItems(ui.Center).Wrap().Children(func() {
 			a.number(c, a.T(kSetMonitorEvery), m.Interval(), 1, 60, 1, func(n int) { a.setPref(func(x *settings.Values) { x.Monitor.IntervalSec = n }) })
@@ -362,7 +371,7 @@ func (a *App) monitorSettings(c *ui.Context, m settings.Monitor) {
 func (a *App) transferSettings(c *ui.Context, t settings.Transfer) {
 	conflicts := []settings.Conflict{settings.ConflictAsk, settings.ConflictOverwrite, settings.ConflictSkip}
 	verifies := []string{"auto", "hash", "size"}
-	a.field(c, a.T(kSetTransfer), func() {
+	a.pfield(c, a.T(kSetTransfer), func() {
 		ui.Row(c).Gap(10).AlignItems(ui.Center).Children(func() {
 			a.number(c, a.T(kSetParallel), t.Parallel(), 1, 8, 1, func(n int) { a.setPref(func(x *settings.Values) { x.Transfer.Concurrency = n }) })
 		})
@@ -389,7 +398,7 @@ func (a *App) dataPage(c *ui.Context) {
 	if st.exportPath == "" {
 		st.exportPath = a.d.DefaultExport
 	}
-	a.field(c, a.T(kDataExport), func() {
+	a.pfield(c, a.T(kDataExport), func() {
 		a.pathRow(c, "export", &st.exportPath, a.T(kDataExportPlaceholder), a.T(kDataExportAction), true, func(p string) {
 			st.exportMsg = a.exportHosts(p)
 		})
@@ -398,7 +407,7 @@ func (a *App) dataPage(c *ui.Context) {
 			a.caption(c, st.exportMsg).Role(ui.RoleStatus)
 		}
 	})
-	a.field(c, a.T(kDataImport), func() {
+	a.pfield(c, a.T(kDataImport), func() {
 		a.pathRow(c, "import", &st.importPath, a.T(kDataImportPlaceholder), a.T(kSetImport), false, func(p string) {
 			st.importMsg, st.importWarns = a.importHosts(p)
 		})
@@ -413,7 +422,7 @@ func (a *App) dataPage(c *ui.Context) {
 			}
 		}
 	})
-	a.field(c, a.T(kDataFolders), func() {
+	a.pfield(c, a.T(kDataFolders), func() {
 		a.caption(c, a.T(kDataConfigDir, a.d.Paths.Config)).Selectable()
 		a.caption(c, a.T(kDataLogDir, a.d.Paths.Logs)).Selectable()
 	})
@@ -446,7 +455,7 @@ func (a *App) importHosts(path string) (string, []string) {
 
 func (a *App) aboutPage(c *ui.Context) {
 	st := &a.settings
-	a.field(c, "Tako", func() {
+	a.pfield(c, "Tako", func() {
 		a.caption(c, a.T(kSetVersion, a.d.Version)).Selectable()
 		a.caption(c, a.T(kAboutLicense))
 	})
@@ -458,7 +467,7 @@ func (a *App) aboutPage(c *ui.Context) {
 			})
 		}
 	}
-	a.field(c, a.T(kAboutUpdates), func() {
+	a.pfield(c, a.T(kAboutUpdates), func() {
 		ui.Row(c).Gap(10).AlignItems(ui.Center).Children(func() {
 			if a.d.CheckUpdates != nil && ui.Button(c, a.T(kAboutCheck)).Clicked() {
 				a.d.CheckUpdates()
@@ -471,7 +480,7 @@ func (a *App) aboutPage(c *ui.Context) {
 		}
 		a.caption(c, a.T(kAboutUpdatesHint))
 	})
-	a.field(c, a.T(kAboutDiagnostics), func() {
+	a.pfield(c, a.T(kAboutDiagnostics), func() {
 		if a.d.Diagnostics != nil && ui.Button(c, a.T(kAboutCopyDiag)).Clicked() {
 			a.writeClipboard(a.d.Diagnostics())
 			st.diagMsg = a.T(kAboutCopied, time.Now().Format("15:04:05"))
