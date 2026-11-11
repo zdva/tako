@@ -263,8 +263,9 @@ func writeConfig(t testing.TB, in install, s *Server, opts Options) string {
 }
 
 func (s *Server) launch(t testing.TB, in install, cfg string) error {
+	t.Helper()
 	var stderr bytes.Buffer
-	//nolint:gosec // the binary path comes from the test environment, not from user input
+
 	cmd := exec.CommandContext(context.WithoutCancel(t.Context()), in.sshd, "-D", "-e", "-f", cfg)
 	cmd.Env = in.env
 	cmd.Stderr = &stderr

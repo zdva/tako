@@ -429,7 +429,7 @@ func (l *Library) dropOrphanedSecrets(old, updated model.Host) {
 	keep := updated.SecretRefs()
 	for _, ref := range old.SecretRefs() {
 		if !slices.Contains(keep, ref) {
-			_ = l.secrets.Delete(context.Background(), ref) //nolint:errcheck // best effort: a stale keychain entry is harmless
+			_ = l.secrets.Delete(context.Background(), ref)
 		}
 	}
 }

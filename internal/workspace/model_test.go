@@ -57,7 +57,7 @@ func newEnv(t *testing.T) *env {
 		},
 		Post:  func(fn func()) { e.posts <- fn },
 		Host:  func(id model.ID) (model.Host, bool) { h, ok := e.hosts[id]; return h, ok },
-		Theme: func() *terminal.Theme { return terminal.LightTheme() },
+		Theme: terminal.LightTheme,
 	})
 	t.Cleanup(e.m.Close)
 	return e
@@ -68,9 +68,11 @@ type trustAll struct{}
 func (trustAll) ConfirmHostKey(context.Context, transport.HostKeyRequest) (bool, error) {
 	return true, nil
 }
+
 func (trustAll) Secret(context.Context, transport.SecretRequest) (transport.SecretReply, error) {
 	return transport.SecretReply{}, transport.ErrCanceled
 }
+
 func (trustAll) Challenge(context.Context, transport.ChallengeRequest) ([]string, error) {
 	return nil, transport.ErrCanceled
 }
@@ -183,7 +185,6 @@ func TestSyncMirrorsTypedInputToSyncedBlocks(t *testing.T) {
 	b, _ := e.m.OpenHost(e.host("b"), false)
 	c, _ := e.m.OpenHost(e.host("c"), false)
 	for _, blk := range []*workspace.Block{a, b, c} {
-		blk := blk
 		e.waitFor(t, "pane "+blk.Name, func() bool { return blk.ActiveTab().Pane.Connected() })
 	}
 	e.m.SetSynced(a, true)

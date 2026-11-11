@@ -40,7 +40,7 @@ func Hex(s string) ui.Color {
 	if err != nil {
 		panic(fmt.Sprintf("theme: bad color %q: %v", s, err))
 	}
-	return ui.RGB(uint8(v>>16), uint8(v>>8), uint8(v))
+	return ui.RGB(uint8(v>>16), uint8(v>>8), uint8(v)) //nolint:gosec // v is parsed with 24 bits, each shift leaves at most 8
 }
 
 // Light is the light appearance.

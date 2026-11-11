@@ -3,6 +3,7 @@ package model
 import (
 	"errors"
 	"slices"
+	"strings"
 	"testing"
 	"time"
 )
@@ -117,9 +118,11 @@ func TestResolveJumps(t *testing.T) {
 				t.Fatalf("err = %v, want %v", err, tc.want)
 			}
 			var ids string
+			var idsSb120 strings.Builder
 			for _, h := range chain {
-				ids += string(h.ID)
+				idsSb120.WriteString(string(h.ID))
 			}
+			ids += idsSb120.String()
 			if ids != tc.ids {
 				t.Errorf("chain = %q, want %q", ids, tc.ids)
 			}

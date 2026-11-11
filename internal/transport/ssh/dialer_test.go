@@ -43,7 +43,7 @@ func TestDial_PasswordFromKeychain(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Dial: %v", err)
 	}
-	defer tr.Close()
+	defer func() { _ = tr.Close() }()
 	if pr.secretPrompts() != 0 {
 		t.Error("asked for a password that was in the keychain")
 	}
@@ -374,12 +374,12 @@ func TestTransport_ShellSizeAndKeepAlive(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer tr.Close()
+	defer func() { _ = tr.Close() }()
 	sh, err := tr.OpenShell(t.Context(), transport.Size{Cols: 91, Rows: 33})
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer sh.Close()
+	defer func() { _ = sh.Close() }()
 	if err := sh.Resize(120, 40); err != nil {
 		t.Fatal(err)
 	}
@@ -430,13 +430,13 @@ func TestTransport_ChannelLimit(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer tr.Close()
+	defer func() { _ = tr.Close() }()
 	for i := range 2 {
 		sh, err := tr.OpenShell(t.Context(), transport.Size{Cols: 80, Rows: 24})
 		if err != nil {
 			t.Fatalf("shell %d: %v", i, err)
 		}
-		defer sh.Close()
+		defer func() { _ = sh.Close() }()
 	}
 	_, err = tr.OpenShell(t.Context(), transport.Size{Cols: 80, Rows: 24})
 	if !errors.Is(err, transport.ErrChannelLimit) {

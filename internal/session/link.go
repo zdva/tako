@@ -85,7 +85,7 @@ func (l *link) run(ctx context.Context) {
 		t, err := l.dial(ctx)
 		if ctx.Err() != nil {
 			if t != nil {
-				_ = t.Close() //nolint:errcheck // shutting down
+				_ = t.Close()
 			}
 			return
 		}
@@ -116,10 +116,10 @@ func (l *link) run(ctx context.Context) {
 			l.lost(t)
 			l.report(StateChange{State: StateReconnecting, Err: t.Err()})
 		case <-l.kick:
-			_ = t.Close() //nolint:errcheck // replaced on purpose
+			_ = t.Close()
 			l.lost(t)
 		case <-ctx.Done():
-			_ = t.Close() //nolint:errcheck // shutting down
+			_ = t.Close()
 			l.lost(t)
 			return
 		}
@@ -202,7 +202,7 @@ func (l *link) attachPane(t transport.Transport, p *Pane) {
 		}
 		// A transport that cannot open a shell is not usable: drop it so the
 		// link reconnects.
-		_ = t.Close() //nolint:errcheck // forcing a reconnect
+		_ = t.Close()
 		return
 	}
 	first := !p.started.Swap(true)
@@ -248,10 +248,10 @@ func (l *link) notice(ev Event) []byte {
 // shell.
 func (l *link) runStart(p *Pane) {
 	if p.startDir != "" {
-		_, _ = p.Write([]byte("cd " + shellQuote(p.startDir) + "\n")) //nolint:errcheck // Pane.Write does not fail while open
+		_, _ = p.Write([]byte("cd " + shellQuote(p.startDir) + "\n"))
 	}
 	if p.startCmd != "" {
-		_, _ = p.Write([]byte(p.startCmd + "\n")) //nolint:errcheck // Pane.Write does not fail while open
+		_, _ = p.Write([]byte(p.startCmd + "\n"))
 	}
 }
 

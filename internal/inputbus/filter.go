@@ -55,7 +55,7 @@ func classify(p []byte) (length int, reply bool) {
 	return 2, false
 }
 
-func classifyCSI(p []byte) (length int, reply bool) {
+func classifyCSI(p []byte) (length int, reply bool) { //nolint:gocyclo // a flat table of terminal escape sequences; splitting it would hide the table
 	i := 2
 	for i < len(p) && p[i] >= 0x30 && p[i] <= 0x3f { // parameter bytes
 		i++

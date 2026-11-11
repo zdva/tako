@@ -36,8 +36,10 @@ func TestParseFile_Fixture(t *testing.T) {
 		names = append(names, h.Name)
 	}
 	// 14 concrete aliases plus one literal jump host (jump.example.com).
-	for _, want := range []string{"bastion", "web-01", "web-02", "web-03", "db-01", "gpu-01", "gpu-02", "legacy",
-		"win-build", "mac-mini", "ci-runner", "extra-1", "extra-2", "ci.corp"} {
+	for _, want := range []string{
+		"bastion", "web-01", "web-02", "web-03", "db-01", "gpu-01", "gpu-02", "legacy",
+		"win-build", "mac-mini", "ci-runner", "extra-1", "extra-2", "ci.corp",
+	} {
 		if !slices.Contains(names, want) && want != "ci.corp" {
 			t.Errorf("missing host %q in %v", want, names)
 		}

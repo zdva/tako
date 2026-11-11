@@ -65,9 +65,9 @@ func dialHTTPConnect(ctx context.Context, d *net.Dialer, addr string, p *model.P
 		return nil, fmt.Errorf("%w: reaching proxy %s: %w", transport.ErrProxyFailed, p.Addr, err)
 	}
 	if dl, ok := ctx.Deadline(); ok {
-		_ = conn.SetDeadline(dl) //nolint:errcheck // a failed deadline only loses the early timeout
+		_ = conn.SetDeadline(dl)
 	}
-	stop := context.AfterFunc(ctx, func() { _ = conn.Close() }) //nolint:errcheck // unblocks the handshake on cancel
+	stop := context.AfterFunc(ctx, func() { _ = conn.Close() })
 	defer stop()
 	req := &http.Request{
 		Method: http.MethodConnect,
@@ -89,7 +89,7 @@ func dialHTTPConnect(ctx context.Context, d *net.Dialer, addr string, p *model.P
 		_ = conn.Close()
 		return nil, fmt.Errorf("%w: reading CONNECT reply: %w", transport.ErrProxyFailed, err)
 	}
-	defer func() { _ = resp.Body.Close() }() //nolint:errcheck // CONNECT replies have no body worth reading
+	defer func() { _ = resp.Body.Close() }()
 	if resp.StatusCode != http.StatusOK {
 		_ = conn.Close()
 		return nil, fmt.Errorf("%w: proxy answered %s", transport.ErrProxyFailed, resp.Status)

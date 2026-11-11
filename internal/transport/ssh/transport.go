@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"slices"
 	"sync"
 	"time"
 
@@ -39,10 +40,10 @@ func (t *Transport) addResource(c io.Closer) {
 
 func (t *Transport) closeResources() {
 	for _, c := range t.closers {
-		_ = c.Close() //nolint:errcheck // best-effort release of agent sockets and jump clients
+		_ = c.Close()
 	}
-	for i := len(t.clients) - 1; i >= 0; i-- {
-		_ = t.clients[i].Close() //nolint:errcheck // the connection is being torn down anyway
+	for _, v := range slices.Backward(t.clients) {
+		_ = v.Close()
 	}
 }
 
@@ -128,21 +129,21 @@ func (t *Transport) OpenShell(ctx context.Context, size transport.Size) (transpo
 	}
 	modes := gossh.TerminalModes{gossh.ECHO: 1, gossh.TTY_OP_ISPEED: 38400, gossh.TTY_OP_OSPEED: 38400}
 	if err := sess.RequestPty("xterm-256color", max(size.Rows, 1), max(size.Cols, 1), modes); err != nil {
-		_ = sess.Close() //nolint:errcheck // reporting the earlier failure
+		_ = sess.Close()
 		return nil, classifyChannel(fmt.Errorf("requesting a pty: %w", err))
 	}
 	stdin, err := sess.StdinPipe()
 	if err != nil {
-		_ = sess.Close() //nolint:errcheck // reporting the earlier failure
+		_ = sess.Close()
 		return nil, fmt.Errorf("opening shell input: %w", err)
 	}
 	stdout, err := sess.StdoutPipe()
 	if err != nil {
-		_ = sess.Close() //nolint:errcheck // reporting the earlier failure
+		_ = sess.Close()
 		return nil, fmt.Errorf("opening shell output: %w", err)
 	}
 	if err := sess.Shell(); err != nil {
-		_ = sess.Close() //nolint:errcheck // reporting the earlier failure
+		_ = sess.Close()
 		return nil, classifyChannel(fmt.Errorf("starting the shell: %w", err))
 	}
 	return &shell{sess: sess, in: stdin, out: stdout}, nil
@@ -168,7 +169,7 @@ func (t *Transport) newSession(ctx context.Context) (*gossh.Session, error) {
 	case <-ctx.Done():
 		go func() {
 			if r := <-ch; r.s != nil {
-				_ = r.s.Close() //nolint:errcheck // abandoned session
+				_ = r.s.Close()
 			}
 		}()
 		return nil, fmt.Errorf("opening a session: %w", context.Cause(ctx))
@@ -185,6 +186,7 @@ func classifyChannel(err error) error {
 		switch oce.Reason {
 		case gossh.ResourceShortage, gossh.Prohibited, gossh.ConnectionFailed:
 			return fmt.Errorf("%w: %w", transport.ErrChannelLimit, err)
+		default: // other refusals are not about limits
 		}
 	}
 	return err
@@ -196,8 +198,8 @@ func (t *Transport) Exec(ctx context.Context, cmd string) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer func() { _ = sess.Close() }()                         //nolint:errcheck // the session is finished
-	stop := context.AfterFunc(ctx, func() { _ = sess.Close() }) //nolint:errcheck // aborts a running command on cancel
+	defer func() { _ = sess.Close() }()
+	stop := context.AfterFunc(ctx, func() { _ = sess.Close() })
 	defer stop()
 	out, err := sess.CombinedOutput(cmd)
 	if err != nil {
@@ -227,7 +229,7 @@ func (s *shell) Resize(cols, rows int) error {
 }
 
 func (s *shell) Close() error {
-	_ = s.in.Close() //nolint:errcheck // closing stdin; the session close below reports failure
+	_ = s.in.Close()
 	if err := s.sess.Close(); err != nil && !errors.Is(err, io.EOF) {
 		return fmt.Errorf("closing shell: %w", err)
 	}

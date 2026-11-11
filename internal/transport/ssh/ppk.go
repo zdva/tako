@@ -86,7 +86,7 @@ type ppkFile struct {
 
 func (f *ppkFile) encrypted() bool { return f.encryption != "none" }
 
-func readPPK(data []byte) (*ppkFile, error) {
+func readPPK(data []byte) (*ppkFile, error) { //nolint:gocyclo // mirrors the PPK file format step by step
 	lines := strings.Split(strings.ReplaceAll(string(data), "\r\n", "\n"), "\n")
 	f := &ppkFile{}
 	i := 0
@@ -147,7 +147,7 @@ func readPPK(data []byte) (*ppkFile, error) {
 		case "Argon2-Parallelism":
 			var n uint32
 			n, err = parseU32(v)
-			f.argonPar = uint8(min(n, 255)) //nolint:gosec // clamped to the uint8 range on the line above
+			f.argonPar = uint8(min(n, 255))
 		case "Argon2-Salt":
 			f.salt, err = hex.DecodeString(v)
 		}
@@ -257,7 +257,7 @@ func (f *ppkFile) macOK(macKey, priv []byte) bool {
 	}
 	var sum []byte
 	if f.version == 2 {
-		m := hmac.New(sha1.New, macKey) //nolint:gosec // dictated by the PPK v2 format
+		m := hmac.New(sha1.New, macKey)
 		m.Write(body)
 		sum = m.Sum(nil)
 	} else {
@@ -276,7 +276,7 @@ func (w *wire) bytes() ([]byte, error) {
 		return nil, fmt.Errorf("%w: truncated key data", ErrBadPPK)
 	}
 	n := binary.BigEndian.Uint32(w.b)
-	if uint64(n) > uint64(len(w.b)-4) {
+	if uint64(n) > uint64(len(w.b)-4) { //nolint:gosec // len(w.b) >= 4 was checked above
 		return nil, fmt.Errorf("%w: truncated key data", ErrBadPPK)
 	}
 	out := w.b[4 : 4+n]
@@ -331,9 +331,9 @@ func buildRSA(pr, pw *wire) (crypto.PrivateKey, error) {
 		return nil, err
 	}
 	key := &rsa.PrivateKey{
-		PublicKey: rsa.PublicKey{N: n, E: int(e.Int64())},
-		D:         d,
-		Primes:    []*big.Int{p, q},
+		N: n, E: int(e.Int64()),
+		D:      d,
+		Primes: []*big.Int{p, q},
 	}
 	if err := key.Validate(); err != nil {
 		return nil, fmt.Errorf("%w: %w", ErrBadPPK, err)
@@ -354,7 +354,7 @@ func buildEd25519(pr, pw *wire) (crypto.PrivateKey, error) {
 	// PuTTY stores the 32-byte seed as an mpint, which drops leading zeros.
 	raw := seed.FillBytes(make([]byte, ed25519.SeedSize))
 	key := ed25519.NewKeyFromSeed(raw)
-	if !bytes.Equal(key.Public().(ed25519.PublicKey), pubKey) { //nolint:forcetypeassert // ed25519.PrivateKey.Public always returns an ed25519.PublicKey
+	if !bytes.Equal(key.Public().(ed25519.PublicKey), pubKey) { //nolint:forcetypeassert,errcheck // ed25519.PrivateKey.Public always returns an ed25519.PublicKey
 		return nil, fmt.Errorf("%w: Ed25519 private key does not match its public key", ErrBadPPK)
 	}
 	return key, nil
@@ -381,9 +381,13 @@ func buildECDSA(keyType string, pr, pw *wire) (crypto.PrivateKey, error) {
 	if err != nil {
 		return nil, err
 	}
-	x, y := elliptic.Unmarshal(curve, point) //nolint:staticcheck // no non-deprecated way to build an ecdsa.PrivateKey from x, y, d with big.Ints
-	if x == nil {
-		return nil, fmt.Errorf("%w: bad ECDSA public point", ErrBadPPK)
+	key, err := ecdsa.ParseRawPrivateKey(curve, d.FillBytes(make([]byte, (curve.Params().BitSize+7)/8)))
+	if err != nil {
+		return nil, fmt.Errorf("%w: bad ECDSA private key: %w", ErrBadPPK, err)
 	}
-	return &ecdsa.PrivateKey{PublicKey: ecdsa.PublicKey{Curve: curve, X: x, Y: y}, D: d}, nil
+	pub, err := key.PublicKey.Bytes()
+	if err != nil || !bytes.Equal(pub, point) {
+		return nil, fmt.Errorf("%w: ECDSA private key does not match its public point", ErrBadPPK)
+	}
+	return key, nil
 }

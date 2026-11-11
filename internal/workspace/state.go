@@ -93,28 +93,9 @@ func (m *Model) Restore(s State) int {
 }
 
 func (m *Model) restoreBlock(bs BlockState) (*Block, error) {
-	var b *Block
-	if bs.HostID == "" {
-		m.nextID++
-		b = &Block{ID: localID(m.nextID), Kind: KindLocal, Name: bs.Name}
-		if b.Name == "" {
-			b.Name = "local"
-		}
-		if err := m.attach(b); err != nil {
-			return nil, err
-		}
-	} else {
-		h, ok := m.deps.Host(bs.HostID)
-		if !ok {
-			return nil, ErrNoSuchHost
-		}
-		var err error
-		if b, err = m.addBlock(h); err != nil {
-			return nil, err
-		}
-		if bs.Name != "" {
-			b.Name = bs.Name
-		}
+	b, err := m.reopenBlock(bs)
+	if err != nil {
+		return nil, err
 	}
 	for _, t := range bs.Tabs {
 		if err := m.addTab(b, t.Dir, ""); err != nil {
@@ -131,6 +112,33 @@ func (m *Model) restoreBlock(bs BlockState) (*Block, error) {
 	if bs.Synced {
 		b.Synced = true
 		m.deps.Bus.SetSynced(b.ID, true)
+	}
+	return b, nil
+}
+
+// reopenBlock creates the block of a saved state, without its tabs.
+func (m *Model) reopenBlock(bs BlockState) (*Block, error) {
+	if bs.HostID == "" {
+		m.nextID++
+		b := &Block{ID: localID(m.nextID), Kind: KindLocal, Name: bs.Name}
+		if b.Name == "" {
+			b.Name = "local"
+		}
+		if err := m.attach(b); err != nil {
+			return nil, err
+		}
+		return b, nil
+	}
+	h, ok := m.deps.Host(bs.HostID)
+	if !ok {
+		return nil, ErrNoSuchHost
+	}
+	b, err := m.addBlock(h)
+	if err != nil {
+		return nil, err
+	}
+	if bs.Name != "" {
+		b.Name = bs.Name
 	}
 	return b, nil
 }

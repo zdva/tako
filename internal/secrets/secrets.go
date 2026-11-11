@@ -180,6 +180,12 @@ func (l *Layered) Set(ctx context.Context, ref string, value []byte) error {
 	return fmt.Errorf("%w: %w", ErrNotPersisted, err)
 }
 
+// SetSession keeps a secret for this run only, never in the keychain: the
+// choice "do not remember" at the connect prompt.
+func (l *Layered) SetSession(ctx context.Context, ref string, value []byte) error {
+	return l.session.Set(ctx, ref, value)
+}
+
 // Delete implements [Store], removing the secret from both layers.
 func (l *Layered) Delete(ctx context.Context, ref string) error {
 	if err := l.session.Delete(ctx, ref); err != nil {

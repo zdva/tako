@@ -131,11 +131,11 @@ func (d *Dialer) connect(
 		ClientVersion:     "SSH-2.0-Tako",
 	}
 	// ssh.NewClientConn has no context; closing the conn aborts it.
-	stop := context.AfterFunc(ctx, func() { _ = conn.Close() }) //nolint:errcheck // unblocks the handshake on cancel
+	stop := context.AfterFunc(ctx, func() { _ = conn.Close() })
 	sc, chans, reqs, err := gossh.NewClientConn(conn, hostport, cfg)
 	stopped := !stop()
 	if err != nil {
-		_ = conn.Close() //nolint:errcheck // the handshake already failed; the close error adds nothing
+		_ = conn.Close()
 		if stopped || ctx.Err() != nil {
 			return nil, fmt.Errorf("%w: %w", transport.ErrUnreachable, ctxCause(ctx, err))
 		}
@@ -147,7 +147,7 @@ func (d *Dialer) connect(
 func (d *Dialer) firstConn(ctx context.Context, target, hop model.Host, timeout time.Duration) (net.Conn, error) {
 	var proxyPass []byte
 	if p := target.Proxy; p != nil && p.SecretRef != "" && d.Secrets != nil {
-		proxyPass, _ = d.Secrets.Get(ctx, p.SecretRef) //nolint:errcheck // a missing proxy password means no password
+		proxyPass, _ = d.Secrets.Get(ctx, p.SecretRef)
 	}
 	return dialTCP(ctx, hop.HostPort(), target.Proxy, proxyPass, timeout)
 }
@@ -172,7 +172,7 @@ func dialThrough(ctx context.Context, client *gossh.Client, addr string) (net.Co
 	case <-ctx.Done():
 		go func() {
 			if r := <-ch; r.c != nil {
-				_ = r.c.Close() //nolint:errcheck // abandoned connection
+				_ = r.c.Close()
 			}
 		}()
 		return nil, fmt.Errorf("%w: %w", transport.ErrUnreachable, ctx.Err())

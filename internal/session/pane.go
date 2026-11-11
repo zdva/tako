@@ -5,6 +5,7 @@ import (
 	"io"
 	"sync"
 	"sync/atomic"
+	"time"
 
 	"github.com/wei-dong/tako/internal/transport"
 )
@@ -22,6 +23,7 @@ type Pane struct {
 	pending []byte // unread tail of the last output chunk
 	exited  bool   // the remote shell ended on its own
 
+	resizeTimer        *time.Timer
 	startDir, startCmd string      // typed into the first shell only
 	started            atomic.Bool // a shell has been attached at least once
 	dropped            atomic.Uint64
@@ -99,20 +101,40 @@ func (p *Pane) Write(b []byte) (int, error) {
 	return len(b), nil
 }
 
+// resizeDelay is how long a window-change waits for the size to settle, so
+// dragging a window edge sends one request instead of one per frame.
+const resizeDelay = 100 * time.Millisecond
+
 // Resize implements the terminal's Resize(cols, rows int) error. The size is
-// remembered and applied to the next shell after a reconnect.
+// remembered at once and applied to the next shell after a reconnect; the
+// running shell is told after the size has been still for [resizeDelay].
 func (p *Pane) Resize(cols, rows int) error {
 	p.mu.Lock()
-	p.size = transport.Size{Cols: cols, Rows: rows}
-	sh := p.shell
-	p.mu.Unlock()
-	if sh == nil {
+	defer p.mu.Unlock()
+	if p.size.Cols == cols && p.size.Rows == rows {
 		return nil
 	}
-	if err := sh.Resize(cols, rows); err != nil {
-		return nil //nolint:nilerr // a failed resize on a dying connection is retried by the reconnect, which uses the stored size
+	p.size = transport.Size{Cols: cols, Rows: rows}
+	if p.shell == nil {
+		return nil
 	}
+	if p.resizeTimer != nil {
+		p.resizeTimer.Stop()
+	}
+	p.resizeTimer = time.AfterFunc(resizeDelay, p.applyResize)
 	return nil
+}
+
+func (p *Pane) applyResize() {
+	p.mu.Lock()
+	sh, size := p.shell, p.size
+	p.mu.Unlock()
+	if sh == nil {
+		return
+	}
+	// A failed resize on a dying connection is retried by the reconnect,
+	// which opens the next shell at the stored size.
+	_ = sh.Resize(size.Cols, size.Rows)
 }
 
 // Size returns the last size set with Resize (or the initial size).
@@ -159,6 +181,9 @@ func (p *Pane) Close() error {
 	p.once.Do(func() {
 		close(p.closed)
 		p.mu.Lock()
+		if p.resizeTimer != nil {
+			p.resizeTimer.Stop()
+		}
 		sh := p.shell
 		p.shell = nil
 		p.mu.Unlock()
@@ -188,7 +213,7 @@ func (p *Pane) inject(b []byte) {
 func (p *Pane) attach(sh transport.Shell) <-chan struct{} {
 	p.mu.Lock()
 	if p.shell != nil {
-		_ = p.shell.Close() //nolint:errcheck // replacing a shell that is already dead
+		_ = p.shell.Close()
 	}
 	p.shell = sh
 	p.mu.Unlock()
@@ -222,7 +247,7 @@ func (p *Pane) detach(sh transport.Shell) {
 		p.shell = nil
 	}
 	p.mu.Unlock()
-	_ = sh.Close() //nolint:errcheck // the connection is gone; closing only frees local state
+	_ = sh.Close()
 }
 
 // markExited ends the pane because the remote shell exited.
@@ -231,5 +256,5 @@ func (p *Pane) markExited() {
 	p.exited = true
 	p.shell = nil
 	p.mu.Unlock()
-	_ = p.Close() //nolint:errcheck // nothing left to close that could fail meaningfully
+	_ = p.Close()
 }

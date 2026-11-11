@@ -102,7 +102,7 @@ type Options struct {
 // Session manages the connection(s) to one host.
 type Session struct {
 	opts   Options
-	ctx    context.Context
+	ctx    context.Context //nolint:containedctx // owns the lifetime of the goroutines this type starts
 	cancel context.CancelFunc
 	wg     sync.WaitGroup
 
@@ -273,7 +273,7 @@ func (s *Session) Close() {
 	panes := s.panesAll
 	s.mu.Unlock()
 	for _, p := range panes {
-		_ = p.Close() //nolint:errcheck // closing a pane of a session that is going away
+		_ = p.Close()
 	}
 	s.cancel()
 	s.wg.Wait()

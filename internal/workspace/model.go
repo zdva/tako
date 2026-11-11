@@ -9,6 +9,8 @@ import (
 	"slices"
 	"strconv"
 	"strings"
+	"sync/atomic"
+	"time"
 
 	"github.com/egoist/mygo/plugins/terminal"
 
@@ -26,7 +28,7 @@ var initialSize = transport.Size{Cols: 100, Rows: 30}
 // Deps are what a Model needs from the rest of the app.
 type Deps struct {
 	// Ctx ends every session and terminal.
-	Ctx context.Context
+	Ctx context.Context //nolint:containedctx // a dependency bundle: Ctx is the lifetime of everything the model starts
 	// Bus mirrors input between synced blocks.
 	Bus *inputbus.Bus
 	// NewSession creates the session of a host (one per host, shared by all
@@ -66,6 +68,9 @@ type Tab struct {
 	Pane *session.Pane
 
 	fallback string
+	// DropAt is when input last went nowhere because the connection was
+	// down; the view shows its "input is not sent" card for a while after.
+	DropAt time.Time
 	// dir is the directory to restore to: the terminal's last OSC 7 report,
 	// or where it started.
 	startDir string
@@ -351,12 +356,23 @@ func (m *Model) addTab(b *Block, dir, cmd string) error {
 			return fmt.Errorf("opening a tab on %s: %w", b.Name, err)
 		}
 		tab.Pane = pane
+		var lastDrop atomic.Int64
+		pane.OnDrop(func() {
+			now := time.Now().UnixNano()
+			if prev := lastDrop.Swap(now); now-prev < int64(500*time.Millisecond) {
+				return // one notice per burst of typing
+			}
+			m.deps.Post(func() {
+				tab.DropAt = time.Now()
+				m.changed(false)
+			})
+		})
 		opts.Conn = &inputbus.SyncConn{Raw: pane, Bus: m.deps.Bus, ID: b.ID}
 	}
 	term, err := m.deps.NewTerminal(opts)
 	if err != nil {
 		if tab.Pane != nil {
-			_ = tab.Pane.Close() //nolint:errcheck // reporting the earlier failure
+			_ = tab.Pane.Close()
 		}
 		return fmt.Errorf("creating the terminal for %s: %w", b.Name, err)
 	}
@@ -426,7 +442,7 @@ func closeTab(t *Tab) {
 		slog.Debug("closing terminal", "err", err)
 	}
 	if t.Pane != nil {
-		_ = t.Pane.Close() //nolint:errcheck // the pane ends with its tab
+		_ = t.Pane.Close()
 	}
 }
 

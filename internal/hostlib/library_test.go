@@ -24,8 +24,10 @@ func open(t *testing.T) (*Library, *secrets.Memory, string) {
 }
 
 func host(name string, tags ...string) model.Host {
-	return model.Host{Name: name, Addr: name + ".example.com", User: "ubuntu", Tags: tags,
-		Auth: []model.Auth{{Kind: model.AuthAgent}}}
+	return model.Host{
+		Name: name, Addr: name + ".example.com", User: "ubuntu", Tags: tags,
+		Auth: []model.Auth{{Kind: model.AuthAgent}},
+	}
 }
 
 func TestLibrary_AddGetUpdateDelete(t *testing.T) {
@@ -160,8 +162,15 @@ func TestLibrary_Search(t *testing.T) {
 		query string
 		want  int
 	}{
-		{"", 3}, {"web", 2}, {"WEB-01", 1}, {"#gpu", 1}, {"#prod", 3}, {"web #prod", 2},
-		{"ubuntu", 3}, {"nothing", 0}, {"#web", 0},
+		{"", 3},
+		{"web", 2},
+		{"WEB-01", 1},
+		{"#gpu", 1},
+		{"#prod", 3},
+		{"web #prod", 2},
+		{"ubuntu", 3},
+		{"nothing", 0},
+		{"#web", 0},
 	}
 	for _, tc := range tests {
 		t.Run(tc.query, func(t *testing.T) {

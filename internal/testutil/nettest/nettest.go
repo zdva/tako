@@ -9,7 +9,6 @@ import (
 	"crypto/ed25519"
 	"crypto/rand"
 	"encoding/binary"
-	"errors"
 	"fmt"
 	"io"
 	"net"
@@ -69,20 +68,6 @@ func listen(t testing.TB) net.Listener {
 		t.Fatalf("listening: %v", err)
 	}
 	return ln
-}
-
-// splice copies both ways until either side closes.
-func splice(a, b net.Conn) {
-	done := make(chan struct{}, 2)
-	cp := func(dst, src net.Conn) {
-		_, _ = io.Copy(dst, src)
-		_ = dst.Close()
-		done <- struct{}{}
-	}
-	go cp(a, b)
-	go cp(b, a)
-	<-done
-	<-done
 }
 
 // SOCKS5 is a running SOCKS5 proxy.
@@ -146,7 +131,7 @@ func (p *SOCKS5) handle(c net.Conn, user, pass string) {
 	if _, err := io.ReadFull(br, portb[:]); err != nil {
 		return
 	}
-	target, err := net.Dial("tcp", net.JoinHostPort(host, fmt.Sprint(binary.BigEndian.Uint16(portb[:]))))
+	target, err := net.Dial("tcp", net.JoinHostPort(host, strconv.FormatUint(uint64(binary.BigEndian.Uint16(portb[:])), 10)))
 	if err != nil {
 		_, _ = c.Write([]byte{5, 5, 0, 1, 0, 0, 0, 0, 0, 0})
 		return
@@ -224,11 +209,10 @@ type Relay struct {
 	Addr   string
 	target string
 
-	mu      sync.Mutex
-	paused  bool
-	resume  chan struct{}
-	conns   map[net.Conn]struct{}
-	dropped atomic.Bool
+	mu     sync.Mutex
+	paused bool
+	resume chan struct{}
+	conns  map[net.Conn]struct{}
 }
 
 // StartRelay relays 127.0.0.1:<port> to target.
@@ -364,9 +348,7 @@ func StartAgent(t testing.TB) *Agent {
 		t.Skipf("unix sockets unavailable: %v", err)
 	}
 	serve(t, ln, func(c net.Conn) {
-		if err := agent.ServeAgent(keyring, c); err != nil && !errors.Is(err, io.EOF) {
-			return
-		}
+		_ = agent.ServeAgent(keyring, c) // it returns io.EOF when the client hangs up
 	})
 	return &Agent{Socket: sock, Signer: signer}
 }

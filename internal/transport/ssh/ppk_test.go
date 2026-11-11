@@ -112,11 +112,11 @@ func FuzzReadPPK(f *testing.F) {
 		f.Add(data)
 	}
 	f.Add([]byte("PuTTY-User-Key-File-2: ssh-rsa\nEncryption: none\n"))
-	f.Fuzz(func(t *testing.T, in []byte) {
+	f.Fuzz(func(_ *testing.T, in []byte) {
 		pf, err := readPPK(in)
 		if err != nil {
 			return
 		}
-		_, _ = pf.signer(nil) //nolint:errcheck // only checking that arbitrary input cannot panic
+		_, _ = pf.signer(nil)
 	})
 }

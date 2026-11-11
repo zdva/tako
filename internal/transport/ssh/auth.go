@@ -49,7 +49,7 @@ func (a *authSet) Close() error {
 	a.mu.Lock()
 	defer a.mu.Unlock()
 	for _, c := range a.closers {
-		_ = c.Close() //nolint:errcheck // releasing an agent socket; nothing to do on failure
+		_ = c.Close()
 	}
 	a.closers = nil
 	return nil
@@ -187,7 +187,7 @@ func defaultAgentConn() (net.Conn, error) {
 	if sock == "" {
 		return nil, errors.New("SSH_AUTH_SOCK is not set")
 	}
-	conn, err := net.Dial("unix", sock)
+	conn, err := net.Dial("unix", sock) //nolint:gosec,noctx // SSH_AUTH_SOCK is the user's own environment; a local socket dial does not block
 	if err != nil {
 		return nil, fmt.Errorf("dialing %s: %w", sock, err)
 	}

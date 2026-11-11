@@ -50,7 +50,7 @@ type sink struct {
 
 // Bus routes input between registered blocks. It is safe for concurrent use.
 type Bus struct {
-	ctx    context.Context
+	ctx    context.Context //nolint:containedctx // owns the lifetime of the goroutines this type starts
 	cancel context.CancelFunc
 	wg     sync.WaitGroup
 

@@ -20,7 +20,6 @@ func TestMain(m *testing.M) { goleak.VerifyTestMain(m) }
 
 // fakeShell is a shell whose output the test controls.
 type fakeShell struct {
-	in      chan []byte
 	out     *io.PipeReader
 	outW    *io.PipeWriter
 	mu      sync.Mutex
@@ -48,6 +47,7 @@ func (s *fakeShell) Resize(cols, rows int) error {
 	s.cols, s.rows = cols, rows
 	return nil
 }
+
 func (s *fakeShell) typed() string {
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -126,7 +126,7 @@ func (d *scriptDialer) Dial(ctx context.Context, _ model.Host) (transport.Transp
 	if err, ok := r.(error); ok {
 		return nil, err
 	}
-	return r.(transport.Transport), nil //nolint:forcetypeassert // test script holds only these two kinds
+	return r.(transport.Transport), nil //nolint:forcetypeassert,errcheck // test script holds only these two kinds
 }
 
 func (d *scriptDialer) count() int {
@@ -363,10 +363,10 @@ func TestSession_BackoffSchedule(t *testing.T) {
 	waitFor(t, "5 attempts", func() bool { return d.count() >= 5 })
 	d.mu.Lock()
 	defer d.mu.Unlock()
-	gaps := []time.Duration{40, 80, 80, 80}
-	for i, want := range gaps {
+	gapsMS := []int{40, 80, 80, 80}
+	for i, ms := range gapsMS {
 		got := d.calls[i+1].Sub(d.calls[i])
-		want *= time.Millisecond
+		want := time.Duration(ms) * time.Millisecond
 		if got < want-5*time.Millisecond || got > want+60*time.Millisecond {
 			t.Errorf("gap %d = %v, want about %v", i, got, want)
 		}
@@ -481,7 +481,7 @@ func TestSession_LimitBoundsConcurrentDials(t *testing.T) {
 	t.Parallel()
 	limit := make(chan struct{}, 2)
 	var cur, peak atomic.Int32
-	d := dialerFunc(func(ctx context.Context, _ model.Host) (transport.Transport, error) {
+	d := dialerFunc(func(_ context.Context, _ model.Host) (transport.Transport, error) {
 		n := cur.Add(1)
 		for {
 			p := peak.Load()
@@ -514,4 +514,26 @@ type dialerFunc func(context.Context, model.Host) (transport.Transport, error)
 
 func (f dialerFunc) Dial(ctx context.Context, h model.Host) (transport.Transport, error) {
 	return f(ctx, h)
+}
+
+func TestPane_ResizeIsDebounced(t *testing.T) {
+	t.Parallel()
+	tr := newFakeTransport(0)
+	s := session.New(fastOpts(&scriptDialer{results: []any{tr}}))
+	defer s.Close()
+	p, _ := s.OpenPane(transport.Size{Cols: 80, Rows: 24})
+	waitFor(t, "shell", func() bool { return p.Connected() })
+
+	for i := range 20 { // a window edge being dragged
+		_ = p.Resize(80+i, 24+i)
+	}
+	if got := p.Size(); got.Cols != 99 || got.Rows != 43 {
+		t.Errorf("Size = %+v, want the latest 99x43 at once", got)
+	}
+	sh := tr.shell(0)
+	waitFor(t, "settled size", func() bool {
+		sh.mu.Lock()
+		defer sh.mu.Unlock()
+		return sh.cols == 99 && sh.rows == 43
+	})
 }

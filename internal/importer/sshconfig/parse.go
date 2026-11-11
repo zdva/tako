@@ -271,7 +271,7 @@ func splitArgs(s string) []string {
 }
 
 // build turns the parsed blocks into hosts.
-func (p *parser) build() []model.Host {
+func (p *parser) build() []model.Host { //nolint:gocyclo // maps each ssh_config keyword to a host field
 	var aliases []string
 	seen := map[string]bool{}
 	for _, b := range p.blocks {
@@ -284,8 +284,7 @@ func (p *parser) build() []model.Host {
 	}
 	byAlias := map[string]*model.Host{}
 	var hosts []*model.Host
-	var lookup func(alias string) *model.Host
-	lookup = func(alias string) *model.Host {
+	lookup := func(alias string) *model.Host {
 		if h, ok := byAlias[alias]; ok {
 			return h
 		}
@@ -303,7 +302,7 @@ func (p *parser) build() []model.Host {
 		if jumps == "" || strings.EqualFold(jumps, "none") {
 			continue
 		}
-		for _, spec := range strings.Split(jumps, ",") {
+		for spec := range strings.SplitSeq(jumps, ",") {
 			spec = strings.TrimSpace(spec)
 			if spec == "" {
 				continue
