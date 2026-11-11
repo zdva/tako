@@ -6,6 +6,58 @@ All notable changes are recorded here. The format follows
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-11-11
+
+First full release candidate. Local tag only; nothing has been published, and
+the installers and updater have not been run on real macOS or Windows machines
+(see [docs/RELEASE.md](docs/RELEASE.md)).
+
+### Added
+
+- Settings window (General, Terminal, Connection, Monitoring, File transfer,
+  Data, About) replacing the old settings sheet. Language and appearance apply
+  at once, with no restart; terminals recolor live (ADR 0017).
+- Terminal color schemes: Tako (follows appearance), Solarized Dark / Light,
+  Dracula, Nord, One Dark, Gruvbox Dark and Tokyo Night, plus import of
+  iTerm2 `.itermcolors` files. Font size, copy on select, keep text readable,
+  keepalive interval.
+- Importers for Xshell (`.xsh`, `.xts`, folders; UTF-16 and legacy code pages
+  of the file itself), SecureCRT (`.ini` folders and the XML export), Termius
+  (CSV) and Tako's own export, all fuzzed and size-limited (ADR 0018). Saved
+  passwords are never imported; the summary says how many were left out.
+- Export of hosts, groups and tags without any secret or secret reference;
+  importing it on another computer remaps IDs and jump chains.
+- Pseudo-locale (`en-XA`) and region-aware number, date and clock formats; every
+  user-visible string comes from the English or Simplified Chinese tables
+  (ADR 0019).
+- Crash reports (`internal/diag`): a panic on any goroutine writes a report; the
+  next start says so in About. "Copy diagnostics" puts a scrubbed report on the
+  clipboard (ADR 0020).
+- Signed auto-update from GitHub Releases through MyGo's updater; packaging
+  for tar.gz, .deb and PKGBUILD here, dmg and NSIS in CI, `.rpm` through nfpm
+  in CI, SHA256SUMS; no Apple or Windows certificates (ADR 0021).
+- Accessibility: roles, names and Tab stops for host rows, tabs, footer
+  buttons and the search box; the settings window keeps focus inside; IME
+  composition tests for text fields and terminals.
+- Docs: [docs/RELEASE.md](docs/RELEASE.md), [docs/IMPORT.md](docs/IMPORT.md),
+  [docs/MANUAL.md](docs/MANUAL.md), ADRs 0017–0021.
+
+### Changed
+
+- Terminals follow the appearance and the chosen scheme on the fly (before,
+  open terminals kept their colors until restart).
+- Footer meters shrink their bars instead of wrapping labels in narrow blocks.
+- Encodings: UTF-8 only, for good (ADR 0005); GBK and other code pages are out
+  of scope.
+
+### Known limitations
+
+- Not run on real macOS or Windows hardware; installers for those platforms are
+  unsigned, so Gatekeeper and SmartScreen will warn (docs/RELEASE.md explains how
+  to add signing later).
+- The importers were written from public format documentation and fixtures
+  composed here, not from real exports.
+
 ## [0.3.0-m3] - 2026-11-11
 
 Third milestone: monitoring and file transfer. Local tag only; nothing has been

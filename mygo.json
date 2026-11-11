@@ -4,5 +4,18 @@
   "version": "0.4.0",
   "main": "./cmd/tako",
   "out": "build",
-  "macos": { "minimumSystemVersion": "13.0" }
+  "license": "MIT",
+  "publisher": "Tako contributors",
+  "macos": { "minimumSystemVersion": "13.0" },
+  "linux": {
+    "maintainer": "Tako contributors <tako@example.invalid>",
+    "comment": "Octopus terminal: every one of your SSH servers in view",
+    "categories": ["Utility", "System", "TerminalEmulator"],
+    "webview": false,
+    "command": "tako"
+  },
+  "updates": {
+    "publicKey": "f48Np6E0RfY49Vg79HoGyCxDaX5Btg04XcASgDi7Jw8=",
+    "github": "OWNER/tako"
+  }
 }
