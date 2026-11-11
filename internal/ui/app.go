@@ -16,6 +16,7 @@ import (
 	"github.com/wei-dong/tako/internal/layout"
 	"github.com/wei-dong/tako/internal/model"
 	"github.com/wei-dong/tako/internal/monitor"
+	"github.com/wei-dong/tako/internal/scheme"
 	"github.com/wei-dong/tako/internal/secrets"
 	"github.com/wei-dong/tako/internal/settings"
 	"github.com/wei-dong/tako/internal/theme"
@@ -113,6 +114,7 @@ type App struct {
 	// heldMods are modifiers the pointer events do not carry: tests set
 	// them, since the Tester's pointer events have none.
 	heldMods ui.Modifiers
+	look     termLook
 }
 
 // New returns the window's state.
@@ -166,11 +168,37 @@ func (a *App) syncPrefs(c *ui.Context) {
 		dark = false
 	case settings.AppearanceSystem:
 	}
+	tk := theme.Light()
 	if dark {
-		a.tk = theme.Dark()
-	} else {
-		a.tk = theme.Light()
+		tk = theme.Dark()
 	}
+	if sc, ok := scheme.Find(v.Terminal.Scheme, v.Terminal.Custom); ok {
+		tk = tk.WithScheme(sc)
+	}
+	// Terminals keep their own copy of the colors and the font, so a change
+	// is pushed to them once, not drawn from the tokens every frame.
+	look := termLook{dark: dark, scheme: v.Terminal.Scheme, font: v.Terminal.Font(),
+		copyOnSelect: v.Terminal.CopyOnSelect, contrast: v.Terminal.KeepContrast}
+	if len(v.Terminal.Custom) > 0 && tk.Scheme != nil {
+		look.custom = tk.Scheme.Background + tk.Scheme.Foreground + tk.Scheme.Palette[1]
+	}
+	a.tk = tk
+	if look != a.look {
+		a.look = look
+		if a.d.Model != nil {
+			a.d.Model.RestyleTerminals()
+		}
+	}
+}
+
+// termLook is what the terminals were last styled with.
+type termLook struct {
+	dark         bool
+	scheme       string
+	custom       string
+	font         int
+	copyOnSelect bool
+	contrast     bool
 }
 
 // Build is the window's view function.

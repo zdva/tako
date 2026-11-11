@@ -167,8 +167,12 @@ func New(parent context.Context, o Options) (*App, error) {
 				StartDir: h.StartDir, StartCmd: h.StartCmd, Notice: a.notice,
 			})
 		},
-		Host:    a.Library.Get,
-		Theme:   func() *terminal.Theme { return a.UI.Tokens().Terminal() },
+		Host:  a.Library.Get,
+		Theme: func() *terminal.Theme { return a.UI.Tokens().Terminal() },
+		Prefs: func() workspace.TermPrefs {
+			t := a.Settings.Values().Terminal
+			return workspace.TermPrefs{FontSize: float32(t.Font()), CopyOnSelect: t.CopyOnSelect, KeepContrast: t.KeepContrast}
+		},
 		Post:    func(fn func()) { a.UI.Post(fn) },
 		Changed: a.doWake,
 		Save:    a.requestSave,

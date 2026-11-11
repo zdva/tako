@@ -8,6 +8,8 @@ import (
 
 	"github.com/egoist/mygo/plugins/terminal"
 	"github.com/egoist/mygo/ui"
+
+	"github.com/wei-dong/tako/internal/scheme"
 )
 
 // Tokens is one appearance's palette.
@@ -34,6 +36,31 @@ type Tokens struct {
 	TermRed, TermGreen      ui.Color
 	TermYellow, TermBlue    ui.Color
 	TermMagenta, TermCyan   ui.Color
+
+	// Scheme is the terminal color scheme in use; nil means the colors above.
+	Scheme *scheme.Scheme
+}
+
+// color converts a validated "#RRGGBB" of a scheme; a bad one (settings.json
+// is hand-editable) falls back to fallback instead of panicking.
+func color(hex string, fallback ui.Color) ui.Color {
+	if !scheme.Valid(hex) {
+		return fallback
+	}
+	return Hex(hex)
+}
+
+// WithScheme returns the tokens with the terminal colors of s. The window's
+// own colors do not change: a dark terminal scheme in a light window is fine.
+func (t Tokens) WithScheme(s scheme.Scheme) Tokens {
+	t.Scheme = &s
+	t.TermBg = color(s.Background, t.TermBg)
+	t.TermFg = color(s.Foreground, t.TermFg)
+	t.TermDim = color(s.Palette[8], t.TermDim)
+	t.TermRed, t.TermGreen = color(s.Palette[1], t.TermRed), color(s.Palette[2], t.TermGreen)
+	t.TermYellow, t.TermBlue = color(s.Palette[3], t.TermYellow), color(s.Palette[4], t.TermBlue)
+	t.TermMagenta, t.TermCyan = color(s.Palette[5], t.TermMagenta), color(s.Palette[6], t.TermCyan)
+	return t
 }
 
 // Hex parses "#RRGGBB" and panics on a malformed constant; it is for the
@@ -127,6 +154,14 @@ func (t Tokens) Terminal() *terminal.Theme {
 	}
 	th.Foreground, th.Background = t.TermFg, t.TermBg
 	th.Cursor = t.TermFg
+	if sc := t.Scheme; sc != nil {
+		th.Cursor = color(sc.Cursor, t.TermFg)
+		th.Selection = color(sc.Selection, t.TermFg.Alpha(0.3))
+		for i, c := range sc.Palette {
+			th.Palette[i] = color(c, th.Palette[i])
+		}
+		return th
+	}
 	th.Selection = t.AccentSoft
 	// Palette order: black, red, green, yellow, blue, magenta, cyan, white,
 	// then the bright kinds, which reuse the normal ones.

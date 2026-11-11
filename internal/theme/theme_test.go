@@ -8,6 +8,7 @@ import (
 
 	"github.com/egoist/mygo/ui"
 
+	"github.com/wei-dong/tako/internal/scheme"
 	"github.com/wei-dong/tako/internal/theme"
 )
 
@@ -71,4 +72,49 @@ func TestHexPanicsOnGarbage(t *testing.T) {
 		}
 	}()
 	theme.Hex("red")
+}
+
+func TestWithSchemeColorsTheTerminalOnly(t *testing.T) {
+	t.Parallel()
+	base := theme.Light()
+	sc, _ := scheme.Find("dracula", nil)
+	tk := base.WithScheme(sc)
+	if tk.Bg != base.Bg || tk.Surface != base.Surface || tk.Accent != base.Accent {
+		t.Error("a terminal scheme changed the window's own colors")
+	}
+	if tk.TermBg != theme.Hex(sc.Background) || tk.TermFg != theme.Hex(sc.Foreground) {
+		t.Error("terminal background or foreground not applied")
+	}
+	if base.Scheme != nil {
+		t.Error("WithScheme modified its receiver")
+	}
+	term := tk.Terminal()
+	for i, c := range sc.Palette {
+		if term.Palette[i] != theme.Hex(c) {
+			t.Errorf("palette %d = %v, want %s", i, term.Palette[i], c)
+		}
+	}
+	if term.Cursor != theme.Hex(sc.Cursor) || term.Selection != theme.Hex(sc.Selection) {
+		t.Error("cursor or selection not applied")
+	}
+}
+
+func TestWithSchemeSurvivesAHandEditedColor(t *testing.T) {
+	t.Parallel()
+	sc, _ := scheme.Find("nord", nil)
+	sc.Background, sc.Palette[3], sc.Cursor = "bogus", "", "#12"
+	tk := theme.Dark().WithScheme(sc)
+	if tk.TermBg != theme.Dark().TermBg {
+		t.Error("a bad background did not fall back to the token")
+	}
+	_ = tk.Terminal() // must not panic
+}
+
+func TestDefaultTerminalFollowsTokens(t *testing.T) {
+	t.Parallel()
+	d := theme.Dark()
+	term := d.Terminal()
+	if term.Background != d.TermBg || term.Foreground != d.TermFg {
+		t.Error("default terminal colors differ from the tokens")
+	}
 }

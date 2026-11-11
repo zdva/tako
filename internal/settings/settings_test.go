@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/wei-dong/tako/internal/i18n"
+	"github.com/wei-dong/tako/internal/scheme"
 	"github.com/wei-dong/tako/internal/settings"
 )
 
@@ -71,5 +72,44 @@ func TestSettings_MonitorAndTransferDefaultsAndRoundTrip(t *testing.T) {
 	if v.Monitor.Interval() != 5 || v.Monitor.Warn() != 60 || v.Monitor.Crit() != 80 ||
 		v.Transfer.Parallel() != 2 || v.Transfer.Policy() != settings.ConflictSkip || !v.Transfer.AllowDirect || v.Transfer.Verify != "hash" {
 		t.Errorf("round trip lost values: %+v", v)
+	}
+}
+
+func TestSettings_TerminalAndConnectionDefaultsAndClamps(t *testing.T) {
+	t.Parallel()
+	var v settings.Values
+	if v.Terminal.Font() != settings.DefaultFontSize || v.Connection.KeepAlive() != settings.DefaultKeepAlive {
+		t.Errorf("defaults: font %d, keepalive %d", v.Terminal.Font(), v.Connection.KeepAlive())
+	}
+	for in, want := range map[int]int{1: settings.MinFontSize, 99: settings.MaxFontSize, 15: 15} {
+		if got := (settings.Terminal{FontSize: in}).Font(); got != want {
+			t.Errorf("Font(%d) = %d, want %d", in, got, want)
+		}
+	}
+}
+
+func TestSettings_CustomSchemesSurviveReload(t *testing.T) {
+	t.Parallel()
+	path := filepath.Join(t.TempDir(), "settings.json")
+	s, err := settings.Open(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	mine := scheme.Builtin[2]
+	mine.ID, mine.Name = "custom:mine", "Mine"
+	if err := s.Update(func(v *settings.Values) {
+		v.Terminal = settings.Terminal{Scheme: mine.ID, Custom: []scheme.Scheme{mine}, FontSize: 14, CopyOnSelect: true}
+		v.Connection.KeepAliveSec = 10
+	}); err != nil {
+		t.Fatal(err)
+	}
+	again, err := settings.Open(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	got := again.Values()
+	if got.Terminal.Scheme != mine.ID || len(got.Terminal.Custom) != 1 || got.Terminal.Custom[0] != mine ||
+		got.Terminal.Font() != 14 || !got.Terminal.CopyOnSelect || got.Connection.KeepAlive() != 10 {
+		t.Errorf("reloaded: %+v", got)
 	}
 }

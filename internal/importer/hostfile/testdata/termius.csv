@@ -1,0 +1,6 @@
+﻿Groups,Label,Tags,Hostname/IP,Protocol,Port,Username,Password
+Production/Web,web-01,"prod,nginx",203.0.113.11,ssh,22,deploy,hunter2
+Production,"db, primary",,203.0.113.21,,5432,postgres,
+Lab,router,,198.51.100.1,telnet,23,admin,
+Lab,,,198.51.100.7,ssh,notaport,admin,
+,nouser,,198.51.100.8,ssh,22,,

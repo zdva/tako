@@ -1,6 +1,7 @@
 package workspace
 
 import (
+	"cmp"
 	"context"
 	"errors"
 	"fmt"
@@ -40,6 +41,8 @@ type Deps struct {
 	NewTerminal func(terminal.Options) (*terminal.Terminal, error)
 	// Theme returns the terminal colors for the current appearance.
 	Theme func() *terminal.Theme
+	// Prefs returns the terminal preferences; the defaults when nil.
+	Prefs func() TermPrefs
 	// Post runs fn on the UI goroutine. Callbacks from other goroutines use
 	// it; tests may run fn inline.
 	Post func(fn func())
@@ -47,6 +50,57 @@ type Deps struct {
 	Changed func()
 	// Save asks for the state to be persisted (debounced by the caller).
 	Save func()
+}
+
+// TermPrefs are the user's terminal preferences from the settings window.
+type TermPrefs struct {
+	// FontSize is in DIPs; 12 when zero.
+	FontSize     float32
+	CopyOnSelect bool
+	// KeepContrast raises the contrast of hard-to-read text to 3:1.
+	KeepContrast bool
+}
+
+func (p TermPrefs) font() terminal.Font {
+	return terminal.Font{Size: cmp.Or(p.FontSize, 12)}
+}
+
+func (p TermPrefs) copyOnSelect() terminal.CopyOnSelect {
+	if p.CopyOnSelect {
+		return terminal.CopyOnSelectClipboard
+	}
+	return terminal.CopyOnSelectNone
+}
+
+func (p TermPrefs) contrast() float32 {
+	if p.KeepContrast {
+		return 3
+	}
+	return 1
+}
+
+func (m *Model) prefs() TermPrefs {
+	if m.deps.Prefs == nil {
+		return TermPrefs{}
+	}
+	return m.deps.Prefs()
+}
+
+// RestyleTerminals applies the current theme and preferences to every open
+// terminal, so a change in the settings window shows at once.
+func (m *Model) RestyleTerminals() {
+	th, p := m.deps.Theme(), m.prefs()
+	for _, b := range m.blocks {
+		for _, t := range b.Tabs {
+			if t.Term == nil {
+				continue
+			}
+			t.Term.SetTheme(th, nil)
+			t.Term.SetFont(p.font())
+			t.Term.SetCopyOnSelect(p.copyOnSelect())
+			t.Term.SetMinimumContrast(p.contrast())
+		}
+	}
 }
 
 // Kind tells where a block's shell runs.
@@ -365,10 +419,12 @@ func (m *Model) addTab(b *Block, dir, cmd string) error {
 	tab := &Tab{ID: fmt.Sprintf("%s/t%d", b.ID, m.bumpTab()), startDir: dir}
 	tab.fallback = "shell " + strconv.Itoa(len(b.Tabs)+1)
 	opts := terminal.Options{
-		Theme:      m.deps.Theme(),
-		NoBlink:    true,
-		Font:       terminal.Font{Size: 12},
-		Scrollback: 4 << 20,
+		Theme:           m.deps.Theme(),
+		NoBlink:         true,
+		Font:            m.prefs().font(),
+		CopyOnSelect:    m.prefs().copyOnSelect(),
+		MinimumContrast: m.prefs().contrast(),
+		Scrollback:      4 << 20,
 		OnExit: func(int) {
 			m.deps.Post(func() { m.tabExited(b, tab) })
 		},

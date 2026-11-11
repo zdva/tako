@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<VanDyke version="3.0">
+  <key name="Sessions">
+    <key name="Production">
+      <key name="Web">
+        <key name="web-03">
+          <string name="Hostname">10.2.0.3</string>
+          <string name="Username">deploy</string>
+          <string name="Protocol Name">SSH2</string>
+          <dword name="[SSH2] Port">00000016</dword>
+          <string name="Password">u00ff</string>
+        </key>
+      </key>
+      <key name="db-02">
+        <string name="Hostname">10.2.1.2</string>
+        <string name="Username">pg</string>
+        <dword name="[SSH2] Port">2200</dword>
+      </key>
+    </key>
+    <key name="Default">
+      <string name="Hostname"></string>
+    </key>
+  </key>
+</VanDyke>

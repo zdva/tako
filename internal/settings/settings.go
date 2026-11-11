@@ -9,6 +9,7 @@ import (
 	"sync"
 
 	"github.com/wei-dong/tako/internal/i18n"
+	"github.com/wei-dong/tako/internal/scheme"
 	"github.com/wei-dong/tako/internal/store"
 )
 
@@ -38,7 +39,51 @@ type Values struct {
 	// zero values are the defaults.
 	Monitor  Monitor  `json:"monitor,omitzero"`
 	Transfer Transfer `json:"transfer,omitzero"`
+	// Terminal and Connection are the Terminal and Connection pages of the
+	// settings window.
+	Terminal   Terminal   `json:"terminal,omitzero"`
+	Connection Connection `json:"connection,omitzero"`
 }
+
+// Terminal settings.
+type Terminal struct {
+	// Scheme is the ID of the color scheme; "" follows the appearance.
+	Scheme string `json:"scheme,omitempty"`
+	// Custom holds the schemes the user imported (iTerm2 presets).
+	Custom []scheme.Scheme `json:"custom,omitempty"`
+	// FontSize is in points; 0 means 12.
+	FontSize int `json:"fontSize,omitempty"`
+	// CopyOnSelect copies the selection to the clipboard as it is made.
+	CopyOnSelect bool `json:"copyOnSelect,omitempty"`
+	// KeepContrast raises the contrast of text that is hard to read on its
+	// background (WCAG ratio 3).
+	KeepContrast bool `json:"keepContrast,omitempty"`
+}
+
+// Terminal bounds and defaults.
+const (
+	DefaultFontSize = 12
+	MinFontSize     = 9
+	MaxFontSize     = 24
+)
+
+// Font is the font size in points, clamped to the supported range.
+func (t Terminal) Font() int {
+	return min(max(cmp.Or(t.FontSize, DefaultFontSize), MinFontSize), MaxFontSize)
+}
+
+// Connection settings.
+type Connection struct {
+	// KeepAliveSec is the SSH keepalive for hosts that do not set their own;
+	// 0 means 30.
+	KeepAliveSec int `json:"keepAliveSec,omitempty"`
+}
+
+// DefaultKeepAlive is the keepalive interval, in seconds, when none is set.
+const DefaultKeepAlive = 30
+
+// KeepAlive is the default keepalive interval in seconds.
+func (c Connection) KeepAlive() int { return cmp.Or(c.KeepAliveSec, DefaultKeepAlive) }
 
 // Monitor settings.
 type Monitor struct {
