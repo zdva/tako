@@ -7,21 +7,48 @@ terminals on one screen as a grid of *blocks*, reconnects the ones whose network
 dropped, and remembers what you had open. It is written in Go with the
 [MyGo](https://github.com/egoist/mygo) native UI toolkit, for macOS, Windows and Linux.
 
-> **Status: milestone M3 (v0.3.0-m3), pre-release.** Connections, terminals,
-> synchronized input with the floating minimap, draggable split layouts, the
-> host sidebar, session restore and `~/.ssh/config` import work, and so do the
-> block footers, the monitor page and file transfer with resume and a queue.
-> Packaging polish and more importers (M4) are not done yet. See
-> [docs/SPEC.md](docs/SPEC.md) and [docs/TECH-PLAN.md](docs/TECH-PLAN.md).
+> **Status: v0.4.0, the first release candidate.** Everything in the plan is
+> built and tested on Linux; it has **not** yet been run on real macOS or Windows
+> machines, nothing is published and the installers are unsigned. See
+> [docs/RELEASE.md](docs/RELEASE.md) for the checklist that needs a person, and
+> [docs/SPEC.md](docs/SPEC.md) and [docs/TECH-PLAN.md](docs/TECH-PLAN.md) for the plan.
 
-![Main window](docs/screenshots/m2/main-light.png)
+![Main window, dark](docs/screenshots/m4/main-dark-zh.png)
 
-| Minimap at rest | Minimap hovered | Dragging a divider |
+| Light, Solarized Light terminals | Dark, Dracula terminals | Settings, Terminal page |
 |---|---|---|
-| ![rest](docs/screenshots/m2/minimap-rest.png) | ![hover](docs/screenshots/m2/minimap-hover.png) | ![divider](docs/screenshots/m2/divider-snap.png) |
+| ![light](docs/screenshots/m4/main-light-solarized-en.png) | ![dracula](docs/screenshots/m4/main-dark-dracula-en.png) | ![settings](docs/screenshots/m4/settings-terminal-dark-en.png) |
 
-More in [docs/screenshots/m2](docs/screenshots/m2) (M1's are in
-[docs/screenshots/m1](docs/screenshots/m1)).
+More in [docs/screenshots/m4](docs/screenshots/m4) (earlier milestones:
+[m3](docs/screenshots/m3), [m2](docs/screenshots/m2), [m1](docs/screenshots/m1)).
+
+## What works in M4
+
+- **Settings window** (`Ctrl+Shift+,`): language, appearance, terminal color
+  scheme, font, keepalive, monitoring, transfers, data and About. Everything
+  applies at once, with no restart. See [ADR 0017](docs/adr/0017-settings-window-and-schemes.md).
+- **Dark mode and color schemes**: the dark theme follows the design mockup;
+  eight schemes (Tako, Solarized Dark / Light, Dracula, Nord, One Dark, Gruvbox
+  Dark, Tokyo Night) and import of iTerm2 `.itermcolors`. Open terminals recolor
+  live.
+- **English and 简体中文**, complete. A pseudo-locale test fails on any string
+  that bypasses the tables or does not fit; numbers, dates and the clock follow the
+  system region. See [ADR 0019](docs/adr/0019-i18n-pseudo-and-regional-formats.md).
+- **Import and export**: hosts from Xshell, SecureCRT, Termius and `~/.ssh/config`;
+  export without any secret and import it on another computer. Saved passwords are
+  never imported. See [docs/IMPORT.md](docs/IMPORT.md) and
+  [ADR 0018](docs/adr/0018-host-importers.md).
+  **The parsers were written from public documentation, not from real exports.**
+- **Accessibility and input methods**: roles, names and Tab stops everywhere,
+  keyboard activation, IME composition in fields and terminals.
+- **Crash reports and "Copy diagnostics"** (scrubbed, nothing is uploaded),
+  [ADR 0020](docs/adr/0020-crash-reports-and-diagnostics.md).
+- **Packaging and updates**: tar.gz + install script, `.deb`, `.rpm`, PKGBUILD,
+  dmg and NSIS installers built by CI, signed (ed25519) auto-update from GitHub
+  Releases; no Apple or Windows certificates,
+  [ADR 0021](docs/adr/0021-unsigned-releases-and-signed-updates.md),
+  [docs/RELEASE.md](docs/RELEASE.md).
+- Not supported on purpose: encodings other than UTF-8 ([ADR 0005](docs/adr/0005-utf8-only.md)).
 
 ## What works in M3
 
@@ -93,7 +120,8 @@ history; the real-window shots are in [docs/screenshots/m3](docs/screenshots/m3)
 
 ## Install and run
 
-Release binaries are not published yet. Build from source (Go 1.27.3 or newer):
+Release builds are not published yet (see [docs/RELEASE.md](docs/RELEASE.md)). Build from source
+(Go 1.27.3 or newer):
 
 ```sh
 git clone <repository-url> tako && cd tako
@@ -108,8 +136,11 @@ and work offline. A plain `go build` binary fetches `libghostty-vt` from the
 MyGo releases into your user cache the first time a terminal opens, and checks
 its SHA-256.
 
-Binaries are **not code-signed** yet: macOS Gatekeeper and Windows SmartScreen
-will warn.
+Binaries are **not code-signed** (a decision, see
+[ADR 0021](docs/adr/0021-unsigned-releases-and-signed-updates.md)): macOS Gatekeeper
+and Windows SmartScreen will warn the first time; [docs/MANUAL.md](docs/MANUAL.md)
+says how to open the app, and [docs/RELEASE.md](docs/RELEASE.md) how to add signing later.
+Updates are verified with an ed25519 signature regardless.
 
 ### Keyboard
 
@@ -150,13 +181,16 @@ password" lasts for the running session only, and Tako says so.
 make check          # gofmt, vet, golangci-lint, go test -race, coverage gate (80% core)
 make integration    # against a real OpenSSH (scripts/fetch-sshd.sh downloads a portable one)
 make e2e            # live window under Xvfb: idle CPU/RSS, cold start, kill -9 recovery
-make screenshots    # real-window screenshots into docs/screenshots/m2 (MILESTONE=m1 for the old set)
+make screenshots    # real-window screenshots into docs/screenshots/m4 (MILESTONE=m3 for an older set)
 make vuln           # govulncheck
+make fuzz           # the parsers: ssh_config, ppk, Xshell/SecureCRT/Termius files, iTerm2 colors
+make build-all      # every platform, cross-compiled
 ```
 
 Read [AGENTS.md](AGENTS.md) for the layout and conventions and
 [CONTRIBUTING.md](CONTRIBUTING.md) for how to send a change.
-[docs/TESTING.md](docs/TESTING.md) explains the test environments.
+[docs/TESTING.md](docs/TESTING.md) explains the test environments; the user guide is
+[docs/MANUAL.md](docs/MANUAL.md).
 
 ## Notes for maintainers
 

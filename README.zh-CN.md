@@ -4,15 +4,26 @@
 
 Tako 是管理一群服务器的桌面终端。它把许多 SSH（和本地）终端放在同一屏的网格里（每个叫一个“块”），网络断了的块会自动重连，下次打开还记得你开过什么。用 Go 和 [MyGo](https://github.com/egoist/mygo) 原生 UI 工具包写成，支持 macOS、Windows、Linux。
 
-> **状态：里程碑 M3（v0.3.0-m3），预发布。** 已有：连接、终端、同步输入与悬浮小地图、可拖动的分割布局、主机侧栏、会话恢复、导入 `~/.ssh/config`，以及块底部的资源条、监控页、支持断点续传和队列的文件传输。打包打磨和更多导入来源（M4）还没做。详见 [docs/SPEC.md](docs/SPEC.md)、[docs/TECH-PLAN.md](docs/TECH-PLAN.md)。
+> **状态：v0.4.0，第一个发布候选。** 计划内的功能都已完成，并在 Linux 上测过；**还没有**在真实的 macOS 和 Windows 上跑过，没有发布任何东西，安装包也没有签名。需要人来做的检查清单见 [docs/RELEASE.md](docs/RELEASE.md)，规划见 [docs/SPEC.md](docs/SPEC.md)、[docs/TECH-PLAN.md](docs/TECH-PLAN.md)。
 
-![主窗口](docs/screenshots/m2/main-light.png)
+![主窗口（深色）](docs/screenshots/m4/main-dark-zh.png)
 
-| 深色 | 连接中断 | 添加主机 |
+| 浅色，Solarized Light 终端 | 深色，Dracula 终端 | 设置，终端页 |
 |---|---|---|
-| ![小地图静止](docs/screenshots/m2/minimap-rest.png) | ![小地图悬停](docs/screenshots/m2/minimap-hover.png) | ![拖动分隔线](docs/screenshots/m2/divider-snap.png) |
+| ![浅色](docs/screenshots/m4/main-light-solarized-en.png) | ![Dracula](docs/screenshots/m4/main-dark-dracula-en.png) | ![设置](docs/screenshots/m4/settings-terminal-dark-en.png) |
 
-更多截图在 [docs/screenshots/m2](docs/screenshots/m2)（M1 的在 [docs/screenshots/m1](docs/screenshots/m1)）。
+更多截图在 [docs/screenshots/m4](docs/screenshots/m4)（之前的里程碑：[m3](docs/screenshots/m3)、[m2](docs/screenshots/m2)、[m1](docs/screenshots/m1)）。
+
+## M4 能做什么
+
+- **设置窗口**（`Ctrl+Shift+,`）：语言、外观、终端配色、字体、保活、监控、传输、数据与关于；改动立即生效，无需重启。见 [ADR 0017](docs/adr/0017-settings-window-and-schemes.md)。
+- **深色模式与配色方案**：深色主题对照设计稿；8 套配色（Tako、Solarized 深 / 浅、Dracula、Nord、One Dark、Gruvbox Dark、Tokyo Night），可导入 iTerm2 的 `.itermcolors`；已打开的终端实时换色。
+- **完整的中文和英文**：伪语言测试会在任何绕过语言表、或放不下的字符串上失败；数字、日期和时钟按系统地区格式显示。见 [ADR 0019](docs/adr/0019-i18n-pseudo-and-regional-formats.md)。
+- **导入与导出**：从 Xshell、SecureCRT、Termius 和 `~/.ssh/config` 导入主机；导出文件不含任何秘密，可在另一台电脑导入。保存的密码**不会**被导入。见 [docs/IMPORT.md](docs/IMPORT.md)、[ADR 0018](docs/adr/0018-host-importers.md)。**这些解析器依据公开文档编写，没有用真实导出文件验证过。**
+- **无障碍与输入法**：各控件都有角色、名称和 Tab 停靠点，可用键盘操作；文本框和终端内支持输入法组合输入。
+- **崩溃报告与“复制诊断信息”**（已脱敏，不会上传任何东西），见 [ADR 0020](docs/adr/0020-crash-reports-and-diagnostics.md)。
+- **打包与更新**：tar.gz + 安装脚本、`.deb`、`.rpm`、PKGBUILD，dmg 和 NSIS 安装包由 CI 构建；从 GitHub Releases 做 ed25519 签名的自动更新；不需要 Apple 或 Windows 证书，见 [ADR 0021](docs/adr/0021-unsigned-releases-and-signed-updates.md)、[docs/RELEASE.md](docs/RELEASE.md)。
+- 有意不支持：UTF-8 以外的编码（[ADR 0005](docs/adr/0005-utf8-only.md)）。
 
 ## M3 能做什么
 
@@ -45,7 +56,7 @@ Tako 是管理一群服务器的桌面终端。它把许多 SSH（和本地）�
 
 ## 安装与运行
 
-暂无发布的安装包，请从源码构建（Go 1.27.3 或更新）：
+暂无发布的安装包（见 [docs/RELEASE.md](docs/RELEASE.md)），请从源码构建（Go 1.27.3 或更新）：
 
 ```sh
 git clone <仓库地址> tako && cd tako
@@ -57,7 +68,7 @@ make build-all      # Windows、macOS（通用）、Linux，amd64 与 arm64
 
 打包版（`mygo build`）把终端引擎放在可执行文件旁边，离线也能用。普通 `go build` 的程序会在第一次打开终端时，从 MyGo 的发布页下载 `libghostty-vt` 到用户缓存目录，并校验 SHA-256。
 
-二进制**还没有代码签名**：macOS 的 Gatekeeper 和 Windows 的 SmartScreen 会提示警告。
+二进制**没有代码签名**（这是既定决定，见 [ADR 0021](docs/adr/0021-unsigned-releases-and-signed-updates.md)）：macOS 的 Gatekeeper 和 Windows 的 SmartScreen 第一次会提示警告，打开方法见 [docs/MANUAL.md](docs/MANUAL.md)，以后如何加签名见 [docs/RELEASE.md](docs/RELEASE.md)。无论如何，更新包都会用 ed25519 签名校验。
 
 ### 快捷键
 
@@ -95,11 +106,13 @@ Linux 和 Windows 的主修饰键是 `Ctrl+Shift`（这样单独的 `Ctrl+C` 还
 make check          # gofmt、vet、golangci-lint、go test -race、覆盖率门槛（核心 80%）
 make integration    # 对真实 OpenSSH 测试（scripts/fetch-sshd.sh 会下载便携版）
 make e2e            # Xvfb 下的真窗口：空闲 CPU/内存、冷启动、kill -9 恢复
-make screenshots    # 真窗口截图，输出到 docs/screenshots/m2（`MILESTONE=m1` 生成旧的一套）
+make screenshots    # 真窗口截图，输出到 docs/screenshots/m4（`MILESTONE=m3` 生成旧的一套）
 make vuln           # govulncheck
+make fuzz           # 解析器：ssh_config、ppk、Xshell / SecureCRT / Termius 文件、iTerm2 配色
+make build-all      # 交叉编译所有平台
 ```
 
-代码结构与约定见 [AGENTS.md](AGENTS.md)，提交修改的方式见 [CONTRIBUTING.md](CONTRIBUTING.md)，测试环境见 [docs/TESTING.md](docs/TESTING.md)。
+代码结构与约定见 [AGENTS.md](AGENTS.md)，提交修改的方式见 [CONTRIBUTING.md](CONTRIBUTING.md)，测试环境见 [docs/TESTING.md](docs/TESTING.md)，用户手册见 [docs/MANUAL.md](docs/MANUAL.md)。
 
 ## 给维护者的说明
 
