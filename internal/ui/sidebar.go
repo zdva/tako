@@ -35,7 +35,11 @@ func (a *App) sidebar(c *ui.Context) {
 }
 
 func (a *App) brandRow(c *ui.Context) {
-	ui.Row(c).Height(54).Padding(10, 16, 0).Gap(9).Children(func() {
+	// The window controls sit over the page: on macOS they are at the start of
+	// this row, so the brand steps aside; the row drags the window.
+	bar := c.TitleBar()
+	row := ui.Row(c).Key("brand").Height(max(54, bar.Height)).Padding(10, 16, 0, 16+bar.Left).Gap(9)
+	row.DragWindow().Children(func() {
 		if img := brand(); img != nil {
 			ui.Image(c, img).Size(28, 28)
 		}

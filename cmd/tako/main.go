@@ -20,13 +20,16 @@ import (
 )
 
 // version is set at build time with -ldflags "-X main.version=...".
-var version = "0.1.0-m1"
+var version = "0.2.0-m2"
 
 const (
 	defaultWidth  = 1280
 	defaultHeight = 800
 	minWidth      = 720
 	minHeight     = 480
+	// titleBarHeight is the height the window controls are centered in; it
+	// matches the toolbar.
+	titleBarHeight = 44
 )
 
 func main() {
@@ -66,6 +69,9 @@ func run(exitAfter time.Duration) error {
 		win := mygo.NewWindow(mygo.WindowOptions{
 			Title: "Tako", Width: defaultWidth, Height: defaultHeight,
 			MinWidth: minWidth, MinHeight: minHeight,
+			// The page owns the whole window: the brand row and the toolbar
+			// are its title bar, the window controls sit over it.
+			TitleBarStyle: mygo.TitleBarHidden, TitleBarHeight: titleBarHeight,
 			Content: ui.View(a.UI.Build),
 		})
 		a.SetWake(win.Invalidate)
