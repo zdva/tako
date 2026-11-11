@@ -124,6 +124,8 @@
   "settings.app.light": "Light",
   "settings.app.system": "System",
   "settings.appearance": "Appearance",
+  "settings.compact": "Compact blocks",
+  "settings.compact.hint": "Fit more blocks on screen: each may shrink to about 48×16 characters before the grid scrolls.",
   "settings.lang.system": "System",
   "settings.language": "Language",
   "settings.title": "Settings",

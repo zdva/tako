@@ -139,8 +139,8 @@ func (a *App) hostRow(c *ui.Context, h model.Host) {
 	row.Children(func() {
 		a.osTile(c, h.OS, false, 26)
 		ui.Column(c).Grow(1).MinWidth(0).Gap(1).Children(func() {
-			ui.Text(c, h.Name).Bold().FontSize(13).Ellipsis("…").NoWrap()
-			a.caption(c, h.Target()).Ellipsis("…").NoWrap()
+			ui.Text(c, h.Name).Bold().FontSize(13).Ellipsis("…").SingleLine()
+			a.caption(c, h.Target()).Ellipsis("…").SingleLine()
 		})
 		if st.synced {
 			ui.Icon(c, iconLink).FontSize(13).TextColor(a.tk.Accent)

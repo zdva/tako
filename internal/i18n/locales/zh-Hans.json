@@ -124,6 +124,8 @@
   "settings.app.light": "浅色",
   "settings.app.system": "跟随系统",
   "settings.appearance": "外观",
+  "settings.compact": "紧凑块",
+  "settings.compact.hint": "一屏放下更多块：每块最小可缩到约 48×16 个字符，再小才滚动。",
   "settings.lang.system": "跟随系统",
   "settings.language": "语言",
   "settings.title": "设置",

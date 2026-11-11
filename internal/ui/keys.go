@@ -132,6 +132,8 @@ const (
 	kSecretsNote             = "secrets.note"
 	kSessionSaved            = "status.saved"
 	kSetAppearance           = "settings.appearance"
+	kSetCompact              = "settings.compact"
+	kSetCompactHint          = "settings.compact.hint"
 	kSetLanguage             = "settings.language"
 	kSetVersion              = "settings.version"
 	kSettings                = "settings.title"

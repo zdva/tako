@@ -187,6 +187,7 @@ func (a *App) settingsView(c *ui.Context) {
 	v := a.d.Settings.Values()
 	lang := map[i18n.Language]int{"": 0, i18n.English: 1, i18n.Chinese: 2}[v.Language]
 	app := map[settings.Appearance]int{"": 0, settings.AppearanceSystem: 0, settings.AppearanceLight: 1, settings.AppearanceDark: 2}[v.Appearance]
+	compact := v.CompactBlocks
 	open := true
 	a.dialog(c, &open, func() {
 		ui.Column(c).Key("settings").Width(440).Padding(20).Gap(14).Background(a.tk.Surface).Radius(16).
@@ -198,6 +199,10 @@ func (a *App) settingsView(c *ui.Context) {
 			a.field(c, a.T(kSetAppearance), func() {
 				ui.Segmented(c, &app, a.T(kAppSystem), a.T(kAppLight), a.T(kAppDark)).Label(a.T(kSetAppearance))
 			})
+			a.field(c, a.T(kSetCompact), func() {
+				ui.Switch(c, &compact).Label(a.T(kSetCompact))
+				a.caption(c, a.T(kSetCompactHint))
+			})
 			a.caption(c, a.T(kSetVersion, a.d.Version))
 			ui.Row(c).Justify(ui.End).Children(func() {
 				if ui.PrimaryButton(c, a.T(kDone)).Clicked() {
@@ -208,8 +213,10 @@ func (a *App) settingsView(c *ui.Context) {
 	})
 	langs := []i18n.Language{"", i18n.English, i18n.Chinese}
 	apps := []settings.Appearance{settings.AppearanceSystem, settings.AppearanceLight, settings.AppearanceDark}
-	if langs[lang] != v.Language || apps[app] != v.ResolveAppearance() {
-		if err := a.d.Settings.Update(func(x *settings.Values) { x.Language, x.Appearance = langs[lang], apps[app] }); err != nil {
+	if langs[lang] != v.Language || apps[app] != v.ResolveAppearance() || compact != v.CompactBlocks {
+		if err := a.d.Settings.Update(func(x *settings.Values) {
+			x.Language, x.Appearance, x.CompactBlocks = langs[lang], apps[app], compact
+		}); err != nil {
 			a.toast(err.Error())
 		}
 	}

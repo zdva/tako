@@ -17,7 +17,10 @@ import (
 
 // minCell is the smallest a block gets before the grid scrolls: about an 80x24
 // terminal plus the header and footer.
-var minCell = layout.Size{W: 520, H: 24*16 + blockHead + blockFoot + 8}
+var (
+	minCell        = layout.Size{W: 520, H: 24*16 + blockHead + blockFoot + 8}
+	minCellCompact = layout.Size{W: 340, H: 16*16 + blockHead + blockFoot + 8}
+)
 
 // primaryMod is the modifier of Tako's shortcuts: Command on macOS; Ctrl+Shift
 // elsewhere, so plain Ctrl keys still reach the shell (DESIGN.md §4.6).
@@ -145,7 +148,11 @@ func (a *App) grid(c *ui.Context, n int) layout.Grid {
 		w -= sidebarW + 1
 	}
 	viewport := layout.Size{W: w - 2*gridGap, H: h - toolbarH - statusH - 2*gridGap}
-	return layout.Compute(n, viewport, minCell, gridGap)
+	minSize := minCell
+	if a.d.Settings.Values().CompactBlocks {
+		minSize = minCellCompact
+	}
+	return layout.Compute(n, viewport, minSize, gridGap)
 }
 
 func (a *App) block(c *ui.Context, b *workspace.Block, cell layout.Rect) {
@@ -168,7 +175,7 @@ func (a *App) block(c *ui.Context, b *workspace.Block, cell layout.Rect) {
 		frame.Shadow(0, 0, 0, 3, a.tk.AccentSoft)
 	}
 	frame.Children(func() {
-		a.blockHeader(c, b, link)
+		a.blockHeader(c, b, link, cell.W)
 		a.banner(c, b, link)
 		a.terminalArea(c, b, link)
 		a.blockFooter(c, b, link)
@@ -178,7 +185,12 @@ func (a *App) block(c *ui.Context, b *workspace.Block, cell layout.Rect) {
 	}
 }
 
-func (a *App) blockHeader(c *ui.Context, b *workspace.Block, link session.StateChange) {
+// headerChrome is the width the header keeps for the icon, name, status dot,
+// new-tab, sync and more buttons; tab titles share what is left.
+const headerChrome = 270
+
+func (a *App) blockHeader(c *ui.Context, b *workspace.Block, link session.StateChange, cellW float32) {
+	titleMax := min(max((cellW-headerChrome)/float32(max(len(b.Tabs), 1))-30, 36), 130)
 	head := ui.Row(c).Key("head").Height(blockHead).Padding(0, 10).Gap(8).Background(a.tk.Surface2).Shrink(0)
 	head.ContextMenu(func(m *ui.Menu) { a.blockMenu(m, b) })
 	head.Children(func() {
@@ -188,7 +200,7 @@ func (a *App) blockHeader(c *ui.Context, b *workspace.Block, link session.StateC
 		dot(c, col, 7)
 		ui.Row(c).Gap(4).Grow(1).MinWidth(0).Children(func() {
 			for i, t := range b.Tabs {
-				a.tabChip(c, b, i, t)
+				a.tabChip(c, b, i, t, titleMax)
 			}
 			if a.iconButton(c, iconPlus, a.T(kNewTab), 22).Clicked() {
 				if err := a.d.Model.AddTab(b); err != nil {
@@ -216,7 +228,7 @@ func (a *App) blockDot(link session.StateChange) ui.Color {
 	return a.tk.Text3
 }
 
-func (a *App) tabChip(c *ui.Context, b *workspace.Block, i int, t *workspace.Tab) {
+func (a *App) tabChip(c *ui.Context, b *workspace.Block, i int, t *workspace.Tab, titleMax float32) {
 	active := i == b.Active
 	chip := ui.Row(c).Key(t.ID).Height(24).Padding(0, 4, 0, 10).Gap(4).Radius(12).Cursor(ui.CursorPointer)
 	if active {
@@ -227,7 +239,7 @@ func (a *App) tabChip(c *ui.Context, b *workspace.Block, i int, t *workspace.Tab
 		if active {
 			col = a.tk.Text
 		}
-		ui.Text(c, t.Title()).FontSize(11.5).Bold().TextColor(col).NoWrap().MaxWidth(130).Ellipsis("…")
+		ui.Text(c, t.Title()).FontSize(11.5).Bold().TextColor(col).SingleLine().MaxWidth(titleMax).Ellipsis("…")
 		if a.iconButton(c, iconClose, a.T(kCloseTab), 16).Clicked() {
 			a.d.Model.CloseTab(b, i)
 		}

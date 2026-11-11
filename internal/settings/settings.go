@@ -31,6 +31,9 @@ type Values struct {
 	// Language is "" (follow the system), "en" or "zh-Hans".
 	Language   i18n.Language `json:"language,omitempty"`
 	Appearance Appearance    `json:"appearance,omitempty"`
+	// CompactBlocks lets blocks shrink to about 48x16 columns before the
+	// grid scrolls; the default keeps them at 80x24.
+	CompactBlocks bool `json:"compactBlocks,omitempty"`
 }
 
 // Settings is the live, saved preferences.
