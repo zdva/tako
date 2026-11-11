@@ -1,0 +1,51 @@
+##TOP
+Load Avg: 2.34, 2.10, 2.05 
+CPU usage: 41.00% user, 22.00% sys, 37.00% idle 
+Load Avg: 2.34, 2.10, 2.05 
+CPU usage: 5.26% user, 10.52% sys, 84.22% idle 
+##MEMSIZE
+17179869184
+##VM
+Mach Virtual Memory Statistics: (page size of 16384 bytes)
+Pages free:                                7300.
+Pages active:                            320000.
+Pages inactive:                          300000.
+Pages speculative:                         9000.
+Pages throttled:                              0.
+Pages wired down:                        150000.
+Pages purgeable:                          10000.
+"Translation faults":                 987654321.
+Pages copy-on-write:                   12345678.
+Pages zero filled:                    456789012.
+Pages reactivated:                       123456.
+Pages purged:                            234567.
+File-backed pages:                       250000.
+Anonymous pages:                         370000.
+Pages stored in compressor:              400000.
+Pages occupied by compressor:            180000.
+Decompressions:                         1234567.
+Compressions:                           2345678.
+Pageins:                                3456789.
+Pageouts:                                 12345.
+Swapins:                                      0.
+Swapouts:                                     0.
+##IO
+              disk0 
+    KB/t  xfrs    MB 
+   22.47 12345678 270000.00 
+##NET
+Name       Mtu   Network       Address            Ipkts Ierrs     Ibytes    Opkts Oerrs     Obytes  Coll
+lo0        16384 <Link#1>                        500000     0  300000000   500000     0  300000000     0
+lo0        16384 127           127.0.0.1         500000     -  300000000   500000     -  300000000     -
+gif0*      1280  <Link#2>                             0     0          0        0     0          0     0
+en0        1500  <Link#6>    aa:bb:cc:dd:ee:ff  8000000     0 9000000000  5000000     0  800000000     0
+en0        1500  192.168.1     192.168.1.5      8000000     -  9000000000  5000000     -  800000000     -
+utun0      1380  <Link#9>                          1000     0     200000     2000     0     300000     0
+##DF
+Filesystem    1024-blocks      Used Available Capacity  Mounted on
+/dev/disk3s1s1   971350180  15000000 400000000     4%    /
+devfs                  200       200         0   100%    /dev
+/dev/disk3s6     971350180   2000000 400000000     1%    /System/Volumes/VM
+/dev/disk3s2     971350180   8000000 400000000     2%    /System/Volumes/Update
+/dev/disk3s5     971350180 500000000 400000000    56%    /System/Volumes/Data
+map auto_home            0         0         0   100%    /System/Volumes/Data/home

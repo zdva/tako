@@ -1,0 +1,12 @@
+##OS
+PRETTY_NAME="Debian GNU/Linux 13 (trixie)"
+##KERNEL
+Linux 6.12.113+
+##CPU
+model name	: Intel(R) Xeon(R) Processor
+8
+##MEM
+MemTotal:       16386416 kB
+##UPTIME
+24986.98 190880.67
+##GPU

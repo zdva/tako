@@ -1,0 +1,3 @@
+#< CLIXML
+{"cpu":3.0,"user":2.0,"priv":1.0,"memTotalKB":8388608.0,"memAvailBytes":4294967296.0,"memCacheBytes":1073741824.0,"netRx":0.0,"netTx":0.0,"diskRead":0.0,"diskWrite":0.0,"disks":{"id":"C:","size":255000000000.0,"free":100000000000.0},"nvidia":"0, NVIDIA GeForce RTX 4070, 12, 1500, 12282, 45, 28.51"}
+<Objs Version="1.1.0.1" xmlns="http://schemas.microsoft.com/powershell/2004/04"><Obj S="progress" RefId="0"></Obj></Objs>

@@ -1,0 +1,3 @@
+{"card0": {"Card series": "AMD Instinct MI250X", "GPU use (%)": "87", "GPU memory use (%)": "40", "Temperature (Sensor edge) (C)": "56.0", "VRAM Total Memory (B)": "68702699520", "VRAM Total Used Memory (B)": "27481079808"},
+ "card1": {"Card series": "AMD Instinct MI250X", "GPU use (%)": "12", "GPU memory use (%)": "5", "Temperature (Sensor edge) (C)": "44.0", "VRAM Total Memory (B)": "68702699520", "VRAM Total Used Memory (B)": "3435134976"},
+ "system": {"Driver version": "6.2.4"}}

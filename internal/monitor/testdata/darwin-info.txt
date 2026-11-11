@@ -1,0 +1,13 @@
+##OS
+macOS
+14.5
+##KERNEL
+Darwin 23.5.0
+##CPU
+Apple M2 Pro
+12
+##MEMSIZE
+17179869184
+##BOOT
+{ sec = 1731200000, usec = 123456 } Sun Nov 10 00:00:00 2024
+1731548000

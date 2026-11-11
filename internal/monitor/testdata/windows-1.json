@@ -1,0 +1,1 @@
+{"cpu":23.0,"user":15.0,"priv":8.0,"memTotalKB":33554432.0,"memAvailBytes":21474836480.0,"memCacheBytes":6442450944.0,"netRx":1250000.0,"netTx":310000.0,"diskRead":8388608.0,"diskWrite":2097152.0,"disks":[{"id":"C:","size":511101108224.0,"free":212345678848.0},{"id":"D:","size":2000396742656.0,"free":1500000000000.0}],"nvidia":""}
