@@ -61,6 +61,6 @@ Results for the current tag are in [CHANGELOG.md](../CHANGELOG.md) and
 
 ## Non-goals
 
-Code signing and installers (until M4), encodings other than UTF-8
+Code signing, notarization and Windows certificates (releases are unsigned; see docs/RELEASE.md), encodings other than UTF-8
 ([ADR 0005](adr/0005-utf8-only.md)), tmux-style remote session persistence,
 a plugin system, cloud sync of hosts (a sync design exists for M2+ but is not committed to).

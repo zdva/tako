@@ -4,6 +4,8 @@
 > 只用 **MyGo**（v0.8.3，Go 1.27.3）。Go 代码规范：samber 的 `golang-*` 技能（尤其 project-layout、design-patterns、error-handling、concurrency、context、security、testing、lint）和 JetBrains 的 `use-modern-go`。
 > 带 **【待确认】** 的地方，是我替你做了默认决定、但需要你点头的事，汇总在 §14。
 
+> **定稿后的用户决定（2026-11-11，覆盖本文）**：① 不做 GBK / 非 UTF-8 编码，只支持 UTF-8（见 ADR 0005）；② 暂不做代码签名、Apple 公证、Windows 证书，发布未签名安装包，自动更新使用 MyGo 的 ed25519 签名更新（密钥只放 CI Secrets，不需要任何平台证书）；③ 不做“同步输入时 sudo 密码保护”。本文里与此冲突的条目（§5 编码、§6 签名公证、M4 范围、§14 第 3/5/7 项）以此为准。
+
 ---
 
 ## 0. 一页纸摘要
