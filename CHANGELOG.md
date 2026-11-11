@@ -21,8 +21,7 @@ the installers and updater have not been run on real macOS or Windows machines
   Dracula, Nord, One Dark, Gruvbox Dark and Tokyo Night, plus import of
   iTerm2 `.itermcolors` files. Font size, copy on select, keep text readable,
   keepalive interval.
-- Importers for Xshell (`.xsh`, `.xts`, folders; UTF-16 and legacy code pages
-  of the file itself), SecureCRT (`.ini` folders and the XML export), Termius
+- Importers for Xshell (`.xsh`, `.xts`, folders; UTF-8 or UTF-16 files), SecureCRT (`.ini` folders and the XML export), Termius
   (CSV) and Tako's own export, all fuzzed and size-limited (ADR 0018). Saved
   passwords are never imported; the summary says how many were left out.
 - Export of hosts, groups and tags without any secret or secret reference;
