@@ -70,7 +70,8 @@ func (a *App) group(c *ui.Context, g hostlib.Group) {
 	if key == hostlib.Untagged {
 		name = a.T(kUntagged)
 	}
-	head := ui.Row(c).Key("group:"+key).Height(26).Padding(0, 6).Gap(6).Cursor(ui.CursorPointer)
+	head := ui.Row(c).Key("group:"+key).Height(26).Padding(0, 6).Gap(6).Cursor(ui.CursorPointer).
+		Focusable().Role(ui.RoleButton).Label(name)
 	head.ContextMenu(func(m *ui.Menu) { a.tagMenu(m, g, collapsed) })
 	head.Children(func() {
 		ic := iconChevronD
@@ -134,7 +135,8 @@ func (a *App) statusColor(st hostState) (col ui.Color, label string) {
 
 func (a *App) hostRow(c *ui.Context, h model.Host) {
 	st := a.stateOf(h)
-	row := ui.Row(c).Key("host:"+string(h.ID)).Height(hostRowH).Padding(0, 8).Gap(9).Radius(10).Cursor(ui.CursorPointer)
+	row := ui.Row(c).Key("host:"+string(h.ID)).Height(hostRowH).Padding(0, 8).Gap(9).Radius(10).Cursor(ui.CursorPointer).
+		Focusable().Role(ui.RoleButton).Label(h.Name + ", " + h.Target())
 	switch {
 	case st.focused:
 		row.Background(a.tk.Surface).Border(1.5, a.tk.Accent)
@@ -208,7 +210,8 @@ func (a *App) sidebarFooter(c *ui.Context) {
 }
 
 func (a *App) footerButton(c *ui.Context, ic *ui.SVG, label, key string, fn func()) {
-	row := ui.Row(c).Key("footer:"+label).Height(34).Padding(0, 8).Gap(10).Radius(8).Cursor(ui.CursorPointer)
+	row := ui.Row(c).Key("footer:"+label).Height(34).Padding(0, 8).Gap(10).Radius(8).Cursor(ui.CursorPointer).
+		Focusable().Role(ui.RoleButton).Label(label)
 	row.Children(func() {
 		ui.Icon(c, ic).FontSize(15).TextColor(a.tk.Text2)
 		ui.Text(c, label).FontSize(12.5).Grow(1).MinWidth(0).NoWrap()

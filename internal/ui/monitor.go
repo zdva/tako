@@ -110,7 +110,7 @@ func (a *App) blockFooter(c *ui.Context, b *workspace.Block) {
 	row := ui.Row(c).Key("foot").Height(blockFoot).Padding(0, 12).Gap(14).Background(a.tk.Surface2).Shrink(0)
 	row.AlignItems(ui.Center)
 	if b.Kind == workspace.KindSSH {
-		row.Cursor(ui.CursorPointer).Label(a.T(kMonOpen, b.Name))
+		row.Cursor(ui.CursorPointer).Focusable().Role(ui.RoleButton).Label(a.T(kMonOpen, b.Name))
 	}
 	var s *monitor.Series
 	if a.d.Monitor != nil && b.Kind == workspace.KindSSH {

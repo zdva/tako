@@ -174,7 +174,8 @@ func (a *App) paletteView(c *ui.Context) {
 
 func (a *App) paletteRow(c *ui.Context, i int, it paletteItem) {
 	sel := i == a.palette.sel
-	row := ui.Row(c).Key("pal:"+it.section+":"+it.title).Height(48).Padding(0, 10).Gap(12).Radius(10).AlignItems(ui.Center).Cursor(ui.CursorPointer)
+	row := ui.Row(c).Key("pal:"+it.section+":"+it.title).Height(48).Padding(0, 10).Gap(12).Radius(10).AlignItems(ui.Center).Cursor(ui.CursorPointer).
+		Role(ui.RoleButton).Label(it.title)
 	if sel {
 		row.Background(a.tk.AccentSoft)
 	}

@@ -60,7 +60,7 @@ func (a *App) toolIcon(c *ui.Context, ic *ui.SVG, label string, on bool) ui.Elem
 // searchBox is the field in the toolbar that opens the command palette.
 func (a *App) searchBox(c *ui.Context) {
 	box := ui.Row(c).Key("searchbox").Width(340).Height(30).Padding(0, 10).Gap(8).Radius(9).
-		Background(a.tk.Surface).Border(1, a.tk.BorderStrong).Cursor(ui.CursorPointer).Label(a.T(kSearchPlaceholder))
+		Background(a.tk.Surface).Border(1, a.tk.BorderStrong).Cursor(ui.CursorPointer).Focusable().Role(ui.RoleButton).Label(a.T(kSearchPlaceholder))
 	box.Children(func() {
 		ui.Icon(c, iconSearch).FontSize(14).TextColor(a.tk.Text3)
 		ui.Text(c, a.T(kSearchPlaceholder)).FontSize(12).TextColor(a.tk.Text3).Grow(1).MinWidth(0).NoWrap().Ellipsis("…")
@@ -134,7 +134,7 @@ func (a *App) importCard(c *ui.Context) {
 	ui.Column(c).Width(500).Gap(8).Children(func() {
 		ui.Text(c, a.T(kImportFrom)).FontSize(11.5).Bold().TextColor(a.tk.Text3)
 		row := ui.Row(c).Key("import-ssh").Height(52).Padding(0, 14).Gap(12).Radius(12).
-			Background(a.tk.Surface).Border(1, a.tk.Border).Cursor(ui.CursorPointer).Label(a.T(kImportSSHConfig))
+			Background(a.tk.Surface).Border(1, a.tk.Border).Cursor(ui.CursorPointer).Focusable().Role(ui.RoleButton).Label(a.T(kImportSSHConfig))
 		row.Children(func() {
 			ui.Box(c).Size(30, 30).Radius(9).Background(a.tk.Text2).Center().Children(func() {
 				ui.Text(c, "~").Bold().FontSize(14).TextColor(ui.RGB(255, 255, 255))

@@ -111,7 +111,8 @@ func (a *App) blockDot(link session.StateChange) (col ui.Color, show bool) {
 
 func (a *App) tabChip(c *ui.Context, b *workspace.Block, i int, t *workspace.Tab, titleMax float32) {
 	active := i == b.Active
-	chip := ui.Row(c).Key(t.ID).Height(24).Padding(0, 4, 0, 10).Gap(4).Radius(12).Cursor(ui.CursorPointer)
+	chip := ui.Row(c).Key(t.ID).Height(24).Padding(0, 4, 0, 10).Gap(4).Radius(12).Cursor(ui.CursorPointer).
+		Focusable().Role(ui.RoleTab).AccessSelected(active).Label(t.Title())
 	if active {
 		chip.Background(a.tk.Surface).Border(1, a.tk.BorderStrong)
 	}
@@ -145,7 +146,7 @@ func (a *App) syncChip(c *ui.Context, b *workspace.Block) {
 		fg, bg, border = a.tk.Accent, a.tk.AccentSoft, a.tk.SyncBorder
 	}
 	chip := ui.Row(c).Key("sync").Height(24).Padding(0, 9).Gap(4).Radius(8).Background(bg).Border(1, border).
-		Cursor(ui.CursorPointer).Label(a.T(kToggleSync))
+		Cursor(ui.CursorPointer).Focusable().Role(ui.RoleButton).Label(a.T(kToggleSync))
 	if paused {
 		chip.BorderStyle(ui.BorderDashed)
 	}
