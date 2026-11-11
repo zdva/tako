@@ -9,6 +9,7 @@ import (
 	"github.com/wei-dong/tako/internal/i18n"
 	"github.com/wei-dong/tako/internal/model"
 	"github.com/wei-dong/tako/internal/settings"
+	"github.com/wei-dong/tako/internal/workspace"
 )
 
 func contextBackground() context.Context { return context.Background() }
@@ -72,17 +73,29 @@ func (a *App) paletteItems() []paletteItem {
 
 func (a *App) commands() []paletteItem {
 	sec := a.T(kPalCommands)
+	do := func(act actID) func() { return func() { a.do(act, 0) } }
 	cmds := []paletteItem{
-		{section: sec, title: a.T(kAddHost), hint: shortcutLabel("N"), run: a.openAddHost},
-		{section: sec, title: a.T(kNewLocal), hint: shortcutLabel("T"), run: a.openLocal},
-		{section: sec, title: a.T(kToggleSidebar), hint: shortcutLabel("B"), run: func() { a.sidebarCollapsed = !a.sidebarCollapsed }},
+		{section: sec, title: a.T(kAddHost), hint: hint(actAddHost), run: do(actAddHost)},
+		{section: sec, title: a.T(kNewLocal), hint: hint(actNewTab), run: a.openLocal},
+		{section: sec, title: a.T(kToggleSidebar), hint: hint(actSidebar), run: do(actSidebar)},
+		{section: sec, title: a.T(kCmdMinimap), hint: hint(actMinimap), run: do(actMinimap)},
+		{section: sec, title: a.T(kCmdSyncAll), hint: hint(actSyncAll), run: do(actSyncAll)},
+		{section: sec, title: a.T(kCmdLayoutAuto), run: func() { a.d.Model.ApplyPreset(workspace.PresetAuto) }},
+		{section: sec, title: a.T(kCmdLayoutRow), run: func() { a.d.Model.ApplyPreset(workspace.PresetRow) }},
+		{section: sec, title: a.T(kCmdLayoutColumn), run: func() { a.d.Model.ApplyPreset(workspace.PresetColumn) }},
 		{section: sec, title: a.T(kImportSSHConfig), run: a.importSSHConfig},
-		{section: sec, title: a.T(kSettings), hint: shortcutLabel(","), run: func() { a.settings.open = true }},
+		{section: sec, title: a.T(kSettings), hint: hint(actSettings), run: do(actSettings)},
+		{section: sec, title: a.T(kCmdMonitor), hint: hint(actMonitor), run: do(actMonitor)},
+		{section: sec, title: a.T(kCmdTransfer), hint: hint(actTransfer), run: do(actTransfer)},
 	}
 	if b := a.d.Model.Focused(); b != nil {
 		cmds = append(cmds,
-			paletteItem{section: sec, title: a.T(kPalToggleSync, b.Name), run: func() { a.d.Model.SetSynced(b, !b.Synced) }},
-			paletteItem{section: sec, title: a.T(kCloseBlock), hint: shortcutLabel("W"), run: func() { a.d.Model.CloseBlock(b) }},
+			paletteItem{section: sec, title: a.T(kPalToggleSync, b.Name), hint: hint(actSyncBlock), run: do(actSyncBlock)},
+			paletteItem{section: sec, title: a.T(kCmdRename), run: func() { a.startRename(b) }},
+			paletteItem{section: sec, title: a.T(kCmdZoom), hint: hint(actZoom), run: do(actZoom)},
+			paletteItem{section: sec, title: a.T(kCmdSearch), hint: hint(actFind), run: do(actFind)},
+			paletteItem{section: sec, title: a.T(kCmdCloseTab), hint: hint(actCloseTab), run: do(actCloseTab)},
+			paletteItem{section: sec, title: a.T(kCloseBlock), hint: hint(actCloseBlock), run: do(actCloseBlock)},
 		)
 	}
 	return cmds

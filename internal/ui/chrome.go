@@ -6,33 +6,46 @@ import (
 	"github.com/egoist/mygo/ui"
 
 	"github.com/wei-dong/tako/internal/model"
+	"github.com/wei-dong/tako/internal/workspace"
 )
 
+// toolbar is the top strip: the search field that opens the command palette,
+// the minimap switch and the transfer icon. It is also the window's drag
+// handle when the title bar is hidden, and keeps clear of the window controls.
 func (a *App) toolbar(c *ui.Context) {
-	ui.Row(c).Key("toolbar").Height(toolbarH).Padding(0, 14).Gap(10).Shrink(0).Children(func() {
+	bar := c.TitleBar()
+	row := ui.Row(c).Key("toolbar").Height(max(toolbarH, bar.Height)).Padding(0, 14+bar.Right, 0, 14).Gap(8).Shrink(0)
+	row.DragWindow().Children(func() {
 		if a.sidebarCollapsed {
+			ui.Box(c).Width(bar.Left)
 			if a.iconButton(c, iconSidebar, a.T(kToggleSidebar), 28).Clicked() {
 				a.sidebarCollapsed = false
 			}
 		}
-		n := len(a.d.Model.Blocks())
-		if n > 0 {
-			g := a.grid(c, n)
-			a.layoutPill(c, a.T(kLayoutAuto, g.Cols, g.Rows))
-		}
 		ui.Spacer(c)
 		a.searchBox(c)
 		ui.Spacer(c)
-		if n > 0 && a.d.Model.SyncedCount() > 0 {
-			a.pill(c, a.T(kSyncCount, a.d.Model.SyncedCount(), n), a.tk.Accent, a.tk.AccentSoft)
+		prefs := a.d.Model.MinimapPrefs()
+		if a.toolIcon(c, iconMinimap, a.T(kMinimapToggle)+" "+hint(actMinimap), !prefs.Hidden).Clicked() {
+			a.do(actMinimap, 0)
+		}
+		if a.toolIcon(c, iconTransfer, a.T(kTransfers)+" "+hint(actTransfer), false).Clicked() {
+			a.do(actTransfer, 0)
 		}
 	})
 }
 
-func (a *App) layoutPill(c *ui.Context, text string) {
-	ui.Row(c).Height(28).Padding(0, 10).Radius(8).Background(a.tk.Surface).Border(1, a.tk.Border).Children(func() {
-		ui.Text(c, text).FontSize(12).TextColor(a.tk.Text2).NoWrap()
-	})
+// toolIcon is a toolbar icon button; on shows it as switched on.
+func (a *App) toolIcon(c *ui.Context, ic *ui.SVG, label string, on bool) ui.Element {
+	b := ui.Button(c, "").Label(label).Tooltip(label)
+	b.Size(30, 30).Padding(0).Radius(8).Border(1, ui.Transparent).Background(ui.Transparent)
+	fg := a.tk.Text2
+	if on {
+		b.Background(a.tk.AccentSoft).Border(1, a.tk.SyncBorder)
+		fg = a.tk.Accent
+	}
+	b.Children(func() { ui.Icon(c, ic).FontSize(16).TextColor(fg) })
+	return b
 }
 
 // searchBox is the field in the toolbar that opens the command palette.
@@ -43,37 +56,33 @@ func (a *App) searchBox(c *ui.Context) {
 		ui.Icon(c, iconSearch).FontSize(14).TextColor(a.tk.Text3)
 		ui.Text(c, a.T(kSearchPlaceholder)).FontSize(12).TextColor(a.tk.Text3).Grow(1)
 		ui.Box(c).Padding(1, 6).Radius(5).Background(a.tk.Surface3).Children(func() {
-			ui.Text(c, shortcutLabel("P")).FontSize(10.5).TextColor(a.tk.Text2)
+			ui.Text(c, hint(actPalette)).FontSize(10.5).TextColor(a.tk.Text2)
 		})
 	})
 	if box.Clicked() {
-		a.palette.open, a.palette.query, a.palette.sel = true, "", 0
+		a.openPalette()
 	}
 }
 
+// statusBar shows the focused block's machine on the left, and its terminal's
+// size and encoding on the right. Nothing else: counts and latency live on the
+// blocks themselves (DESIGN.md, Final).
 func (a *App) statusBar(c *ui.Context) {
-	connected, re := a.d.Model.Counts()
-	ui.Row(c).Key("status").Height(statusH).Padding(0, 14).Gap(14).Shrink(0).Children(func() {
-		ui.Row(c).Gap(5).Children(func() {
-			dot(c, a.tk.Green, 6)
-			a.caption(c, a.T(kStatusCount, connected))
-		})
-		if re > 0 {
-			ui.Row(c).Gap(5).Children(func() {
-				dot(c, a.tk.Amber, 6)
-				a.caption(c, a.T(kStatusReconnectingCount, re))
-			})
+	ui.Row(c).Key("status").Height(statusH).Padding(0, 14).Gap(10).Shrink(0).Children(func() {
+		b := a.d.Model.Focused()
+		if b == nil {
+			return
 		}
-		if b := a.d.Model.Focused(); b != nil {
-			ui.Text(c, b.Name).FontSize(11).Bold().TextColor(a.tk.Text2)
-		}
-		a.caption(c, a.T(kSessionSaved))
-		ui.Spacer(c)
-		if b := a.d.Model.Focused(); b != nil {
-			if t := b.ActiveTab(); t != nil {
-				cols, rows := t.Term.Size()
-				a.caption(c, fmt.Sprintf("%d×%d · UTF-8", cols, rows))
+		ui.Text(c, b.Name).FontSize(11).Bold().TextColor(a.tk.Text2)
+		if b.Kind == workspace.KindSSH {
+			if h, ok := a.d.Library.Get(b.HostID); ok {
+				a.caption(c, h.Target())
 			}
+		}
+		ui.Spacer(c)
+		if t := b.ActiveTab(); t != nil {
+			cols, rows := t.Term.Size()
+			a.caption(c, fmt.Sprintf("%d×%d · UTF-8", cols, rows))
 		}
 	})
 }
@@ -95,11 +104,11 @@ func (a *App) emptyState(c *ui.Context) {
 			ui.Text(c, a.T(kWelcomeLine2)).FontSize(12.5).TextColor(a.tk.Text2)
 		})
 		ui.Row(c).Gap(10).Padding(6, 0, 10).Children(func() {
-			add := ui.PrimaryButton(c, a.T(kAddHost)+"  "+shortcutLabel("N")).Height(34).Padding(0, 16)
+			add := ui.PrimaryButton(c, a.T(kAddHost)+"  "+hint(actAddHost)).Height(34).Padding(0, 16)
 			if add.Clicked() {
 				a.openAddHost()
 			}
-			if ui.Button(c, a.T(kNewLocal)+"  "+shortcutLabel("T")).Height(34).Padding(0, 16).Clicked() {
+			if ui.Button(c, a.T(kNewLocal)+"  "+hint(actNewTab)).Height(34).Padding(0, 16).Clicked() {
 				a.openLocal()
 			}
 		})

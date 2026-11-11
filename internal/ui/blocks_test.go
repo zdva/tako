@@ -45,7 +45,7 @@ func TestBlocks_AutoLayoutFollowsCount(t *testing.T) {
 	}
 	h.openAll(4)
 	h.tt.SetSize(1700, 1000)
-	h.waitText("Auto layout 2×2")
+	h.waitText("Sync 0 / 4")
 	h.shot("grid-4")
 }
 
@@ -73,7 +73,7 @@ func TestDisconnectBanner_ShowsWhileServerIsGoneAndKeepsScrollback(t *testing.T)
 	h.srv.Stop() // refuses new connections too, so the outage lasts
 	h.waitText("Reconnect now")
 	h.shot("disconnected")
-	if !h.tt.HasText("Auto layout 1×1") {
+	if !h.tt.HasText("web-01") || !h.tt.HasText("Sync 0 / 1") {
 		t.Fatal("the block disappeared during the outage")
 	}
 	if n := len(h.app.Model.Blocks()); n != 1 {

@@ -35,12 +35,16 @@ type harness struct {
 	srv  *memssh.Server
 	dirs store.Dirs
 	kc   *secrets.Memory
+
+	resizeDelay time.Duration
 }
 
 type harnessOpts struct {
 	locale    string
 	sshConfig string
 	keepDirs  *store.Dirs
+	// resizeDelay overrides how long a terminal size must stay still.
+	resizeDelay time.Duration
 }
 
 func newHarness(t *testing.T, o harnessOpts) *harness {
@@ -61,7 +65,7 @@ func newHarness(t *testing.T, o harnessOpts) *harness {
 	if locale == "" {
 		locale = "en_US.UTF-8"
 	}
-	h := &harness{t: t, srv: srv, dirs: dirs, kc: secrets.NewMemory()}
+	h := &harness{t: t, srv: srv, dirs: dirs, kc: secrets.NewMemory(), resizeDelay: o.resizeDelay}
 	h.start(locale, o.sshConfig)
 	t.Cleanup(h.stop)
 	return h
@@ -73,6 +77,7 @@ func (h *harness) start(locale, sshConfig string) {
 		Dirs: h.dirs, Keychain: h.kc, Locale: locale, Version: "test",
 		SSHConfig: sshConfig, Home: h.t.TempDir(),
 		SaveDelay: 20 * time.Millisecond, Backoff: []time.Duration{100 * time.Millisecond},
+		ResizeDelay: h.resizeDelay,
 	})
 	if err != nil {
 		h.t.Fatal(err)

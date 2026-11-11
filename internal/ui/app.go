@@ -12,6 +12,7 @@ import (
 
 	"github.com/wei-dong/tako/internal/hostlib"
 	"github.com/wei-dong/tako/internal/i18n"
+	"github.com/wei-dong/tako/internal/layout"
 	"github.com/wei-dong/tako/internal/model"
 	"github.com/wei-dong/tako/internal/secrets"
 	"github.com/wei-dong/tako/internal/settings"
@@ -82,12 +83,25 @@ type App struct {
 	sshConfigHosts  []model.Host
 	sshConfigLoaded bool
 	pendingClip     string
+
+	// Main area state: the divider being dragged, the viewport of the last
+	// frame (a change of it makes the blocks follow at once instead of
+	// gliding), the minimap, the rename dialog and the terminal search.
+	div          dividerDrag
+	lastViewport layout.Size
+	mm           minimapState
+	rename       renameState
+	find         findState
+	// heldMods are modifiers the pointer events do not carry: tests set
+	// them, since the Tester's pointer events have none.
+	heldMods ui.Modifiers
 }
 
 // New returns the window's state.
 func New(d Deps) *App {
 	a := &App{d: d, collapsedGroups: map[string]bool{}}
 	a.sheet.init(a)
+	a.mm.menuIdx, a.mm.hover = -1, -1
 	v := d.Settings.Values()
 	a.tr = i18n.Must(v.ResolveLanguage(d.Locale))
 	return a
@@ -162,5 +176,6 @@ func (a *App) Build(c *ui.Context) {
 		a.settingsView(c)
 		a.promptView(c)
 		a.deleteView(c)
+		a.renameView(c)
 	})
 }

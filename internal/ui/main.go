@@ -3,7 +3,6 @@ package ui
 import (
 	"errors"
 	"fmt"
-	"runtime"
 	"time"
 
 	"github.com/egoist/mygo/plugins/terminal"
@@ -15,151 +14,23 @@ import (
 	"github.com/wei-dong/tako/internal/workspace"
 )
 
-// minCell is the smallest a block gets before the grid scrolls: about an 80x24
-// terminal plus the header and footer.
-var (
-	minCell        = layout.Size{W: 520, H: 24*16 + blockHead + blockFoot + 8}
-	minCellCompact = layout.Size{W: 340, H: 16*16 + blockHead + blockFoot + 8}
-)
-
-// primaryMod is the modifier of Tako's shortcuts: Command on macOS; Ctrl+Shift
-// elsewhere, so plain Ctrl keys still reach the shell (DESIGN.md §4.6).
-func primaryMod() ui.Modifiers {
-	if runtime.GOOS == "darwin" {
-		return ui.Super
-	}
-	return ui.Ctrl | ui.Shift
-}
-
-// secondMod adds the second modifier of two-modifier shortcuts.
-func secondMod(extra ui.Modifiers) ui.Modifiers {
-	if runtime.GOOS == "darwin" {
-		return ui.Super | extra
-	}
-	return ui.Ctrl | ui.Shift | extra
-}
-
-// shortcutLabel renders a shortcut for display, as ⌘T or Ctrl+Shift+T.
-func shortcutLabel(key string) string {
-	if runtime.GOOS == "darwin" {
-		return "⌘" + key
-	}
-	return "Ctrl+Shift+" + key
-}
-
-func (a *App) shortcuts(c *ui.Context) { //nolint:gocyclo // one case per shortcut
-	m := a.d.Model
-	mod := primaryMod()
-	switch {
-	case c.Shortcut(mod, ui.KeyP):
-		a.palette.open = true
-		a.palette.query = ""
-		a.palette.sel = 0
-	case c.Shortcut(mod, ui.KeyB):
-		a.sidebarCollapsed = !a.sidebarCollapsed
-	case c.Shortcut(mod, ui.KeyN):
-		a.openAddHost()
-	case c.Shortcut(mod, ui.KeyComma):
-		a.settings.open = true
-	case c.Shortcut(mod, ui.KeyT):
-		if b := m.Focused(); b != nil {
-			if err := m.AddTab(b); err != nil {
-				a.toast(a.T(kErrOpenLocal, err))
-			}
-			a.focusBlock(b)
-		} else {
-			a.openLocal()
-		}
-	case c.Shortcut(mod, ui.KeyW):
-		if b := m.Focused(); b != nil {
-			m.CloseTab(b, b.Active)
-		}
-	case c.Shortcut(secondMod(ui.Alt), ui.KeyW):
-		if b := m.Focused(); b != nil {
-			m.CloseBlock(b)
-		}
-	case c.Shortcut(secondMod(ui.Alt), ui.KeyS):
-		if b := m.Focused(); b != nil {
-			m.SetSynced(b, !b.Synced)
-		}
-	}
-	if b := m.Focused(); b != nil {
-		for i, k := range []ui.Key{ui.Key1, ui.Key2, ui.Key3, ui.Key4, ui.Key5, ui.Key6, ui.Key7, ui.Key8, ui.Key9} {
-			if c.Shortcut(mod, k) {
-				m.SetActive(b, i)
-				a.focusBlock(b)
-			}
-		}
-		arrow := secondMod(ui.Alt)
-		switch {
-		case c.Shortcut(arrow, ui.KeyLeft):
-			m.MoveFocus(-1, 0)
-			a.focusBlock(m.Focused())
-		case c.Shortcut(arrow, ui.KeyRight):
-			m.MoveFocus(1, 0)
-			a.focusBlock(m.Focused())
-		case c.Shortcut(arrow, ui.KeyUp):
-			m.MoveFocus(0, -1)
-			a.focusBlock(m.Focused())
-		case c.Shortcut(arrow, ui.KeyDown):
-			m.MoveFocus(0, 1)
-			a.focusBlock(m.Focused())
-		}
-	}
-	if a.pendingToast != "" {
-		c.Toast(a.pendingToast)
-		a.pendingToast = ""
-	}
-}
-
 func (a *App) toast(msg string) { a.pendingToast = msg }
 
 func (a *App) writeClipboard(s string) {
 	a.pendingClip = s
 }
 
-// main is the area under the toolbar: the grid of blocks, or the empty state.
-func (a *App) main(c *ui.Context) {
-	blocks := a.d.Model.Blocks()
-	if a.pendingClip != "" {
-		c.WriteClipboard(a.pendingClip)
-		a.pendingClip = ""
-	}
-	if len(blocks) == 0 {
-		a.emptyState(c)
-		return
-	}
-	g := a.grid(c, len(blocks))
-	scroll := ui.Scroll(c).Key("grid").Grow(1).Padding(gridGap)
-	scroll.Children(func() {
-		ui.Box(c).Size(g.Content.W, g.Content.H).Children(func() {
-			for i, b := range blocks {
-				a.block(c, b, g.Cells[i])
-			}
-		})
-	})
-}
-
-// grid places n blocks in the area under the toolbar.
-func (a *App) grid(c *ui.Context, n int) layout.Grid {
-	w, h := c.Size()
-	if !a.sidebarCollapsed {
-		w -= sidebarW + 1
-	}
-	viewport := layout.Size{W: w - 2*gridGap, H: h - toolbarH - statusH - 2*gridGap}
-	minSize := minCell
-	if a.d.Settings.Values().CompactBlocks {
-		minSize = minCellCompact
-	}
-	return layout.Compute(n, viewport, minSize, gridGap)
-}
-
-func (a *App) block(c *ui.Context, b *workspace.Block, cell layout.Rect) {
-	focused := a.d.Model.Focused() == b
+// block draws one block in the rectangle cell of the main area (in DIPs from
+// its top-left corner). The block's frame glides to its place in about 150 ms
+// when the layout changes, unless instant says the layout follows the pointer
+// or the window.
+func (a *App) block(c *ui.Context, b *workspace.Block, cell layout.Rect, instant bool) {
+	m := a.d.Model
+	focused := m.Focused() == b
 	border, bw := a.tk.Border, float32(1)
 	switch {
 	case b.Synced:
-		border, bw = a.tk.Accent, 1.5
+		border = a.tk.SyncBorder
 	case focused:
 		border, bw = a.tk.BorderStrong, 1.5
 	}
@@ -167,22 +38,29 @@ func (a *App) block(c *ui.Context, b *workspace.Block, cell layout.Rect) {
 	if link.State == session.StateReconnecting || link.State == session.StateFailed {
 		border, bw = a.tk.Amber, 1.5
 	}
-	frame := ui.Column(c).Key(string(b.ID)).Absolute().Left(cell.X).Top(cell.Y).Size(cell.W, cell.H)
+	frame := ui.Column(c).Key(string(b.ID)).Absolute()
+	anim := ui.Animation{Spring: ui.SpringOptions{Duration: layoutSpring}}
+	if instant {
+		anim = ui.Animation{Duration: time.Millisecond}
+	}
+	x, y := frame.AnimateTo("x", cell.X, anim), frame.AnimateTo("y", cell.Y, anim)
+	w, h := frame.AnimateTo("w", cell.W, anim), frame.AnimateTo("h", cell.H, anim)
+	frame.Left(x).Top(y).Size(w, h)
 	frame.Radius(12).Background(a.tk.Surface).Border(bw, border).Clip()
 	frame.Shadow(0, 1, 2, 0, ui.RGBA(24, 24, 32, 0.06))
-	if b.Synced {
-		frame.Shadow(0, 0, 0, 3, a.tk.AccentSoft)
-	}
 	frame.Children(func() {
 		a.blockHeader(c, b, link, cell.W)
 		a.banner(c, b, link)
 		a.terminalArea(c, b, link)
-		a.blockFooter(c, b, link)
+		a.blockFooter(c, b)
 	})
 	if frame.FocusWithin() {
-		a.d.Model.Focus(b)
+		m.Focus(b)
 	}
 }
+
+// layoutSpring is how long blocks take to glide to a new layout.
+const layoutSpring = 150 * time.Millisecond
 
 // headerChrome is the width the header keeps for the icon, name, status dot,
 // new-tab, sync and more buttons; tab titles share what is left.
@@ -192,11 +70,15 @@ func (a *App) blockHeader(c *ui.Context, b *workspace.Block, link session.StateC
 	titleMax := min(max((cellW-headerChrome)/float32(max(len(b.Tabs), 1))-30, 36), 130)
 	head := ui.Row(c).Key("head").Height(blockHead).Padding(0, 10).Gap(8).Background(a.tk.Surface2).Shrink(0)
 	head.ContextMenu(func(m *ui.Menu) { a.blockMenu(m, b) })
+	if head.DoubleClicked() {
+		a.d.Model.ToggleZoom(b)
+	}
 	head.Children(func() {
 		a.osTile(c, b.OS, b.Kind == workspace.KindLocal, 22)
 		ui.Text(c, b.Name).Bold().FontSize(13).NoWrap()
-		col := a.blockDot(link)
-		dot(c, col, 7)
+		if col, show := a.blockDot(link); show {
+			dot(c, col, 7)
+		}
 		ui.Row(c).Gap(4).Grow(1).MinWidth(0).Children(func() {
 			for i, t := range b.Tabs {
 				a.tabChip(c, b, i, t, titleMax)
@@ -208,23 +90,23 @@ func (a *App) blockHeader(c *ui.Context, b *workspace.Block, link session.StateC
 				a.focusBlock(b)
 			}
 		})
-		a.syncChip(c, b, link)
+		a.syncChip(c, b)
 		more := a.iconButton(c, iconMore, a.T(kMoreActions), 24)
 		more.PopoverMenuButton(func(m *ui.Menu) { a.blockMenu(m, b) })
 	})
 }
 
-func (a *App) blockDot(link session.StateChange) ui.Color {
+// blockDot is the status dot of a block's header. A healthy connection shows
+// none: only trouble does (DESIGN.md, Final: no redundant status).
+func (a *App) blockDot(link session.StateChange) (col ui.Color, show bool) {
 	switch link.State {
-	case session.StateConnected:
-		return a.tk.Green
 	case session.StateFailed:
-		return a.tk.Red
+		return a.tk.Red, true
 	case session.StateConnecting, session.StateReconnecting:
-		return a.tk.Amber
-	case session.StateClosed:
+		return a.tk.Amber, true
+	case session.StateConnected, session.StateClosed:
 	}
-	return a.tk.Text3
+	return ui.Color{}, false
 }
 
 func (a *App) tabChip(c *ui.Context, b *workspace.Block, i int, t *workspace.Tab, titleMax float32) {
@@ -247,30 +129,24 @@ func (a *App) tabChip(c *ui.Context, b *workspace.Block, i int, t *workspace.Tab
 		a.d.Model.SetActive(b, i)
 		a.focusBlock(b)
 	}
-	chip.ContextMenu(func(m *ui.Menu) {
-		if m.Item(a.T(kMenuDuplicateTab)).Chosen() {
-			a.d.Model.SetActive(b, i)
-			if err := a.d.Model.DuplicateTab(b); err != nil {
-				a.toast(err.Error())
-			}
-		}
-		if m.Item(a.T(kCloseTab)).Chosen() {
-			a.d.Model.CloseTab(b, i)
-		}
-	})
+	chip.ContextMenu(func(m *ui.Menu) { a.tabMenu(m, b, i) })
 }
 
-func (a *App) syncChip(c *ui.Context, b *workspace.Block, link session.StateChange) {
-	label, fg, bg, border := a.T(kSync), a.tk.Text2, ui.Transparent, a.tk.BorderStrong
+// syncChip is the one small control that shows and toggles a block's sync:
+// coral when on, a gray outline when off, a dashed coral outline while the
+// connection is down and sync waits.
+func (a *App) syncChip(c *ui.Context, b *workspace.Block) {
+	label, fg, bg, border := a.T(kSync), a.tk.Text3, ui.Transparent, a.tk.BorderStrong
+	paused := a.d.Model.SyncPaused(b)
 	switch {
-	case b.Synced && link.State == session.StateConnected:
-		label, fg, bg, border = a.T(kSyncOn), ui.RGB(255, 255, 255), a.tk.Accent, a.tk.Accent
+	case paused:
+		label, fg, bg, border = a.T(kSyncPaused), a.tk.Accent, a.tk.AccentSoft, a.tk.SyncBorder
 	case b.Synced:
-		label, fg, bg, border = a.T(kSyncPaused), a.tk.Accent, a.tk.AccentSoft, a.tk.Accent
+		fg, bg, border = a.tk.Accent, a.tk.AccentSoft, a.tk.SyncBorder
 	}
 	chip := ui.Row(c).Key("sync").Height(24).Padding(0, 9).Gap(4).Radius(8).Background(bg).Border(1, border).
 		Cursor(ui.CursorPointer).Label(a.T(kToggleSync))
-	if b.Synced && link.State != session.StateConnected {
+	if paused {
 		chip.BorderStyle(ui.BorderDashed)
 	}
 	chip.Children(func() {
@@ -279,31 +155,6 @@ func (a *App) syncChip(c *ui.Context, b *workspace.Block, link session.StateChan
 	})
 	if chip.Clicked() {
 		a.d.Model.SetSynced(b, !b.Synced)
-	}
-}
-
-func (a *App) blockMenu(m *ui.Menu, b *workspace.Block) {
-	if m.Item(a.T(kMenuDuplicateTab)).Chosen() {
-		if err := a.d.Model.DuplicateTab(b); err != nil {
-			a.toast(err.Error())
-		}
-	}
-	if m.Item(a.T(kMenuToggleSync)).Checked(b.Synced).Chosen() {
-		a.d.Model.SetSynced(b, !b.Synced)
-	}
-	if b.Kind == workspace.KindSSH {
-		if m.Item(a.T(kReconnectNow)).Chosen() {
-			b.Reconnect()
-		}
-		if h, ok := a.d.Library.Get(b.HostID); ok {
-			if m.Item(a.T(kMenuEdit)).Chosen() {
-				a.openEditHost(h)
-			}
-		}
-	}
-	m.Separator()
-	if m.Item(a.T(kMenuCloseBlock)).Chosen() {
-		a.d.Model.CloseBlock(b)
 	}
 }
 
@@ -388,6 +239,7 @@ func (a *App) terminalArea(c *ui.Context, b *workspace.Block, link session.State
 				a.focusTab = nil
 			}
 		})
+		a.findBar(c, b)
 		if !tab.DropAt.IsZero() && time.Since(tab.DropAt) < 6*time.Second {
 			c.After(time.Second)
 			a.dropCard(c, b)
@@ -407,7 +259,9 @@ func (a *App) dropCard(c *ui.Context, b *workspace.Block) {
 	})
 }
 
-func (a *App) blockFooter(c *ui.Context, b *workspace.Block, link session.StateChange) {
+// blockFooter holds the block's resource readings, which arrive with the
+// monitor in M3; until then they show a dash.
+func (a *App) blockFooter(c *ui.Context, _ *workspace.Block) {
 	ui.Row(c).Key("foot").Height(blockFoot).Padding(0, 12).Gap(14).Background(a.tk.Surface2).Shrink(0).Children(func() {
 		for _, m := range []string{a.T(kMetricCPU), a.T(kMetricMem), a.T(kMetricDisk)} {
 			ui.Row(c).Gap(4).Children(func() {
@@ -415,26 +269,7 @@ func (a *App) blockFooter(c *ui.Context, b *workspace.Block, link session.StateC
 				ui.Text(c, "—").FontSize(11).Bold().TextColor(a.tk.Text3)
 			})
 		}
-		ui.Spacer(c)
-		state := a.T(kLocalShell)
-		if b.Kind == workspace.KindSSH {
-			state = a.linkLabel(link)
-		}
-		a.caption(c, state)
 	})
-}
-
-func (a *App) linkLabel(link session.StateChange) string {
-	switch link.State {
-	case session.StateConnected:
-		return a.T(kStatusConnected)
-	case session.StateFailed:
-		return a.T(kStatusFailed)
-	case session.StateConnecting, session.StateReconnecting:
-		return a.T(kStatusReconnecting)
-	case session.StateClosed:
-	}
-	return ""
 }
 
 // bannerButtons are the actions of the disconnect banner.

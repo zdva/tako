@@ -67,6 +67,7 @@ func (a *App) group(c *ui.Context, g hostlib.Group) {
 		name = a.T(kUntagged)
 	}
 	head := ui.Row(c).Key("group:"+key).Height(26).Padding(0, 6).Gap(6).Cursor(ui.CursorPointer)
+	head.ContextMenu(func(m *ui.Menu) { a.tagMenu(m, g, collapsed) })
 	head.Children(func() {
 		ic := iconChevronD
 		if collapsed {
@@ -142,9 +143,6 @@ func (a *App) hostRow(c *ui.Context, h model.Host) {
 			ui.Text(c, h.Name).Bold().FontSize(13).Ellipsis("…").SingleLine()
 			a.caption(c, h.Target()).Ellipsis("…").SingleLine()
 		})
-		if st.synced {
-			ui.Icon(c, iconLink).FontSize(13).TextColor(a.tk.Accent)
-		}
 		col, label := a.statusColor(st)
 		ui.Box(c).Children(func() { dot(c, col, 7) }).Label(label)
 	})
@@ -163,9 +161,7 @@ func (a *App) hostMenu(m *ui.Menu, h model.Host, st hostState) {
 	}
 	if st.open {
 		if m.Item(a.T(kMenuToggleSync)).Checked(st.synced).Chosen() {
-			for _, b := range a.d.Model.BlocksOf(h.ID) {
-				a.d.Model.SetSynced(b, !st.synced)
-			}
+			a.d.Model.SetSyncedMany(a.d.Model.BlocksOf(h.ID), !st.synced)
 		}
 	}
 	m.Separator()
@@ -195,8 +191,8 @@ func sshCommand(h model.Host) string {
 
 func (a *App) sidebarFooter(c *ui.Context) {
 	ui.Column(c).Padding(8, 10, 10).Gap(2).Children(func() {
-		a.footerButton(c, iconTerminal, a.T(kNewLocalShort), shortcutLabel("T"), func() { a.openLocal() })
-		a.footerButton(c, iconSettings, a.T(kSettings), shortcutLabel(","), func() { a.settings.open = true })
+		a.footerButton(c, iconTerminal, a.T(kNewLocalShort), hint(actNewTab), func() { a.openLocal() })
+		a.footerButton(c, iconSettings, a.T(kSettings), hint(actSettings), func() { a.settings.open = true })
 	})
 }
 
