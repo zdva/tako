@@ -216,6 +216,9 @@ type shell struct {
 	sess *gossh.Session
 	in   io.WriteCloser
 	out  io.Reader
+
+	closeOnce sync.Once
+	closeErr  error
 }
 
 func (s *shell) Read(p []byte) (int, error)  { return s.out.Read(p) } //nolint:wrapcheck // io.Reader contract: callers compare io.EOF
@@ -228,10 +231,15 @@ func (s *shell) Resize(cols, rows int) error {
 	return nil
 }
 
+// Close ends the shell. It is safe to call from several goroutines (a
+// reconnect and the user closing the tab can race), which x/crypto/ssh's
+// channel is not.
 func (s *shell) Close() error {
-	_ = s.in.Close()
-	if err := s.sess.Close(); err != nil && !errors.Is(err, io.EOF) {
-		return fmt.Errorf("closing shell: %w", err)
-	}
-	return nil
+	s.closeOnce.Do(func() {
+		_ = s.in.Close()
+		if err := s.sess.Close(); err != nil && !errors.Is(err, io.EOF) {
+			s.closeErr = fmt.Errorf("closing shell: %w", err)
+		}
+	})
+	return s.closeErr
 }
