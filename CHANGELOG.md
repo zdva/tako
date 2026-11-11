@@ -49,6 +49,18 @@ the installers and updater have not been run on real macOS or Windows machines
 - Encodings: UTF-8 only, for good (ADR 0005); GBK and other code pages are out
   of scope.
 
+### M4 acceptance (Linux VM, Xvfb, Mesa software renderer; fresh clone of the tagged commit)
+
+| # | Criterion | Result |
+|---|---|---|
+| 1 | Installers install, start, connect and update on clean systems of all three platforms | **Not met, needs people and machines.** On this Debian 13 box the `.deb` installed, started and uninstalled cleanly, and the `.tar.gz`, PKGBUILD and `.rpm` (nfpm) build; a signed update manifest is produced with a throw-away key. The dmg and NSIS installers are built by CI only (no `makensis` or macOS here) and the updater has never installed an update end to end |
+| 2 | Light/dark switch without a restart; `theme` tokens equal `DESIGN.md` | Pass: `TestTokensMatchDesignDoc`, `TestSettings_DarkAppearanceChangesTerminalToo`, `TestSettings_SchemeRecolorsOpenTerminalsWithoutARestart` |
+| 3 | English and Chinese complete; pseudo-locale shows no missing key, hard-coded text or text outside the window | Pass: `TestKeys_MatchLocales`, `TestPseudoLocale_EverySurfaceComesFromTheTables` (main window, host sheet, palette, every settings page, transfer sheet). Truncation is checked as "inside the window", not by pixel |
+| 4 | An export imported on another computer works and contains no secret (grep) | Pass: `TestSettings_ExportHasNoSecretsAndImportsOnAnotherComputer`, `TestExportImportMovesHostsToAnotherComputerWithoutSecrets` (jump chain remapped) |
+| 5 | Performance budgets; `goleak` and `-race` green | Pass here: nine idle blocks 0.40% of a core, 129 MB RSS (35 MB private), monitored 0.93% and 0.00 frames/s, flood 59 frames/s, cold start 0.14 s, recovery after `kill -9` 0.29 s; core coverage 83.3%; `make race` and `make vuln` green; five fuzz targets run 20 s each |
+| 6 | Manual checklist on a real Mac and a real Windows | **Not done**: no such machines ([docs/RELEASE.md](docs/RELEASE.md)) |
+| 7 | Linux smoke on Ubuntu 22.04/24.04 and Fedora | **Not done**: only Debian 13 was available |
+
 ### Known limitations
 
 - Not run on real macOS or Windows hardware; installers for those platforms are
