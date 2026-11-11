@@ -80,3 +80,25 @@ func TestLayered_OtherErrorsPropagate(t *testing.T) {
 		t.Errorf("Set err = %v, want boom", err)
 	}
 }
+
+func TestLayered_SetSessionNeverReachesThePersistentStore(t *testing.T) {
+	t.Parallel()
+	ctx := t.Context()
+	persistent := NewMemory()
+	l := NewLayered(persistent)
+	if err := l.SetSession(ctx, "k", []byte("v")); err != nil {
+		t.Fatal(err)
+	}
+	if got, err := l.Get(ctx, "k"); err != nil || string(got) != "v" {
+		t.Fatalf("Get = %q, %v", got, err)
+	}
+	if _, err := persistent.Get(ctx, "k"); !errors.Is(err, ErrNotFound) {
+		t.Fatalf("the persistent store has the session secret: %v", err)
+	}
+	if err := l.Delete(ctx, "k"); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := l.Get(ctx, "k"); !errors.Is(err, ErrNotFound) {
+		t.Fatalf("after Delete: %v", err)
+	}
+}

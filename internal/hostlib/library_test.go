@@ -13,7 +13,11 @@ import (
 
 func open(t *testing.T) (*Library, *secrets.Memory, string) {
 	t.Helper()
-	path := filepath.Join(t.TempDir(), "hosts.json")
+	return openAt(t, filepath.Join(t.TempDir(), "hosts.json"))
+}
+
+func openAt(t *testing.T, path string) (*Library, *secrets.Memory, string) {
+	t.Helper()
 	sec := secrets.NewMemory()
 	l, err := Open(store.Doc{Path: path}, sec, func(err error) { t.Errorf("save error: %v", err) })
 	if err != nil {
