@@ -234,8 +234,11 @@ func TestFirstLaunchWithEmptyFontCache_Logged(t *testing.T) {
 	t.Logf("first launch, empty fontconfig cache: window after %v", r.windowAppears())
 }
 
+// The idle budget of nine terminals is measured with monitoring off: sampling
+// nine hosts has its own budget and test (TestM3_NineMonitoredHostsIdle).
 func TestNineIdleBlocks_CPUMemoryAndColdStart(t *testing.T) {
 	f := newFixture(t)
+	f.writeSettings(map[string]any{"monitor": map[string]any{"off": true}})
 	f.warmFontCache()
 	r := f.start()
 	cold := r.windowAppears()
