@@ -37,7 +37,7 @@ type Bundle struct {
 var (
 	loadOnce sync.Once
 	tables   map[Language]map[string]string
-	loadErr  error
+	errLoad  error
 )
 
 func load() {
@@ -45,12 +45,12 @@ func load() {
 	for _, l := range Languages() {
 		data, err := fs.ReadFile(localeFS, "locales/"+string(l)+".json")
 		if err != nil {
-			loadErr = fmt.Errorf("reading locale %s: %w", l, err)
+			errLoad = fmt.Errorf("reading locale %s: %w", l, err)
 			return
 		}
 		var m map[string]string
 		if err := json.Unmarshal(data, &m); err != nil {
-			loadErr = fmt.Errorf("parsing locale %s: %w", l, err)
+			errLoad = fmt.Errorf("parsing locale %s: %w", l, err)
 			return
 		}
 		tables[l] = m
@@ -60,8 +60,8 @@ func load() {
 // New returns the bundle for a language. An unknown language gets English.
 func New(lang Language) (*Bundle, error) {
 	loadOnce.Do(load)
-	if loadErr != nil {
-		return nil, loadErr
+	if errLoad != nil {
+		return nil, errLoad
 	}
 	t, ok := tables[lang]
 	if !ok {
