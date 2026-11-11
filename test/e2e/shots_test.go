@@ -22,6 +22,9 @@ import (
 // Screenshots of the real window, for docs/screenshots. Run with
 // TAKO_SHOTS=<dir> (see `make screenshots`).
 
+// The size layoutWindow gives the window.
+const windowW, windowH = 1440, 900
+
 type demoHost struct {
 	name, user, tag string
 	os              model.OSKind
@@ -89,7 +92,9 @@ func xdo(t *testing.T, args ...string) {
 func shot(t *testing.T, dir, name string) {
 	t.Helper()
 	time.Sleep(400 * time.Millisecond)
-	py := fmt.Sprintf("from PIL import ImageGrab; ImageGrab.grab(xdisplay=%q).save(%q)", os.Getenv("DISPLAY"), filepath.Join(dir, name+".png"))
+	// Crop to the window, which layoutWindow puts at the top-left.
+	py := fmt.Sprintf("from PIL import ImageGrab\nim = ImageGrab.grab(xdisplay=%q)\nim.crop((0, 0, min(im.width, %d), min(im.height, %d))).save(%q)",
+		os.Getenv("DISPLAY"), windowW, windowH, filepath.Join(dir, name+".png"))
 	if out, err := exec.Command("python3", "-c", py).CombinedOutput(); err != nil {
 		t.Fatalf("screenshot %s: %v %s", name, err, out)
 	}
@@ -119,7 +124,7 @@ func layoutWindow(t *testing.T, r *run) {
 		t.Fatal("no window")
 	}
 	xdo(t, "windowmove", win, "0", "0")
-	xdo(t, "windowsize", win, "1440", "900")
+	xdo(t, "windowsize", win, strconv.Itoa(windowW), strconv.Itoa(windowH))
 	xdo(t, "windowfocus", win)
 	time.Sleep(300 * time.Millisecond)
 }
