@@ -56,30 +56,52 @@ func (a *App) setPref(fn func(*settings.Values)) {
 	a.applyTransferPrefs(before.Transfer, a.d.Settings.Values().Transfer)
 }
 
+// setting is one row of a settings page: the name and its explanation on the
+// left, the control on the right.
+func (a *App) setting(c *ui.Context, label, hint string, control func()) {
+	ui.Row(c).Gap(16).AlignItems(ui.Center).Shrink(0).MinHeight(34).Children(func() {
+		ui.Column(c).Grow(1).MinWidth(0).Gap(2).Children(func() {
+			ui.Text(c, label).FontSize(13)
+			if hint != "" {
+				a.caption(c, hint)
+			}
+		})
+		control()
+	})
+}
+
 // choice draws a segmented control over options and calls set with the new
 // index when the user picks another one.
-func (a *App) choice(c *ui.Context, label string, cur int, options []string, set func(int)) {
+func (a *App) choice(c *ui.Context, label, hint string, cur int, options []string, set func(int)) {
+	// A saved value that is not an option (the test-only pseudo-locale, or a
+	// hand-edited file) shows the first option and is left alone until the
+	// user picks another one.
+	cur = max(cur, 0)
 	idx := cur
-	ui.Segmented(c, &idx, options...).Label(label)
+	a.setting(c, label, hint, func() { ui.Segmented(c, &idx, options...).Label(label).Shrink(0) })
 	if idx != cur {
 		set(idx)
 	}
 }
 
 // toggle draws a labelled switch.
-func (a *App) toggle(c *ui.Context, label string, cur bool, set func(bool)) {
+func (a *App) toggle(c *ui.Context, label, hint string, cur bool, set func(bool)) {
 	on := cur
-	ui.Switch(c, &on).Label(label)
+	a.setting(c, label, hint, func() { ui.Switch(c, &on).Label(label) })
 	if on != cur {
 		set(on)
 	}
 }
 
-// number draws a labelled stepper next to its caption.
-func (a *App) number(c *ui.Context, label string, cur, lo, hi, step int, set func(int)) {
+// number draws a labelled stepper with its value beside it.
+func (a *App) number(c *ui.Context, label, hint string, cur, lo, hi, step int, set func(int)) {
 	v := float64(cur)
-	a.caption(c, label)
-	ui.Stepper(c, &v, float64(lo), float64(hi), float64(step)).Label(label).Width(90)
+	a.setting(c, label, hint, func() {
+		ui.Row(c).Gap(8).AlignItems(ui.Center).Shrink(0).Children(func() {
+			ui.Text(c, a.loc.Number(float64(cur), 0)).FontSize(13).Bold().TextColor(a.tk.Text).Role(ui.RoleStatus).Label(label)
+			ui.Stepper(c, &v, float64(lo), float64(hi), float64(step)).Label(label).Width(90)
+		})
+	})
 	if int(v) != cur {
 		set(int(v))
 	}
@@ -178,19 +200,13 @@ func (a *App) settingsPage(c *ui.Context, page string) {
 func (a *App) generalPage(c *ui.Context, v settings.Values) {
 	langs := []i18n.Language{"", i18n.English, i18n.Chinese}
 	apps := []settings.Appearance{settings.AppearanceSystem, settings.AppearanceLight, settings.AppearanceDark}
-	a.pfield(c, a.T(kSetLanguage), func() {
-		a.choice(c, a.T(kSetLanguage), slices.Index(langs, v.Language), []string{a.T(kLangSystem), "English", "简体中文"},
-			func(i int) { a.setPref(func(x *settings.Values) { x.Language = langs[i] }) })
-	})
-	a.pfield(c, a.T(kSetAppearance), func() {
-		a.choice(c, a.T(kSetAppearance), slices.Index(apps, v.ResolveAppearance()), []string{a.T(kAppSystem), a.T(kAppLight), a.T(kAppDark)},
-			func(i int) { a.setPref(func(x *settings.Values) { x.Appearance = apps[i] }) })
-		a.caption(c, a.T(kSetAppearanceHint))
-	})
-	a.pfield(c, a.T(kSetCompact), func() {
-		a.toggle(c, a.T(kSetCompact), v.CompactBlocks, func(on bool) { a.setPref(func(x *settings.Values) { x.CompactBlocks = on }) })
-		a.caption(c, a.T(kSetCompactHint))
-	})
+	a.choice(c, a.T(kSetLanguage), "", slices.Index(langs, v.Language), []string{a.T(kLangSystem), "English", "简体中文"},
+		func(i int) { a.setPref(func(x *settings.Values) { x.Language = langs[i] }) })
+	a.choice(c, a.T(kSetAppearance), a.T(kSetAppearanceHint), slices.Index(apps, v.ResolveAppearance()),
+		[]string{a.T(kAppSystem), a.T(kAppLight), a.T(kAppDark)},
+		func(i int) { a.setPref(func(x *settings.Values) { x.Appearance = apps[i] }) })
+	a.toggle(c, a.T(kSetCompact), a.T(kSetCompactHint), v.CompactBlocks,
+		func(on bool) { a.setPref(func(x *settings.Values) { x.CompactBlocks = on }) })
 }
 
 func (a *App) terminalPage(c *ui.Context, v settings.Values) {
@@ -206,17 +222,12 @@ func (a *App) terminalPage(c *ui.Context, v settings.Values) {
 			a.caption(c, a.settings.colorsMsg).Role(ui.RoleStatus)
 		}
 	})
-	a.pfield(c, a.T(kSetFont), func() {
-		ui.Row(c).Gap(10).AlignItems(ui.Center).Children(func() {
-			a.number(c, a.T(kSetFontSize), t.Font(), settings.MinFontSize, settings.MaxFontSize, 1,
-				func(n int) { a.setPref(func(x *settings.Values) { x.Terminal.FontSize = n }) })
-		})
-	})
-	a.pfield(c, a.T(kSetBehavior), func() {
-		a.toggle(c, a.T(kSetCopyOnSelect), t.CopyOnSelect, func(on bool) { a.setPref(func(x *settings.Values) { x.Terminal.CopyOnSelect = on }) })
-		a.toggle(c, a.T(kSetKeepContrast), t.KeepContrast, func(on bool) { a.setPref(func(x *settings.Values) { x.Terminal.KeepContrast = on }) })
-		a.caption(c, a.T(kSetKeepContrastHint))
-	})
+	a.number(c, a.T(kSetFontSize), "", t.Font(), settings.MinFontSize, settings.MaxFontSize, 1,
+		func(n int) { a.setPref(func(x *settings.Values) { x.Terminal.FontSize = n }) })
+	a.toggle(c, a.T(kSetCopyOnSelect), "", t.CopyOnSelect,
+		func(on bool) { a.setPref(func(x *settings.Values) { x.Terminal.CopyOnSelect = on }) })
+	a.toggle(c, a.T(kSetKeepContrast), a.T(kSetKeepContrastHint), t.KeepContrast,
+		func(on bool) { a.setPref(func(x *settings.Values) { x.Terminal.KeepContrast = on }) })
 }
 
 // schemeGrid shows the color schemes as swatches: what the terminal would
@@ -341,49 +352,38 @@ func (a *App) pathRow(c *ui.Context, key string, path *string, placeholder, acti
 }
 
 func (a *App) connectionPage(c *ui.Context, v settings.Values) {
-	a.pfield(c, a.T(kSetKeepAlive), func() {
-		ui.Row(c).Gap(10).AlignItems(ui.Center).Children(func() {
-			a.number(c, a.T(kSetKeepAliveEvery), v.Connection.KeepAlive(), 5, 300, 5,
-				func(n int) { a.setPref(func(x *settings.Values) { x.Connection.KeepAliveSec = n }) })
-		})
-		a.caption(c, a.T(kSetKeepAliveHint))
-	})
+	a.number(c, a.T(kSetKeepAlive), a.T(kSetKeepAliveHint), v.Connection.KeepAlive(), 5, 300, 5,
+		func(n int) { a.setPref(func(x *settings.Values) { x.Connection.KeepAliveSec = n }) })
 	a.pfield(c, a.T(kSetHostKeys), func() {
 		a.caption(c, a.T(kSetHostKeysHint))
 	})
 }
 
 func (a *App) monitorSettings(c *ui.Context, m settings.Monitor) {
-	a.pfield(c, a.T(kSetMonitor), func() {
-		a.toggle(c, a.T(kSetMonitorOn), !m.Off, func(on bool) { a.setPref(func(x *settings.Values) { x.Monitor.Off = !on }) })
-		ui.Row(c).Gap(10).AlignItems(ui.Center).Wrap().Children(func() {
-			a.number(c, a.T(kSetMonitorEvery), m.Interval(), 1, 60, 1, func(n int) { a.setPref(func(x *settings.Values) { x.Monitor.IntervalSec = n }) })
-			a.number(c, a.T(kSetMonitorWarn), m.Warn(), 1, 99, 5, func(n int) {
-				a.setPref(func(x *settings.Values) { x.Monitor.WarnPct = n; x.Monitor.CritPct = max(x.Monitor.Crit(), n) })
-			})
-			a.number(c, a.T(kSetMonitorCrit), m.Crit(), 1, 100, 5, func(n int) {
-				a.setPref(func(x *settings.Values) { x.Monitor.CritPct = n; x.Monitor.WarnPct = min(x.Monitor.Warn(), n) })
-			})
-		})
+	a.toggle(c, a.T(kSetMonitorOn), "", !m.Off, func(on bool) { a.setPref(func(x *settings.Values) { x.Monitor.Off = !on }) })
+	a.number(c, a.T(kSetMonitorEvery), "", m.Interval(), 1, 60, 1,
+		func(n int) { a.setPref(func(x *settings.Values) { x.Monitor.IntervalSec = n }) })
+	a.number(c, a.T(kSetMonitorWarn), "", m.Warn(), 1, 99, 5, func(n int) {
+		a.setPref(func(x *settings.Values) { x.Monitor.WarnPct = n; x.Monitor.CritPct = max(x.Monitor.Crit(), n) })
+	})
+	a.number(c, a.T(kSetMonitorCrit), "", m.Crit(), 1, 100, 5, func(n int) {
+		a.setPref(func(x *settings.Values) { x.Monitor.CritPct = n; x.Monitor.WarnPct = min(x.Monitor.Warn(), n) })
 	})
 }
 
 func (a *App) transferSettings(c *ui.Context, t settings.Transfer) {
 	conflicts := []settings.Conflict{settings.ConflictAsk, settings.ConflictOverwrite, settings.ConflictSkip}
 	verifies := []string{"auto", "hash", "size"}
-	a.pfield(c, a.T(kSetTransfer), func() {
-		ui.Row(c).Gap(10).AlignItems(ui.Center).Children(func() {
-			a.number(c, a.T(kSetParallel), t.Parallel(), 1, 8, 1, func(n int) { a.setPref(func(x *settings.Values) { x.Transfer.Concurrency = n }) })
-		})
-		a.choice(c, a.T(kSetConflict), slices.Index(conflicts, t.Policy()),
-			[]string{a.T(kSetConflictAsk), a.T(kSetConflictOver), a.T(kSetConflictSkip)},
-			func(i int) { a.setPref(func(x *settings.Values) { x.Transfer.Conflict = conflicts[i] }) })
-		verify := max(slices.Index(verifies, cmpOr(t.Verify, "auto")), 0)
-		a.choice(c, a.T(kSetVerify), verify, []string{a.T(kSetVerifyAuto), a.T(kSetVerifyHash), a.T(kSetVerifySize)},
-			func(i int) { a.setPref(func(x *settings.Values) { x.Transfer.Verify = verifies[i] }) })
-		a.toggle(c, a.T(kSetDirect), t.AllowDirect, func(on bool) { a.setPref(func(x *settings.Values) { x.Transfer.AllowDirect = on }) })
-		a.caption(c, a.T(kSetDirectHint))
-	})
+	a.number(c, a.T(kSetParallel), "", t.Parallel(), 1, 8, 1,
+		func(n int) { a.setPref(func(x *settings.Values) { x.Transfer.Concurrency = n }) })
+	a.choice(c, a.T(kSetConflict), "", slices.Index(conflicts, t.Policy()),
+		[]string{a.T(kSetConflictAsk), a.T(kSetConflictOver), a.T(kSetConflictSkip)},
+		func(i int) { a.setPref(func(x *settings.Values) { x.Transfer.Conflict = conflicts[i] }) })
+	verify := max(slices.Index(verifies, cmpOr(t.Verify, "auto")), 0)
+	a.choice(c, a.T(kSetVerify), "", verify, []string{a.T(kSetVerifyAuto), a.T(kSetVerifyHash), a.T(kSetVerifySize)},
+		func(i int) { a.setPref(func(x *settings.Values) { x.Transfer.Verify = verifies[i] }) })
+	a.toggle(c, a.T(kSetDirect), a.T(kSetDirectHint), t.AllowDirect,
+		func(on bool) { a.setPref(func(x *settings.Values) { x.Transfer.AllowDirect = on }) })
 }
 
 func cmpOr(s, def string) string {

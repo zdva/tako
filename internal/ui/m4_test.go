@@ -38,12 +38,14 @@ func (h *harness) reveal(name string) {
 }
 
 // clickRadio clicks the control with the radio role and the given name.
-func (h *harness) clickRadio(name string) {
+func (h *harness) clickRadio(name string) { h.clickRole(ui.RoleRadio, name) }
+
+func (h *harness) clickRole(role ui.Role, name string) {
 	h.t.Helper()
 	h.reveal(name)
-	info, ok := h.tt.AccessByRole(ui.RoleRadio, name)
+	info, ok := h.tt.AccessByRole(role, name)
 	if !ok {
-		h.t.Fatalf("no radio %q", name)
+		h.t.Fatalf("no control %q of role %v", name, role)
 	}
 	h.tt.ClickAt(float32(info.Bounds.X+info.Bounds.W/2), float32(info.Bounds.Y+info.Bounds.H/2))
 	h.tt.Frame()
@@ -53,7 +55,7 @@ func TestSettings_PagesAreReachableAndShowTheirControls(t *testing.T) {
 	h := newHarness(t, harnessOpts{})
 	h.openSettings("")
 	for _, page := range []struct{ nav, text string }{
-		{"Terminal", "Color scheme"}, {"Connection", "Keepalive"}, {"Monitoring", "Amber from"},
+		{"Terminal", "Color scheme"}, {"Connection", "Keepalive every (seconds)"}, {"Monitoring", "Amber from (%)"},
 		{"File transfer", "Same name"}, {"Data", "Export hosts"}, {"About", "Copy diagnostics"}, {"General", "Language"},
 	} {
 		h.click(page.nav)
@@ -193,14 +195,14 @@ func TestSettings_TerminalOptionsAreSaved(t *testing.T) {
 	h := newHarness(t, harnessOpts{})
 	h.openSettings("terminal")
 	h.reveal("Keep text readable")
-	h.click("Copy text when it is selected")
-	h.click("Keep text readable")
+	h.clickRole(ui.RoleSwitch, "Copy text when it is selected")
+	h.clickRole(ui.RoleSwitch, "Keep text readable")
 	if tp := h.prefs().Terminal; !tp.CopyOnSelect || !tp.KeepContrast {
 		t.Errorf("%+v", tp)
 	}
 	h.openSettings("connection")
 	h.tt.Frame()
-	if !h.tt.HasText("Every (s)") {
+	if !h.tt.HasText("Keepalive every (seconds)") {
 		t.Errorf("keepalive row missing: %q", h.tt.Texts())
 	}
 }
