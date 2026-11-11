@@ -9,6 +9,7 @@ import (
 	"github.com/egoist/mygo/ui"
 
 	"github.com/wei-dong/tako/internal/i18n"
+	"github.com/wei-dong/tako/internal/model"
 	"github.com/wei-dong/tako/internal/scheme"
 	"github.com/wei-dong/tako/internal/settings"
 )
@@ -201,5 +202,79 @@ func TestSettings_TerminalOptionsAreSaved(t *testing.T) {
 	h.tt.Frame()
 	if !h.tt.HasText("Every (s)") {
 		t.Errorf("keepalive row missing: %q", h.tt.Texts())
+	}
+}
+
+func (h *harness) exportTo(path string) {
+	h.t.Helper()
+	h.openSettings("data")
+	h.tt.Frame()
+	info, _ := h.tt.AccessByRole(ui.RoleTextField, "Where to save the file")
+	h.tt.ClickAt(float32(info.Bounds.X+info.Bounds.W/2), float32(info.Bounds.Y+info.Bounds.H/2))
+	h.tt.Key(ui.Ctrl, ui.KeyA)
+	h.tt.Type(path)
+	h.tt.Frame()
+	h.click("Export")
+	h.waitText("Exported")
+}
+
+func TestSettings_ExportHasNoSecretsAndImportsOnAnotherComputer(t *testing.T) {
+	h := newHarness(t, harnessOpts{})
+	web := h.addHost("web-01", "prod")
+	const secret = "S3cr3t-Value-Do-Not-Leak"
+	ref := model.SecretRef(web.ID, "password")
+	if err := h.app.Secrets.Set(t.Context(), ref, []byte(secret)); err != nil {
+		t.Fatal(err)
+	}
+	h.addHost("db-01")
+	out := filepath.Join(t.TempDir(), "tako-hosts.json")
+	h.exportTo(out)
+	raw, err := os.ReadFile(out)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, bad := range []string{secret, string(ref), "pw-web-01", "SecretRef", "secret"} {
+		if strings.Contains(strings.ToLower(string(raw)), strings.ToLower(bad)) {
+			t.Errorf("the export contains %q", bad)
+		}
+	}
+	if st, err := os.Stat(out); err != nil || st.Mode().Perm() != 0o600 {
+		t.Errorf("export mode %v %v", st, err)
+	}
+	// Another computer: a fresh harness with its own data and keychain.
+	other := newHarness(t, harnessOpts{})
+	other.openSettings("data")
+	other.typeInto("Xshell, SecureCRT, Termius or Tako file or folder", out)
+	other.click("Import")
+	other.waitText("Imported 2")
+	if n := other.app.Library.Len(); n != 2 {
+		t.Fatalf("%d hosts imported", n)
+	}
+	for _, host := range other.app.Library.Hosts() {
+		if len(host.Auth) > 0 && host.Auth[0].SecretRef != "" {
+			if _, err := other.app.Secrets.Get(t.Context(), host.Auth[0].SecretRef); err == nil {
+				t.Errorf("%s arrived with a secret", host.Name)
+			}
+		}
+	}
+	other.shot("settings-data")
+}
+
+func TestSettings_ImportsTheOtherToolsAndSaysPasswordsWereLeftOut(t *testing.T) {
+	for _, tc := range []struct{ name, path string }{
+		{"xshell", "web-01.xsh"}, {"xshell sessions", "sessions.xts"}, {"securecrt folder", "web-01.ini"},
+		{"securecrt xml", "securecrt-export.xml"}, {"termius", "termius.csv"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			h := newHarness(t, harnessOpts{})
+			h.openSettings("data")
+			h.typeInto("Xshell, SecureCRT, Termius or Tako file or folder",
+				filepath.Join("..", "importer", "hostfile", "testdata", tc.path))
+			h.click("Import")
+			h.waitText("Imported")
+			if h.app.Library.Len() == 0 {
+				t.Fatalf("nothing imported; screen %q", h.tt.Texts())
+			}
+		})
 	}
 }
