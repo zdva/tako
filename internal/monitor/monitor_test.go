@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -453,6 +454,51 @@ func TestHub_WatchesProbesAndReportsOnlyVisibleChanges(t *testing.T) {
 	hub.Forget("h1")
 	if hub.Series("h1") != nil {
 		t.Error("history kept after Forget")
+	}
+}
+
+// A fleet whose readings wobble by a point or two is told to the window
+// rarely, and in merged calls, not once per host per sample.
+func TestHub_MergesWobbleIntoFewWakes(t *testing.T) {
+	one, two := fixtureBytes("linux-1.txt"), fixtureBytes("linux-2.txt")
+	var n atomic.Int64
+	exec := func(_ context.Context, cmd string) ([]byte, error) {
+		switch cmd {
+		case monitor.ProbeCommand:
+			return []byte("Linux\n"), nil
+		case monitor.Linux{}.InfoCommand():
+			return fixtureBytes("linux-info.txt"), nil
+		}
+		// Alternating counters: the CPU reading swings between samples.
+		if n.Add(1)%2 == 0 {
+			return two, nil
+		}
+		return one, nil
+	}
+	var wakes atomic.Int64
+	hub := monitor.NewHub(monitor.HubOptions{
+		Interval: 5 * time.Millisecond, Jitter: -1, MinGap: 300 * time.Millisecond,
+		OnChange: func(model.ID) { wakes.Add(1) },
+	})
+	defer hub.Close()
+	for i := range 6 {
+		hub.Watch(monitor.Target{Host: model.ID(fmt.Sprint("h", i)), OS: model.OSLinux, Exec: exec})
+	}
+	time.Sleep(1700 * time.Millisecond) // the first sample of a host is followed by a short pause
+	samples := 0
+	for i := range 6 {
+		samples += hub.Series(model.ID(fmt.Sprint("h", i))).Len()
+	}
+	got := wakes.Load()
+	// At most one call per gap (plus the first), whatever the sample count.
+	if got > 7 {
+		t.Errorf("%d wake-ups in 1.7 s for %d samples with a 300 ms gap", got, samples)
+	}
+	if got == 0 {
+		t.Error("the window was never told")
+	}
+	if samples < 100 {
+		t.Errorf("only %d samples: the test measured nothing", samples)
 	}
 }
 

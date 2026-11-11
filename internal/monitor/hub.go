@@ -27,9 +27,25 @@ type HubOptions struct {
 	// failure state has, and on every sample of the focused host. It is
 	// called from sampler goroutines and must only post work elsewhere.
 	OnChange func(model.ID)
+	// Step is how many percentage points a footer reading must move from
+	// what the window last showed before the window is told; zero is
+	// [DefaultStep]. A busy machine's CPU wobbles by a point or two every
+	// sample, and every redraw of the window costs more than the sampling.
+	Step int
+	// MinGap is the shortest time between two calls of OnChange about the
+	// fleet (changes in between are merged into one later call); zero is
+	// [DefaultMinGap], negative turns merging off. The focused host and
+	// failures are never held back.
+	MinGap time.Duration
 	// Sampler hooks for tests.
 	Jitter float64
 }
+
+// Defaults of [HubOptions].
+const (
+	DefaultStep   = 3
+	DefaultMinGap = time.Second
+)
 
 // Hub measures many machines and keeps their history. It tells the window
 // about a host only when something visible changed, so an idle fleet costs no
@@ -45,6 +61,9 @@ type Hub struct {
 	interval time.Duration
 	paused   bool
 	focus    model.ID
+	// lastWake and timer merge changes: see HubOptions.MinGap.
+	lastWake time.Time
+	timer    *time.Timer
 }
 
 type watched struct {
@@ -60,6 +79,16 @@ type shown struct {
 	cpu, mem, disk, gpu int
 	failing             bool
 	known               bool
+}
+
+// differs reports whether the footer must be redrawn to go from s to o: a
+// reading appeared or failed, or one moved by at least step points.
+func (s shown) differs(o shown, step int) bool {
+	if s.failing != o.failing || s.known != o.known {
+		return true
+	}
+	far := func(a, b int) bool { return a-b >= step || b-a >= step }
+	return far(s.cpu, o.cpu) || far(s.mem, o.mem) || far(s.disk, o.disk) || far(s.gpu, o.gpu)
 }
 
 // NewHub returns a hub that measures until Close.
@@ -112,7 +141,7 @@ func (h *Hub) measure(ctx context.Context, w *watched, t Target) {
 	s := StartSampler(ctx, SamplerOptions{
 		Collector: ForOS(os), Exec: t.Exec, Ping: t.Ping, Interval: interval, Jitter: h.opts.Jitter,
 		OnSample: func(p Sample) { w.series.Add(p); h.notify(t.Host, w, false) },
-		OnInfo:   func(i Info) { w.series.SetInfo(i); h.notify(t.Host, w, true) },
+		OnInfo:   func(i Info) { w.series.SetInfo(i); h.notify(t.Host, w, false) }, // only the monitor page shows it
 		OnFail:   func(err error) { w.series.Fail(err); h.notify(t.Host, w, true) },
 	})
 	h.mu.Lock()
@@ -149,17 +178,52 @@ func (h *Hub) probe(ctx context.Context, t Target) model.OSKind {
 	}
 }
 
-// notify tells the window when the footer's numbers moved.
+// notify tells the window when the footer's numbers moved enough to see.
 func (h *Hub) notify(id model.ID, w *watched, force bool) {
 	cur := h.display(w)
 	h.mu.Lock()
-	changed := force || cur != w.last || id == h.focus
-	w.last = cur
+	urgent := force || id == h.focus
+	changed := urgent || cur.differs(w.last, cmpOr(h.opts.Step, DefaultStep))
+	if changed {
+		w.last = cur
+	}
 	cb := h.opts.OnChange
+	fire := changed && cb != nil
+	if fire && !urgent {
+		fire = h.admit(id)
+	} else if fire {
+		h.lastWake = time.Now()
+	}
 	h.mu.Unlock()
-	if changed && cb != nil {
+	if fire {
 		cb(id)
 	}
+}
+
+// admit decides, with h.mu held, whether a change may call OnChange now. Too
+// soon after the last call, it arms a timer that calls it once later for all
+// the changes that arrive meanwhile.
+func (h *Hub) admit(id model.ID) bool {
+	gap := cmpOr(h.opts.MinGap, DefaultMinGap)
+	now := time.Now()
+	if gap < 0 || now.Sub(h.lastWake) >= gap {
+		h.lastWake = now
+		return true
+	}
+	if h.timer == nil && h.ctx.Err() == nil {
+		h.timer = time.AfterFunc(gap-now.Sub(h.lastWake), func() {
+			h.mu.Lock()
+			h.timer = nil
+			h.lastWake = time.Now()
+			cb := h.opts.OnChange
+			closed := h.ctx.Err() != nil
+			h.mu.Unlock()
+			if cb != nil && !closed {
+				cb(id)
+			}
+		})
+	}
+	return false
 }
 
 func (h *Hub) display(w *watched) shown {
@@ -245,5 +309,11 @@ func (h *Hub) SetFocus(id model.ID) {
 // Close stops every sampler and waits for them.
 func (h *Hub) Close() {
 	h.stop()
+	h.mu.Lock()
+	if h.timer != nil {
+		h.timer.Stop()
+		h.timer = nil
+	}
+	h.mu.Unlock()
 	h.wg.Wait()
 }
