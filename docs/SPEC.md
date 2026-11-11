@@ -40,7 +40,7 @@ machines at once, survives flaky networks and is honest about credentials.
 | **M1** | Connections (all auth methods, jump hosts, proxies), terminals, adaptive grid, host sidebar, tabs, palette, `~/.ssh/config` import, resilient panes, session restore, EN/zh, light/dark | **Done** (v0.1.0-m1) |
 | **M2** | Sync UI (chip, all on/off, selection), floating minimap, draggable split layout with snapping, manual layout restore, full shortcuts, right-click menus, rename, custom title bar | **Done** (v0.2.0-m2) |
 | **M3** | Agentless per-block metrics (CPU, memory, disk, GPU) for Linux/macOS/Windows, monitor page, file transfer (upload, download, server to server by relay or direct) with resume and a queue, OSC 7 folders | **Done** (v0.3.0-m3) |
-| M4 | Polish, more importers (Xshell, SecureCRT, Termius), packaging and release pipeline, signing | Planned |
+| **M4** | Dark-mode polish and terminal color schemes, full EN / 简体中文 with a pseudo-locale test, settings window, export / import without secrets, Xshell / SecureCRT / Termius importers, accessibility and IME polish, packaging (dmg, NSIS, deb, rpm, tar.gz), signed auto-update from GitHub Releases, crash reports and diagnostics. UTF-8 only; no platform code signing | **Done** (v0.4.0, release candidate; needs the pre-release checks in [RELEASE.md](RELEASE.md)) |
 
 ## M1 acceptance criteria
 

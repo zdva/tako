@@ -42,6 +42,37 @@ Also: `make fuzz` (PPK parser, ssh-config parser), `make vuln` (govulncheck),
   (`nettest.Relay.SetRate`) against a raw SFTP baseline between the same two
   hosts, because a shared-CPU loopback cannot show 80% of anything.
 
+## M4: what the new tests prove
+
+- **Pseudo-locale** (`internal/ui/pseudo_test.go`): the language is set to
+  `en-XA` (English wrapped in ⟦ ⟧, +40% longer, accents). The test opens the main
+  window, the host sheet, the palette, every settings page and the transfer
+  sheet and fails on any text that is neither from the tables nor user data, and
+  on any text outside the window. `TestKeys_MatchLocales` keeps the key
+  constants and both locale files in step.
+- **Export without secrets** (`m4_test.go`): stores a distinct password and
+  its keychain reference, exports, greps the file for both (and for "secret"),
+  checks mode 0600, imports on a second app with its own data and keychain and
+  checks that no secret arrived.
+- **Importers**: the fixtures in `internal/importer/hostfile/testdata` are
+  hand-written (`README.md` there); `FuzzParse` and `FuzzParseITerm` run in
+  `make fuzz`; a round-trip test proves nothing secret survives export.
+- **Accessibility** (`a11y_test.go`): roles and names of the main controls, Tab
+  and Shift+Tab reach them, Enter / Space activate rows and buttons, the
+  settings window keeps focus inside, the selected scheme reads as checked.
+- **IME**: `Tester.Compose` in a text field and in a terminal; the candidate
+  window position (`TextCaret`) lands in the field / the terminal. Real input
+  methods on a real Mac or Windows are a pre-release check.
+- **Crash reports** (`internal/diag`): a subprocess panics on a goroutine and the
+  next start reads the report; scrubbing removes home paths, user names, IPs and
+  secrets-looking values.
+- Real-window screenshots (`make screenshots`, MILESTONE=m4) are taken by
+  `test/e2e/m4_test.go`; Tester screenshots go to `docs/screenshots/m4/tester`.
+- Helpers worth knowing: in Tester tests `Scroll(x, y, 0, +160)` scrolls down;
+  click a card with `AccessByRole(role, name)` bounds + `ClickAt`, not `Click`
+  by text (a text click can land on a child); `Read` of a screenshot path is
+  cached, so copy to a new name to view a fresh one.
+
 ## Testing the UI without a window
 
 `ui.Tester` drives the real view tree headlessly. Things to know when writing

@@ -22,3 +22,8 @@ decision that is replaced is marked *Superseded by* and kept.
 | [0014](0014-fleet-connections.md) | Transfers get their own connection; monitoring shares the block's session | Accepted |
 | [0015](0015-direct-server-to-server.md) | Direct server-to-server copies: agent forwarding for one command, then gone | Accepted |
 | [0016](0016-osc7-default-folders.md) | The current folder comes from OSC 7 | Accepted |
+| [0017](0017-settings-window-and-schemes.md) | A settings window; color schemes resolved in `theme`, applied live | Accepted |
+| [0018](0018-host-importers.md) | Importers parse bytes and never touch secrets; export carries no secret | Accepted |
+| [0019](0019-i18n-pseudo-and-regional-formats.md) | Pseudo-locale and system-region number and date formats | Accepted |
+| [0020](0020-crash-reports-and-diagnostics.md) | Crash reports from the Go runtime; scrubbed diagnostics on request | Accepted |
+| [0021](0021-unsigned-releases-and-signed-updates.md) | Unsigned installers, ed25519-signed updates from GitHub Releases | Accepted |
