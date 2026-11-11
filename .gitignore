@@ -25,3 +25,6 @@ Thumbs.db
 *.key
 *.ppk
 .env
+
+# ...except throw-away keys that tests need (see the README beside them)
+!internal/transport/ssh/testdata/ppk/*.ppk
