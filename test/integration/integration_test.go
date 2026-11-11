@@ -41,7 +41,7 @@ func (p prompter) ConfirmHostKey(context.Context, transport.HostKeyRequest) (boo
 	return true, nil
 }
 
-func (p prompter) Secret(_ context.Context, r transport.SecretRequest) (transport.SecretReply, error) {
+func (p prompter) Secret(_ context.Context, _ transport.SecretRequest) (transport.SecretReply, error) {
 	return transport.SecretReply{Value: []byte(p.password)}, nil
 }
 
@@ -115,7 +115,7 @@ func shellRun(t *testing.T, sh transport.Shell, command string) string {
 			n, err := sh.Read(chunk)
 			buf.Write(chunk[:n])
 			s := buf.String()
-			if i := strings.LastIndex(s, end); i >= 0 && strings.Contains(s[:i], begin) {
+			if before, _, ok := strings.CutLast(s, end); ok && strings.Contains(before, begin) {
 				return
 			}
 			if err != nil {
@@ -261,12 +261,12 @@ func TestAuthAndRouteMatrix(t *testing.T) {
 				if err != nil {
 					t.Fatalf("Dial: %v", err)
 				}
-				defer tr.Close()
+				defer func() { _ = tr.Close() }()
 				sh, err := tr.OpenShell(t.Context(), transport.Size{Cols: 100, Rows: 30})
 				if err != nil {
 					t.Fatalf("OpenShell: %v", err)
 				}
-				defer sh.Close()
+				defer func() { _ = sh.Close() }()
 				if got := shellRun(t, sh, "echo TERM=$TERM; stty size"); got != "TERM=xterm-256color\n30 100" {
 					t.Errorf("shell environment = %q", got)
 				}
@@ -300,12 +300,12 @@ func TestInteractiveProgramsWork(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer tr.Close()
+	defer func() { _ = tr.Close() }()
 	sh, err := tr.OpenShell(t.Context(), transport.Size{Cols: 120, Rows: 40})
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer sh.Close()
+	defer func() { _ = sh.Close() }()
 
 	if _, err := exec.LookPath("top"); err == nil {
 		out := shellRun(t, sh, "top -b -n 1 | head -n 3")
@@ -399,7 +399,7 @@ func TestMaxSessionsOpensExtraConnection(t *testing.T) {
 	}
 	// Every pane works.
 	for i, p := range panes {
-		fmt.Fprintf(p, "echo pane-%d-ok\n", i)
+		_, _ = fmt.Fprintf(p, "echo pane-%d-ok\n", i)
 		want := fmt.Sprintf("pane-%d-ok", i)
 		readUntil(t, p, want, 10*time.Second)
 	}
@@ -459,7 +459,7 @@ func TestOutageReconnectKeepsPaneAndDropsInput(t *testing.T) {
 		t.Fatal(err)
 	}
 	waitConnected(t, p)
-	fmt.Fprint(p, "echo first-$((20+1))\n")
+	_, _ = fmt.Fprint(p, "echo first-$((20+1))\n")
 	readUntil(t, p, "first-21", 15*time.Second)
 
 	// The network goes dead: bytes stop moving but nothing closes, like a
@@ -492,7 +492,7 @@ func TestOutageReconnectKeepsPaneAndDropsInput(t *testing.T) {
 		}
 	}()
 	// Typing during the outage goes nowhere.
-	fmt.Fprintf(p, "touch %s\n", marker)
+	_, _ = fmt.Fprintf(p, "touch %s\n", marker)
 	if p.Dropped() == 0 {
 		t.Error("input during the outage was not counted as dropped")
 	}
@@ -518,7 +518,7 @@ func TestOutageReconnectKeepsPaneAndDropsInput(t *testing.T) {
 		t.Fatal("pane never reconnected")
 	}
 
-	fmt.Fprint(p, "echo second-$((40+2))\n")
+	_, _ = fmt.Fprint(p, "echo second-$((40+2))\n")
 	readUntil(t, p, "second-42", 15*time.Second)
 	if _, err := os.Stat(marker); err == nil {
 		t.Error("input typed during the outage was replayed after reconnecting")

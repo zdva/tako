@@ -5,6 +5,10 @@ run:
   timeout: 5m
   # Include test files
   tests: true
+  # Lint the integration and e2e suites too.
+  build-tags:
+    - integration
+    - e2e
 
 issues:
   max-issues-per-linter: 0 # 0 = unlimited (we want ALL issues)

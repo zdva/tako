@@ -88,13 +88,11 @@ func (s *Server) AuthorizeKey(t testing.TB, pub ssh.PublicKey) {
 // Stop kills sshd and its sessions.
 func (s *Server) Stop() {
 	if s.cmd.Process != nil {
-		_ = s.cmd.Process.Signal(os.Interrupt)
+		killGroup(s.cmd)
 	}
 	select {
 	case <-s.done:
 	case <-time.After(3 * time.Second):
-		_ = s.cmd.Process.Kill()
-		<-s.done
 	}
 }
 
@@ -268,6 +266,7 @@ func (s *Server) launch(t testing.TB, in install, cfg string) error {
 
 	cmd := exec.CommandContext(context.WithoutCancel(t.Context()), in.sshd, "-D", "-e", "-f", cfg)
 	cmd.Env = in.env
+	cmd.WaitDelay = time.Second // session processes keep stderr open
 	cmd.Stderr = &stderr
 	if os.Getenv("TAKO_SSHD_LOGLEVEL") != "" {
 		cmd.Stderr = io.MultiWriter(&stderr, os.Stderr)
