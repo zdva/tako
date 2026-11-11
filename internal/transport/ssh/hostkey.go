@@ -9,6 +9,7 @@ import (
 	"os"
 	"path/filepath"
 	"slices"
+	"strconv"
 	"sync"
 
 	gossh "golang.org/x/crypto/ssh"
@@ -200,4 +201,26 @@ func algorithmsOf(keyType string) []string {
 		return []string{gossh.KeyAlgoRSASHA512, gossh.KeyAlgoRSASHA256, gossh.KeyAlgoRSA}
 	}
 	return []string{keyType}
+}
+
+// Lines returns the trusted keys of the host at addr:port as known_hosts
+// lines, in the form OpenSSH looks them up, so they can be handed to another
+// machine that must trust exactly this server and no other.
+func (k *KnownHosts) Lines(addr string, port int) []string {
+	k.mu.Lock()
+	defer k.mu.Unlock()
+	data, err := os.ReadFile(k.path)
+	if err != nil {
+		return nil
+	}
+	name := knownhosts.Normalize(net.JoinHostPort(addr, strconv.Itoa(port)))
+	var lines []string
+	for line := range bytes.SplitSeq(data, []byte("\n")) {
+		_, hosts, key, _, _, err := gossh.ParseKnownHosts(line)
+		if err != nil || !slices.Contains(hosts, name) {
+			continue
+		}
+		lines = append(lines, knownhosts.Line([]string{name}, key))
+	}
+	return lines
 }
