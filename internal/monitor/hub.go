@@ -13,7 +13,7 @@ import (
 // Target is a machine the hub can measure.
 type Target struct {
 	Host model.ID
-	// OS picks the collector; empty means probe the machine first.
+	// OS is the saved system of the host, a hint only: the machine is probed.
 	OS   model.OSKind
 	Exec Exec
 	Ping func(ctx context.Context) (time.Duration, error)
@@ -126,14 +126,14 @@ func (h *Hub) Watch(t Target) {
 	h.wg.Go(func() { h.measure(ctx, w, t) })
 }
 
-// measure probes the OS if needed, then samples until ctx ends.
+// measure probes the OS, then samples until ctx ends.
 func (h *Hub) measure(ctx context.Context, w *watched, t Target) {
-	os := t.OS
-	if os == "" {
-		os = h.probe(ctx, t)
-		if ctx.Err() != nil {
-			return
-		}
+	// The host's saved system is only a hint: a wrong one (a Linux box saved
+	// as macOS) would never produce a reading, and the probe is one cheap
+	// command, so the machine is always asked.
+	os := h.probe(ctx, t)
+	if ctx.Err() != nil {
+		return
 	}
 	h.mu.Lock()
 	interval, paused := h.interval, h.paused
