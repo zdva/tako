@@ -1,0 +1,66 @@
+# Product specification (summary)
+
+The long-form design lives in [DESIGN.md](DESIGN.md) (interaction and visual
+spec, Chinese) and [TECH-PLAN.md](TECH-PLAN.md) (architecture and milestones,
+Chinese). This page is the short English version of *what Tako is for* and
+*what each milestone delivers*.
+
+## Who it is for
+
+People who look after several to dozens of servers (developers, SREs, GPU
+cluster users, small ops teams) and today juggle a terminal emulator, tmux,
+an SSH config and a pile of tabs. They want one calm window that shows many
+machines at once, survives flaky networks and is honest about credentials.
+
+## Principles
+
+1. Quiet, native look; the terminal content is the star.
+2. Coral means "synchronized / primary action" and nothing else.
+3. State is readable at a glance: synced, disconnected (amber), online (green),
+   with the same colour in block header, sidebar, minimap and status bar.
+4. The terminal theme follows the app (white terminal in light mode).
+5. No hidden surprises: no replay of keystrokes typed during an outage, no
+   silent acceptance of changed host keys, no secrets on disk.
+
+## Concepts
+
+- **Host**: a saved SSH target (address, user, auth methods, jump chain,
+  proxy, tags, host-key policy). Stored in `hosts.json`; secrets only by reference.
+- **Block**: one host (or the local machine) shown in the main grid, with one
+  or more **tabs** (shells).
+- **Workspace**: the set of open blocks, tabs, focus and window state; saved to
+  `session.json` and restored on start.
+- **Synchronized input**: keystrokes in the focused block are mirrored to the
+  blocks marked as synced.
+
+## Milestones
+
+| | Scope | Status |
+|---|---|---|
+| **M1** | Connections (all auth methods, jump hosts, proxies), terminals, adaptive grid, host sidebar, tabs, palette, `~/.ssh/config` import, resilient panes, session restore, EN/zh, light/dark | **Done** (v0.1.0-m1) |
+| M2 | Sync UI (capsule, all on/off, selection), minimap, draggable split layout with snapping, sync settings | Planned |
+| M3 | Per-block metrics (CPU, memory, disk, GPU) for Linux/macOS/Windows, monitor view, SFTP transfers | Planned |
+| M4 | Polish, more importers (Xshell, SecureCRT, Termius), packaging and release pipeline, signing | Planned |
+
+## M1 acceptance criteria
+
+1. Every auth × jump × proxy combination connects; `vim` and `top` are usable.
+2. A 60 s network outage shows the reconnect banner, keeps scrollback,
+   `Pane.Read` never reports EOF and input typed during the outage is not replayed.
+3. A changed host key is refused with a clear message.
+4. `~/.ssh/config` import handles 12+ hosts with `Include`, `ProxyJump`, `IdentityFile`.
+5. Nine idle blocks: ~0% CPU, RSS ≤ 100 MB, cold start ≤ 1 s.
+6. Quit and restart restores blocks and tabs and reconnects; after `kill -9`
+   recovery takes ≤ 1 s.
+7. Secrets are absent from `hosts.json`, `session.json`, logs and exports.
+8. Race tests, lint and `govulncheck` are green; core coverage ≥ 80%.
+9. GPU rendering baseline on real macOS and Windows hardware.
+
+Results for the current tag are in [CHANGELOG.md](../CHANGELOG.md) and
+[TESTING.md](TESTING.md).
+
+## Non-goals
+
+Code signing and installers (until M4), encodings other than UTF-8
+([ADR 0005](adr/0005-utf8-only.md)), tmux-style remote session persistence,
+a plugin system, cloud sync of hosts (a sync design exists for M2+ but is not committed to).
