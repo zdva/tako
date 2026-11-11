@@ -55,9 +55,11 @@ func load() {
 		}
 		tables[l] = m
 	}
+	tables[Pseudo] = pseudoTable(tables[English])
 }
 
-// New returns the bundle for a language. An unknown language gets English.
+// New returns the bundle for a language. An unknown language gets English;
+// Pseudo is the test language.
 func New(lang Language) (*Bundle, error) {
 	loadOnce.Do(load)
 	if errLoad != nil {

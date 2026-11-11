@@ -333,5 +333,8 @@
   "xfer.verified": "Verified",
   "xfer.viadirect": "direct",
   "xfer.viarelay": "via this computer",
-  "xfer.yesterday": "Yesterday %s"
+  "xfer.yesterday": "Yesterday %s",
+  "dur.sec": "%d s",
+  "dur.min": "%d min",
+  "dur.hourmin": "%d h %d min"
 }

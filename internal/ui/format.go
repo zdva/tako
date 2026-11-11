@@ -1,13 +1,13 @@
 package ui
 
 import (
-	"fmt"
 	"math"
 	"time"
 )
 
-// splitBytes writes a byte count as a number and a unit: "318", "GB".
-func splitBytes(n float64) (value, unit string) {
+// splitBytes writes a byte count as a number and a unit: "318", "GB", with
+// the decimal mark of the system's region.
+func (a *App) splitBytes(n float64) (value, unit string) {
 	units := []string{"B", "KB", "MB", "GB", "TB", "PB"}
 	i := 0
 	for n >= 1024 && i < len(units)-1 {
@@ -15,33 +15,34 @@ func splitBytes(n float64) (value, unit string) {
 		i++
 	}
 	if i == 0 || n >= 10 {
-		return fmt.Sprintf("%.0f", n), units[i]
+		return a.loc.Number(n, 0), units[i]
 	}
-	return fmt.Sprintf("%.1f", n), units[i]
+	return a.loc.Number(n, 1), units[i]
 }
 
 // humanBytes writes a byte count as "2.4 GB".
-func humanBytes(n float64) string {
-	v, u := splitBytes(n)
+func (a *App) humanBytes(n float64) string {
+	v, u := a.splitBytes(n)
 	return v + " " + u
 }
 
 // humanRate writes bytes per second as "46.8 MB/s".
-func humanRate(n float64) string {
-	v, u := splitBytes(n)
+func (a *App) humanRate(n float64) string {
+	v, u := a.splitBytes(n)
 	return v + " " + u + "/s"
 }
 
-// humanDuration writes a short span: "15 s", "3 min", "2 h 5 min".
-func humanDuration(d time.Duration) string {
+// humanDuration writes a short span: "15 s", "3 min", "2 h 5 min", in the
+// interface language.
+func (a *App) humanDuration(d time.Duration) string {
 	d = d.Round(time.Second)
 	switch {
 	case d < time.Minute:
-		return fmt.Sprintf("%d s", int(d/time.Second))
+		return a.T(kDurSec, int(d/time.Second))
 	case d < time.Hour:
-		return fmt.Sprintf("%d min", int(d/time.Minute))
+		return a.T(kDurMin, int(d/time.Minute))
 	default:
-		return fmt.Sprintf("%d h %d min", int(d/time.Hour), int(d%time.Hour/time.Minute))
+		return a.T(kDurHourMin, int(d/time.Hour), int(d%time.Hour/time.Minute))
 	}
 }
 

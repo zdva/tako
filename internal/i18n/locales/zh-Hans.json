@@ -333,5 +333,8 @@
   "xfer.verified": "校验通过",
   "xfer.viadirect": "直连",
   "xfer.viarelay": "经本机中转",
-  "xfer.yesterday": "昨天 %s"
+  "xfer.yesterday": "昨天 %s",
+  "dur.sec": "%d 秒",
+  "dur.min": "%d 分钟",
+  "dur.hourmin": "%d 小时 %d 分钟"
 }

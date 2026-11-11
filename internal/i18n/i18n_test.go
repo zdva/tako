@@ -3,7 +3,9 @@ package i18n_test
 import (
 	"regexp"
 	"slices"
+	"strings"
 	"testing"
+	"unicode/utf8"
 
 	"github.com/wei-dong/tako/internal/i18n"
 )
@@ -43,5 +45,30 @@ func TestT_MissingKeyReturnsKeyAndFormats(t *testing.T) {
 	}
 	if got := b.T("hosts.count", 3); got != "3 hosts" {
 		t.Fatalf("formatted = %q", got)
+	}
+}
+
+func TestPseudo_KeepsVerbsAndMarksEveryString(t *testing.T) {
+	en, ps := i18n.Must(i18n.English), i18n.Must(i18n.Pseudo)
+	if ps.Language() != i18n.Pseudo {
+		t.Fatalf("language %q", ps.Language())
+	}
+	if slices.Contains(i18n.Languages(), i18n.Pseudo) {
+		t.Error("the pseudo-locale is offered to users")
+	}
+	for _, k := range i18n.Keys(i18n.English) {
+		e, p := en.T(k), ps.T(k)
+		if !strings.HasPrefix(p, "⟦") || !strings.HasSuffix(p, "⟧") {
+			t.Errorf("%s: %q is not wrapped", k, p)
+		}
+		if !slices.Equal(verb.FindAllString(e, -1), verb.FindAllString(p, -1)) {
+			t.Errorf("%s: verbs changed: %q -> %q", k, e, p)
+		}
+		if len(strings.TrimSpace(e)) > 6 && utf8.RuneCountInString(p) < utf8.RuneCountInString(e)+2 {
+			t.Errorf("%s: %q did not grow", k, p)
+		}
+	}
+	if got := ps.T("hosts.count", 3); !strings.Contains(got, "3") || strings.Contains(got, "%!") {
+		t.Errorf("formatted = %q", got)
 	}
 }

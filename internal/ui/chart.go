@@ -51,7 +51,7 @@ func (a *App) paintChart(p *ui.Painter, r ui.Rect, percent bool, samples []monit
 		if percent {
 			return fmt.Sprintf("%d%%", pct(v))
 		}
-		val, unit := splitBytes(v)
+		val, unit := a.splitBytes(v)
 		return val + " " + unit[:1]
 	}
 	// Grid and value labels.

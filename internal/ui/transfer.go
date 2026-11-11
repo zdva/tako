@@ -430,7 +430,7 @@ func (a *App) fileRow(c *ui.Context, p *xferPane, e transfer.Entry, source, pare
 		if !parent {
 			size := ""
 			if !e.Dir {
-				size = humanBytes(float64(e.Size))
+				size = a.humanBytes(float64(e.Size))
 			}
 			a.caption(c, size).Width(64)
 			a.caption(c, a.when(e.ModTime)).Width(96)
@@ -454,11 +454,11 @@ func (a *App) when(t time.Time) string {
 	now := time.Now()
 	switch {
 	case sameDay(t, now):
-		return a.T(kXferToday, t.Format("15:04"))
+		return a.T(kXferToday, a.loc.Clock(t))
 	case sameDay(t, now.AddDate(0, 0, -1)):
-		return a.T(kXferYesterday, t.Format("15:04"))
+		return a.T(kXferYesterday, a.loc.Clock(t))
 	}
-	return t.Format("2006-01-02")
+	return a.loc.Date(t)
 }
 
 func sameDay(a, b time.Time) bool {
@@ -478,7 +478,7 @@ func (a *App) transferActions(c *ui.Context) {
 	ui.Row(c).Gap(14).AlignItems(ui.Center).Children(func() {
 		summary := a.T(kXferNoneSelected)
 		if len(sel) > 0 {
-			summary = a.T(kXferSelected, len(sel), humanBytes(float64(total)))
+			summary = a.T(kXferSelected, len(sel), a.humanBytes(float64(total)))
 		}
 		ui.Column(c).Grow(1).MinWidth(0).Gap(2).Children(func() {
 			ui.Text(c, summary).Bold().FontSize(13).Ellipsis("…").SingleLine().Key("xfer-summary")
@@ -602,7 +602,7 @@ func (a *App) jobRow(c *ui.Context, j transfer.JobInfo) {
 			ui.Row(c).Gap(8).AlignItems(ui.Center).Children(func() {
 				ui.Text(c, j.Name).Bold().FontSize(13).Ellipsis("…").SingleLine().MinWidth(0)
 				if j.Total > 0 {
-					a.caption(c, humanBytes(float64(j.Total)))
+					a.caption(c, a.humanBytes(float64(j.Total)))
 				}
 				a.pill(c, tag, col, col.Alpha(0.14))
 				if j.Resumed {
@@ -622,7 +622,7 @@ func (a *App) jobRow(c *ui.Context, j transfer.JobInfo) {
 func (a *App) jobStatus(c *ui.Context, j transfer.JobInfo) {
 	q := a.d.Transfers
 	if j.State == transfer.StateAsking && j.Conflict != nil {
-		a.caption(c, a.T(kXferAsk, path.Base(j.Conflict.Path), humanBytes(float64(j.Conflict.SrcSize)), humanBytes(float64(j.Conflict.DstSize)))).
+		a.caption(c, a.T(kXferAsk, path.Base(j.Conflict.Path), a.humanBytes(float64(j.Conflict.SrcSize)), a.humanBytes(float64(j.Conflict.DstSize)))).
 			Ellipsis("…").SingleLine().TextColor(a.tk.Amber)
 		ui.Row(c).Gap(6).Children(func() {
 			for _, o := range []struct {
@@ -651,12 +651,12 @@ func (a *App) jobStatus(c *ui.Context, j transfer.JobInfo) {
 	case transfer.StateQueued:
 		text = a.T(kXferQueued)
 	case transfer.StateRunning:
-		text = a.T(kXferProgress, humanBytes(float64(j.Done)), humanBytes(float64(j.Total)))
+		text = a.T(kXferProgress, a.humanBytes(float64(j.Done)), a.humanBytes(float64(j.Total)))
 		if eta := j.ETA(); eta > 0 {
-			text += " · " + a.T(kXferLeft, humanDuration(eta))
+			text += " · " + a.T(kXferLeft, a.humanDuration(eta))
 		}
 		if j.Speed > 0 {
-			text += " · " + humanRate(j.Speed)
+			text += " · " + a.humanRate(j.Speed)
 		}
 		if j.Attempt > 0 {
 			text = a.T(kXferRetrying, j.Attempt)
@@ -668,12 +668,12 @@ func (a *App) jobStatus(c *ui.Context, j transfer.JobInfo) {
 		if j.Reason == transfer.ReasonNetwork {
 			key = kXferNetLost
 		}
-		text = a.T(key, humanBytes(float64(j.Resumable)))
+		text = a.T(key, a.humanBytes(float64(j.Resumable)))
 	case transfer.StateDone:
 		barCol, frac = a.tk.Green, 1
 		text = a.T(kXferDoneJustNow)
 		if ago := time.Since(j.Finished); ago >= 10*time.Second {
-			text = a.T(kXferDoneAgo, humanDuration(ago))
+			text = a.T(kXferDoneAgo, a.humanDuration(ago))
 		}
 		text += " · " + a.verifiedText(j)
 		if j.Skipped > 0 {

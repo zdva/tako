@@ -115,6 +115,8 @@ type App struct {
 	// them, since the Tester's pointer events have none.
 	heldMods ui.Modifiers
 	look     termLook
+	// loc formats numbers and dates as the system region does.
+	loc i18n.Locale
 }
 
 // New returns the window's state.
@@ -124,6 +126,7 @@ func New(d Deps) *App {
 	a.mm.menuIdx, a.mm.hover = -1, -1
 	v := d.Settings.Values()
 	a.tr = i18n.Must(v.ResolveLanguage(d.Locale))
+	a.loc = i18n.ParseLocale(d.Locale)
 	return a
 }
 

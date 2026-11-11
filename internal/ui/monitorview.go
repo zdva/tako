@@ -160,9 +160,9 @@ func (a *App) statCards(c *ui.Context, p monitor.Sample, info monitor.Info, gpus
 	}
 	ui.Row(c).Key("mon-cards").Gap(12).Children(func() {
 		a.card(c, "cpu", a.tk.Blue, a.T(kMonCardCPU), strconv.Itoa(pct(p.CPU)), "%", a.T(kMonLoad, p.Load[0], cores))
-		memV, memU := splitBytes(float64(p.MemUsed))
+		memV, memU := a.splitBytes(float64(p.MemUsed))
 		a.card(c, "mem", a.tk.Purple, a.T(kMonCardMem), memV, memU,
-			a.T(kMonMemOf, humanBytes(float64(p.MemTotal)), pct(p.MemPercent())))
+			a.T(kMonMemOf, a.humanBytes(float64(p.MemTotal)), pct(p.MemPercent())))
 		if gpus {
 			peak := 0.0
 			for _, g := range p.GPUs {
@@ -172,16 +172,16 @@ func (a *App) statCards(c *ui.Context, p monitor.Sample, info monitor.Info, gpus
 				a.T(kMonGPUAvg, len(p.GPUs), pct(peak)))
 			used, total := p.GPUMem()
 			a.card(c, "vram", a.tk.Red, a.T(kMonCardVRAM), strconv.Itoa(pct(percentOf(float64(used), float64(total)))), "%",
-				humanBytes(float64(used))+" / "+humanBytes(float64(total)))
+				a.humanBytes(float64(used))+" / "+a.humanBytes(float64(total)))
 		}
-		ioV, ioU := splitBytes(p.DiskRead + p.DiskWrite)
+		ioV, ioU := a.splitBytes(p.DiskRead + p.DiskWrite)
 		sub := a.T(kMonIOTotal)
 		if p.DiskSplit {
-			sub = a.T(kMonRW, humanBytes(p.DiskRead), humanBytes(p.DiskWrite))
+			sub = a.T(kMonRW, a.humanBytes(p.DiskRead), a.humanBytes(p.DiskWrite))
 		}
 		a.card(c, "io", a.tk.Amber, a.T(kMonCardDisk), ioV, ioU+"/s", sub)
-		netV, netU := splitBytes(p.NetRx + p.NetTx)
-		a.card(c, "net", a.tk.Green, a.T(kMonCardNet), netV, netU+"/s", a.T(kMonDownUp, humanRate(p.NetRx), humanRate(p.NetTx)))
+		netV, netU := a.splitBytes(p.NetRx + p.NetTx)
+		a.card(c, "net", a.tk.Green, a.T(kMonCardNet), netV, netU+"/s", a.T(kMonDownUp, a.humanRate(p.NetRx), a.humanRate(p.NetTx)))
 	})
 }
 
@@ -256,7 +256,7 @@ func (a *App) diskBars(c *ui.Context, p monitor.Sample) {
 				ui.Row(c).Grow(1).Height(6).Radius(3).Background(a.tk.Surface3).Clip().Children(func() {
 					ui.Box(c).BasisPercent(float32(d.Percent())).Height(6).Background(a.level(d.Percent()))
 				})
-				ui.Text(c, fmt.Sprintf("%s / %s · %d%%", humanBytes(float64(d.Used)), humanBytes(float64(d.Total)), pct(d.Percent()))).
+				ui.Text(c, fmt.Sprintf("%s / %s · %d%%", a.humanBytes(float64(d.Used)), a.humanBytes(float64(d.Total)), pct(d.Percent()))).
 					FontSize(11.5).TextColor(a.tk.Text2).Width(190).NoWrap()
 			})
 		}
@@ -320,7 +320,7 @@ func (a *App) gpuTable(c *ui.Context, p monitor.Sample) {
 					}
 				}
 				ui.Text(c, temp).FontSize(11.5).Bold().TextColor(tempCol).Width(42).NoWrap()
-				ui.Text(c, humanBytes(float64(g.MemUsed))+" / "+humanBytes(float64(g.MemTotal))).
+				ui.Text(c, a.humanBytes(float64(g.MemUsed))+" / "+a.humanBytes(float64(g.MemTotal))).
 					FontSize(11).TextColor(a.tk.Text2).Width(108).NoWrap()
 			})
 		}
