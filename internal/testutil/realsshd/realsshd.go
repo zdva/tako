@@ -247,6 +247,11 @@ func writeConfig(t testing.TB, in install, s *Server, opts Options) string {
 		fmt.Fprintf(&b, "SshdSessionPath %s\nSshdAuthPath %s\nSubsystem sftp %s\n",
 			filepath.Join(lib, "sshd-session"), filepath.Join(lib, "sshd-auth"), filepath.Join(lib, "sftp-server"))
 	}
+	if in.root != "" {
+		// The portable client tools need their libraries; sessions find them
+		// through wrapper scripts so no other command is affected.
+		fmt.Fprintf(&b, "SetEnv PATH=%s\n", wrapTools(t, in, s.Dir)+":/usr/local/bin:/usr/bin:/bin")
+	}
 	if opts.MaxSessions > 0 {
 		fmt.Fprintf(&b, "MaxSessions %d\n", opts.MaxSessions)
 	}
@@ -304,4 +309,19 @@ func freePort(t testing.TB) int {
 	must(t, err)
 	defer func() { _ = ln.Close() }()
 	return ln.Addr().(*net.TCPAddr).Port //nolint:forcetypeassert // a TCP listener's address is a *net.TCPAddr
+}
+
+// wrapTools writes scripts for the portable install's client programs into a
+// bin directory under dir and returns it.
+func wrapTools(t testing.TB, in install, dir string) string {
+	t.Helper()
+	bin := filepath.Join(dir, "bin")
+	must(t, os.MkdirAll(bin, 0o755))
+	lib := filepath.Join(in.root, "usr", "lib", "x86_64-linux-gnu")
+	for _, name := range []string{"ssh", "scp", "sftp", "ssh-add"} {
+		real := filepath.Join(in.root, "usr", "bin", name)
+		script := fmt.Sprintf("#!/bin/sh\nLD_LIBRARY_PATH=%s exec %s \"$@\"\n", lib, real)
+		must(t, os.WriteFile(filepath.Join(bin, name), []byte(script), 0o755))
+	}
+	return bin
 }

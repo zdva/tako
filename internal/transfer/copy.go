@@ -7,6 +7,7 @@ import (
 	"io"
 	"os"
 	"strings"
+	"sync"
 	"sync/atomic"
 
 	"github.com/wei-dong/tako/internal/transport"
@@ -165,21 +166,23 @@ func pump(ctx context.Context, c *copyJob, in, out transport.File) (int64, error
 }
 
 // relay runs a remote file's parallel reads into a remote file's parallel
-// writes with no buffer between them but the pipe's hand-off.
+// writes. A short queue of buffers between them lets each side keep its
+// requests in flight while the other is busy; it is the only memory the copy
+// holds besides SFTP's own windows.
 func relay(ctx context.Context, c *copyJob, wt io.WriterTo, rf io.ReaderFrom) (int64, error) {
-	pr, pw := io.Pipe()
+	p := newBufPipe()
 	type result struct {
 		n   int64
 		err error
 	}
 	readDone := make(chan result, 1)
 	go func() {
-		n, err := wt.WriteTo(&countWriter{ctx: ctx, w: pw, n: nil})
-		_ = pw.CloseWithError(err) // nil reads as io.EOF
+		n, err := wt.WriteTo(&countWriter{ctx: ctx, w: p, n: nil})
+		p.closeWrite(err) // nil reads as io.EOF
 		readDone <- result{n, err}
 	}()
-	n, werr := rf.ReadFrom(&countReader{ctx: ctx, r: pr, n: c.cur})
-	_ = pr.CloseWithError(errors.Join(werr, io.ErrClosedPipe))
+	n, werr := rf.ReadFrom(&countReader{ctx: ctx, r: p, n: c.cur})
+	p.closeRead(errors.Join(werr, io.ErrClosedPipe))
 	r := <-readDone
 	if werr != nil {
 		return n, wrapIO("writing", c.dstPath, werr)
@@ -188,6 +191,94 @@ func relay(ctx context.Context, c *copyJob, wt io.WriterTo, rf io.ReaderFrom) (i
 		return n, wrapIO("reading", c.srcPath, r.err)
 	}
 	return n, nil
+}
+
+const (
+	// pipeDepth is how many buffers may wait between reader and writer.
+	pipeDepth = 8
+	// pipeChunk is the size of one buffer.
+	pipeChunk = 256 << 10
+)
+
+var chunkPool = sync.Pool{New: func() any { b := make([]byte, 0, pipeChunk); return &b }}
+
+// bufPipe is io.Pipe with a bounded queue of buffers in between.
+type bufPipe struct {
+	ch   chan *[]byte
+	done chan struct{} // closed when the reading side gives up
+	once sync.Once
+	mu   sync.Mutex
+	rerr error // why the reader gave up
+	werr error // how the writer ended; nil is io.EOF
+	cur  *[]byte
+	off  int
+}
+
+func newBufPipe() *bufPipe {
+	return &bufPipe{ch: make(chan *[]byte, pipeDepth), done: make(chan struct{})}
+}
+
+// Write copies p into queued buffers, blocking while the queue is full.
+func (b *bufPipe) Write(p []byte) (int, error) {
+	total := 0
+	for len(p) > 0 {
+		chunk := chunkPool.Get().(*[]byte) //nolint:forcetypeassert // the pool only holds *[]byte
+		n := min(len(p), pipeChunk)
+		*chunk = append((*chunk)[:0], p[:n]...)
+		select {
+		case b.ch <- chunk:
+		case <-b.done:
+			chunkPool.Put(chunk)
+			b.mu.Lock()
+			defer b.mu.Unlock()
+			return total, b.rerr
+		}
+		p = p[n:]
+		total += n
+	}
+	return total, nil
+}
+
+// Read serves the queued buffers in order.
+func (b *bufPipe) Read(p []byte) (int, error) {
+	if b.cur == nil {
+		chunk, ok := <-b.ch
+		if !ok {
+			b.mu.Lock()
+			defer b.mu.Unlock()
+			if b.werr != nil {
+				return 0, b.werr
+			}
+			return 0, io.EOF
+		}
+		b.cur, b.off = chunk, 0
+	}
+	n := copy(p, (*b.cur)[b.off:])
+	b.off += n
+	if b.off == len(*b.cur) {
+		chunkPool.Put(b.cur)
+		b.cur = nil
+	}
+	return n, nil
+}
+
+// closeWrite ends the stream; err (nil for a clean end) is what Read reports
+// once the queue is empty.
+func (b *bufPipe) closeWrite(err error) {
+	b.mu.Lock()
+	b.werr = err
+	b.mu.Unlock()
+	close(b.ch)
+}
+
+// closeRead makes Write fail with err.
+func (b *bufPipe) closeRead(err error) {
+	b.once.Do(func() {
+		b.mu.Lock()
+		b.rerr = err
+		b.mu.Unlock()
+		close(b.done)
+	})
 }
 
 func wrapIO(verb, path string, err error) error {

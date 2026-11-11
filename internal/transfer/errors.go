@@ -40,7 +40,7 @@ func isNetwork(err error) bool {
 		}
 	}
 	msg := strings.ToLower(err.Error())
-	for _, s := range []string{"connection lost", "connection reset", "broken pipe", "use of closed", "not connected", "connection closed", "keepalive", "i/o timeout"} {
+	for _, s := range []string{"connection lost", "connection reset", "broken pipe", "use of closed", "not connected", "connection closed", "keepalive", "exited without exit status", "i/o timeout"} {
 		if strings.Contains(msg, s) {
 			return true
 		}

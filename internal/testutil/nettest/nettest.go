@@ -18,6 +18,7 @@ import (
 	"sync"
 	"sync/atomic"
 	"testing"
+	"time"
 
 	"golang.org/x/crypto/ssh"
 	"golang.org/x/crypto/ssh/agent"
@@ -213,6 +214,47 @@ type Relay struct {
 	paused bool
 	resume chan struct{}
 	conns  map[net.Conn]struct{}
+	// up and down limit bytes per second in each direction, over all
+	// connections; zero is unlimited.
+	up, down limiter
+}
+
+// limiter spaces bytes out to a rate.
+type limiter struct {
+	mu   sync.Mutex
+	rate float64
+	next time.Time
+}
+
+func (l *limiter) set(rate float64) {
+	l.mu.Lock()
+	l.rate = rate
+	l.mu.Unlock()
+}
+
+func (l *limiter) wait(n int) {
+	l.mu.Lock()
+	if l.rate <= 0 {
+		l.mu.Unlock()
+		return
+	}
+	now := time.Now()
+	if now.Sub(l.next) > 50*time.Millisecond { // idle for a while: no saved-up credit beyond a short burst
+		l.next = now.Add(-50 * time.Millisecond)
+	}
+	at := l.next
+	l.next = at.Add(time.Duration(float64(n) / l.rate * float64(time.Second)))
+	l.mu.Unlock()
+	if d := time.Until(at); d > 0 {
+		time.Sleep(d)
+	}
+}
+
+// SetRate limits the link to bytesPerSec in each direction (0 removes the
+// limit), like a network of that capacity.
+func (r *Relay) SetRate(bytesPerSec float64) {
+	r.up.set(bytesPerSec)
+	r.down.set(bytesPerSec)
 }
 
 // StartRelay relays 127.0.0.1:<port> to target.
@@ -241,12 +283,13 @@ func (r *Relay) handle(c net.Conn) {
 		r.mu.Unlock()
 	}()
 	done := make(chan struct{}, 2)
-	pipe := func(dst, src net.Conn) {
+	pipe := func(dst, src net.Conn, lim *limiter) {
 		buf := make([]byte, 32*1024)
 		for {
 			n, err := src.Read(buf)
 			if n > 0 {
 				r.waitResume()
+				lim.wait(n)
 				if _, werr := dst.Write(buf[:n]); werr != nil {
 					break
 				}
@@ -258,8 +301,8 @@ func (r *Relay) handle(c net.Conn) {
 		_ = dst.Close()
 		done <- struct{}{}
 	}
-	go pipe(up, c)
-	go pipe(c, up)
+	go pipe(up, c, &r.up)
+	go pipe(c, up, &r.down)
 	<-done
 	<-done
 }
@@ -325,6 +368,23 @@ type Agent struct {
 	Socket string
 	// Signer is the key the agent holds; its public key must be authorized.
 	Signer ssh.Signer
+
+	keyring agent.Agent
+	// Served counts connections the agent has accepted.
+	Served atomic.Int32
+}
+
+// AddKey puts another private key (an OpenSSH PEM file's contents) in the
+// agent.
+func (a *Agent) AddKey(t testing.TB, pemData []byte) {
+	t.Helper()
+	key, err := ssh.ParseRawPrivateKey(pemData)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := a.keyring.Add(agent.AddedKey{PrivateKey: key, Comment: "tako-test-extra"}); err != nil {
+		t.Fatal(err)
+	}
 }
 
 // StartAgent starts an agent holding a fresh Ed25519 key.
@@ -347,10 +407,12 @@ func StartAgent(t testing.TB) *Agent {
 	if err != nil {
 		t.Skipf("unix sockets unavailable: %v", err)
 	}
+	a := &Agent{Socket: sock, Signer: signer, keyring: keyring}
 	serve(t, ln, func(c net.Conn) {
+		a.Served.Add(1)
 		_ = agent.ServeAgent(keyring, c) // it returns io.EOF when the client hangs up
 	})
-	return &Agent{Socket: sock, Signer: signer}
+	return a
 }
 
 // Dial opens a connection to the agent, for ssh.Dialer.AgentConn.

@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"math/rand/v2"
-	"net"
 	"sync"
 	"time"
 
@@ -142,10 +141,6 @@ func New(opts Options) *Session {
 // ErrNotConnected is returned by Exec when no connection is up.
 var ErrNotConnected = errors.New("not connected")
 
-// ErrNoAgentForwarding is returned by ExecAgent when the transport cannot
-// forward the agent.
-var ErrNoAgentForwarding = errors.New("this connection cannot forward the agent")
-
 // ErrClosed is returned after Close.
 var ErrClosed = errors.New("session closed")
 
@@ -279,19 +274,6 @@ func (s *Session) Ping(ctx context.Context) (time.Duration, error) {
 		return 0, ErrNotConnected
 	}
 	return t.Ping(ctx) //nolint:wrapcheck // the transport's error already names the failure
-}
-
-// ExecAgent runs a command with the SSH agent forwarded for its length only.
-func (s *Session) ExecAgent(ctx context.Context, cmd string, agent func() (net.Conn, error)) ([]byte, error) {
-	t := s.primary()
-	if t == nil {
-		return nil, ErrNotConnected
-	}
-	ae, ok := t.(transport.AgentExecer)
-	if !ok {
-		return nil, ErrNoAgentForwarding
-	}
-	return ae.ExecAgent(ctx, cmd, agent) //nolint:wrapcheck // the transport's error already names the failure
 }
 
 // Reconnect restarts connecting now: it skips a pending backoff wait, retries

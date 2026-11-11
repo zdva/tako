@@ -200,6 +200,11 @@ func (t *Transport) ExecAgent(ctx context.Context, cmd string, agent func() (net
 	defer func() { _ = sess.Close() }()
 	stop := context.AfterFunc(ctx, func() { _ = sess.Close() })
 	defer stop()
+	// A pty makes the command die with the channel (SIGHUP) instead of
+	// finishing a copy nobody is waiting for.
+	if err := sess.RequestPty("dumb", 24, 200, gossh.TerminalModes{gossh.ECHO: 0}); err != nil {
+		return nil, classifyChannel(fmt.Errorf("requesting a pty: %w", err))
+	}
 	ok, err := sess.SendRequest("auth-agent-req@openssh.com", true, nil)
 	if err != nil || !ok {
 		return nil, fmt.Errorf("the server refused agent forwarding: %w", errors.Join(err, errAgentRefused))
