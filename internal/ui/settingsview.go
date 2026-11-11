@@ -141,7 +141,7 @@ func (a *App) settingsNav(c *ui.Context) {
 			} {
 				ui.SidebarItem(c, it.id, it.icon, a.pageTitle(it.id))
 			}
-		}).Label(a.T(kSettings)).Grow(1)
+		}).Label(a.T(kSettings)).Grow(1).Background(a.tk.Sidebar)
 	})
 	st.page = page
 }
@@ -230,39 +230,47 @@ func (a *App) schemeGrid(c *ui.Context, t settings.Terminal) {
 	for _, s := range t.Custom {
 		cards = append(cards, card{id: s.ID, name: s.Name, sc: s, custom: true})
 	}
-	ui.Row(c).Key("schemes").Wrap().Gap(10).Children(func() {
-		for _, cd := range cards {
-			sel := cd.id == t.Scheme
-			border, bw := a.tk.Border, float32(1)
-			if sel {
-				border, bw = a.tk.Accent, 2
-			}
-			box := ui.Column(c).Key("scheme-"+cd.id).Width(156).Gap(6).Padding(6).Radius(10).Background(a.tk.Surface2).
-				Border(bw, border).Cursor(ui.CursorPointer).Focusable().Role(ui.RoleRadio).AccessSelected(sel).Label(cd.name)
-			box.Children(func() {
-				a.schemePreview(c, cd.sc, cd.id == scheme.Default)
-				ui.Text(c, cd.name).FontSize(12).Bold().NoWrap().Ellipsis("…")
+	const perRow = 3
+	ui.Column(c).Key("schemes").Gap(10).Children(func() {
+		for row := range slices.Chunk(cards, perRow) {
+			ui.Row(c).Key("scheme-row-" + row[0].id).Gap(10).Children(func() {
+				for _, cd := range row {
+					a.schemeCard(c, t, cd.id, cd.name, cd.sc, cd.custom)
+				}
 			})
-			if box.Clicked() {
-				id := cd.id
-				a.setPref(func(x *settings.Values) { x.Terminal.Scheme = id })
-			}
-			if cd.custom {
-				box.ContextMenu(func(m *ui.Menu) {
-					if m.Item(a.T(kSchemeRemove)).Chosen() {
-						id := cd.id
-						a.setPref(func(x *settings.Values) {
-							x.Terminal.Custom = slices.DeleteFunc(slices.Clone(x.Terminal.Custom), func(s scheme.Scheme) bool { return s.ID == id })
-							if x.Terminal.Scheme == id {
-								x.Terminal.Scheme = scheme.Default
-							}
-						})
-					}
-				})
-			}
 		}
 	})
 	a.caption(c, a.T(kSchemeHint))
+}
+
+// schemeCard is one swatch of the grid.
+func (a *App) schemeCard(c *ui.Context, t settings.Terminal, id, name string, sc scheme.Scheme, custom bool) {
+	sel := id == t.Scheme
+	border, bw := a.tk.Border, float32(1)
+	if sel {
+		border, bw = a.tk.Accent, 2
+	}
+	box := ui.Column(c).Key("scheme-"+id).Width(164).Gap(6).Padding(6).Radius(10).Background(a.tk.Surface2).
+		Border(bw, border).Cursor(ui.CursorPointer).Focusable().Role(ui.RoleRadio).AccessSelected(sel).Label(name)
+	box.Children(func() {
+		a.schemePreview(c, sc, id == scheme.Default)
+		ui.Text(c, name).FontSize(12).Bold().NoWrap().Ellipsis("…")
+	})
+	if box.Clicked() {
+		a.setPref(func(x *settings.Values) { x.Terminal.Scheme = id })
+	}
+	if custom {
+		box.ContextMenu(func(m *ui.Menu) {
+			if m.Item(a.T(kSchemeRemove)).Chosen() {
+				a.setPref(func(x *settings.Values) {
+					x.Terminal.Custom = slices.DeleteFunc(slices.Clone(x.Terminal.Custom), func(s scheme.Scheme) bool { return s.ID == id })
+					if x.Terminal.Scheme == id {
+						x.Terminal.Scheme = scheme.Default
+					}
+				})
+			}
+		})
+	}
 }
 
 func hexOf(c ui.Color) string {

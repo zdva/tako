@@ -87,3 +87,8 @@ func (a *App) Level(p float64) string {
 
 // PaneFolders are the folders the transfer sheet's source and target show.
 func (a *App) PaneFolders() (src, dst string) { return a.xfer.src.path, a.xfer.dst.path }
+
+// OpenSettings opens the settings window on a page ("" for the first).
+func (a *App) OpenSettings(page string) {
+	a.settings.open, a.settings.page = true, page
+}
