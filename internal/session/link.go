@@ -247,12 +247,11 @@ func (l *link) notice(ev Event) []byte {
 // runStart types the start directory and command into a pane's very first
 // shell.
 func (l *link) runStart(p *Pane) {
-	o := l.s.opts
-	if o.StartDir != "" {
-		_, _ = p.Write([]byte("cd " + shellQuote(o.StartDir) + "\n")) //nolint:errcheck // Pane.Write does not fail while open
+	if p.startDir != "" {
+		_, _ = p.Write([]byte("cd " + shellQuote(p.startDir) + "\n")) //nolint:errcheck // Pane.Write does not fail while open
 	}
-	if o.StartCmd != "" {
-		_, _ = p.Write([]byte(o.StartCmd + "\n")) //nolint:errcheck // Pane.Write does not fail while open
+	if p.startCmd != "" {
+		_, _ = p.Write([]byte(p.startCmd + "\n")) //nolint:errcheck // Pane.Write does not fail while open
 	}
 }
 

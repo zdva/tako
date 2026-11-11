@@ -22,9 +22,10 @@ type Pane struct {
 	pending []byte // unread tail of the last output chunk
 	exited  bool   // the remote shell ended on its own
 
-	started atomic.Bool // a shell has been attached at least once
-	dropped atomic.Uint64
-	onDrop  atomic.Pointer[func()]
+	startDir, startCmd string      // typed into the first shell only
+	started            atomic.Bool // a shell has been attached at least once
+	dropped            atomic.Uint64
+	onDrop             atomic.Pointer[func()]
 }
 
 func newPane(size transport.Size) *Pane {

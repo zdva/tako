@@ -189,12 +189,19 @@ func (s *Session) setState(l *link, st StateChange) {
 // when the transport is up, so a session being restored can show its panes
 // while they connect.
 func (s *Session) OpenPane(size transport.Size) (*Pane, error) {
+	return s.OpenPaneAt(size, s.opts.StartDir, s.opts.StartCmd)
+}
+
+// OpenPaneAt is OpenPane with its own start directory and command, which run
+// in the pane's first shell only (a restored tab returns to where it was).
+func (s *Session) OpenPaneAt(size transport.Size, dir, cmd string) (*Pane, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	if s.closed {
 		return nil, ErrClosed
 	}
 	p := newPane(size)
+	p.startDir, p.startCmd = dir, cmd
 	s.panesAll = append(s.panesAll, p)
 	s.assignLocked(p)
 	return p, nil

@@ -316,7 +316,8 @@ func (s *Server) serveSession(ctx context.Context, ch ssh.Channel, reqs <-chan *
 	}
 }
 
-// echoShell prints a prompt and echoes what is typed, recording every byte.
+// echoShell prints a prompt and echoes what is typed, recording every byte;
+// Ctrl-D ends it.
 func (s *Server) echoShell(ctx context.Context, ch ssh.Channel) {
 	prompt := "[" + s.opts.Name + "] $ "
 	_, _ = io.WriteString(ch, prompt)
@@ -327,6 +328,9 @@ func (s *Server) echoShell(ctx context.Context, ch ssh.Channel) {
 			s.mu.Lock()
 			s.typed.Write(buf[:n])
 			s.mu.Unlock()
+			if bytes.IndexByte(buf[:n], 4) >= 0 {
+				return // Ctrl-D ends the shell, as in a real one
+			}
 			out := bytes.ReplaceAll(buf[:n], []byte("\r"), []byte("\r\n"+prompt))
 			_, _ = ch.Write(out)
 		}
