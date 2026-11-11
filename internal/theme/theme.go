@@ -23,6 +23,12 @@ type Tokens struct {
 	Green, Amber, Red              ui.Color
 	Blue, Purple, Teal             ui.Color
 	Scrim                          ui.Color
+	// SyncBorder is the 1px border of a block that takes part in input sync.
+	SyncBorder ui.Color
+	// Glass3 is the minimap panel's surface; its alpha is scaled down while the
+	// panel is at rest, so it is translucent then and opaque when hovered or
+	// dragged (DESIGN.md, the Final section).
+	Glass3 ui.Color
 
 	TermBg, TermFg, TermDim ui.Color
 	TermRed, TermGreen      ui.Color
@@ -53,8 +59,10 @@ func Light() Tokens {
 		Accent: Hex("#EE6A5B"), AccentSoft: ui.RGBA(238, 106, 91, 0.11), AccentRing: ui.RGBA(238, 106, 91, 0.30),
 		Green: Hex("#1EA672"), Amber: Hex("#E39A12"), Red: Hex("#E5484D"),
 		Blue: Hex("#3B7BF6"), Purple: Hex("#8A63D2"), Teal: Hex("#0FA3B1"),
-		Scrim:  ui.RGBA(20, 20, 28, 0.28),
-		TermBg: Hex("#FFFFFF"), TermFg: Hex("#2A2A30"), TermDim: Hex("#9A9AA6"),
+		Scrim:      ui.RGBA(20, 20, 28, 0.28),
+		SyncBorder: ui.RGBA(238, 106, 91, 0.55),
+		Glass3:     ui.RGBA(255, 255, 255, 0.97),
+		TermBg:     Hex("#FFFFFF"), TermFg: Hex("#2A2A30"), TermDim: Hex("#9A9AA6"),
 		TermRed: Hex("#D3403F"), TermGreen: Hex("#1F8F50"), TermYellow: Hex("#A56A00"),
 		TermBlue: Hex("#2F6BE0"), TermMagenta: Hex("#A33FB5"), TermCyan: Hex("#0C8C99"),
 	}
@@ -71,8 +79,10 @@ func Dark() Tokens {
 		Accent: Hex("#FF7B6A"), AccentSoft: ui.RGBA(255, 123, 106, 0.15), AccentRing: ui.RGBA(255, 123, 106, 0.38),
 		Green: Hex("#3DD68C"), Amber: Hex("#F5B83D"), Red: Hex("#FF6369"),
 		Blue: Hex("#5B9BFF"), Purple: Hex("#B18CFF"), Teal: Hex("#3CC9D6"),
-		Scrim:  ui.RGBA(0, 0, 0, 0.45),
-		TermBg: Hex("#151517"), TermFg: Hex("#D8D8DE"), TermDim: Hex("#6E6E78"),
+		Scrim:      ui.RGBA(0, 0, 0, 0.45),
+		SyncBorder: ui.RGBA(255, 123, 106, 0.60),
+		Glass3:     ui.RGBA(33, 33, 36, 0.97),
+		TermBg:     Hex("#151517"), TermFg: Hex("#D8D8DE"), TermDim: Hex("#6E6E78"),
 		TermRed: Hex("#FF6B6B"), TermGreen: Hex("#5FD38D"), TermYellow: Hex("#F0C45A"),
 		TermBlue: Hex("#6AA6FF"), TermMagenta: Hex("#C792EA"), TermCyan: Hex("#56D4DD"),
 	}
