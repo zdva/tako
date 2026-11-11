@@ -486,10 +486,14 @@ func (h *harness) dragNext(first layout.Divider) {
 func TestLayout_DragDebouncesTerminalResizes(t *testing.T) {
 	// A size must stay still for 1.5 s before the shell is told: far longer
 	// than the frames of this test, so what shows is the debounce itself.
-	h := newHarness(t, harnessOpts{resizeDelay: 1500 * time.Millisecond})
+	delay := 1500 * time.Millisecond
+	if raceEnabled {
+		delay = 5 * time.Second // a frame takes ~0.4 s under the race detector
+	}
+	h := newHarness(t, harnessOpts{resizeDelay: delay})
 	h.openAll(2)
 	h.tt.Frame()
-	time.Sleep(2 * time.Second) // let the opening sizes settle
+	time.Sleep(delay + 500*time.Millisecond) // let the opening sizes settle
 	before := len(h.srv.Sizes())
 
 	x, y, _ := h.dividerAt(0)
