@@ -2,13 +2,15 @@ module github.com/wei-dong/tako
 
 go 1.27.3
 
+toolchain go1.27.4
+
 tool github.com/egoist/mygo/cmd/mygo
 
 require (
 	github.com/egoist/mygo v0.8.3
 	go.uber.org/goleak v1.3.0
 	golang.org/x/crypto v0.58.0
-	golang.org/x/net v0.60.0
+	golang.org/x/net v0.62.0
 )
 
 require (
