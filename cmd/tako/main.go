@@ -20,7 +20,7 @@ import (
 )
 
 // version is set at build time with -ldflags "-X main.version=...".
-var version = "0.2.0-m2"
+var version = "0.3.0-m3"
 
 const (
 	defaultWidth  = 1280

@@ -6,6 +6,75 @@ All notable changes are recorded here. The format follows
 
 ## [Unreleased]
 
+## [0.3.0-m3] - 2026-11-11
+
+Third milestone: monitoring and file transfer. Local tag only; nothing has been
+published.
+
+### Added
+
+- Agentless monitoring (`internal/monitor`, ADR 0012): one command per sample
+  over the block's SSH session, nothing installed on the server. Collectors for
+  Linux (`/proc`, `df`, `nvidia-smi` / `rocm-smi` when present), macOS (`top`,
+  `vm_stat`, `iostat`, `netstat`) and Windows (PowerShell `-EncodedCommand`
+  over CIM). `Sampler` (jitter, pause, backoff), `Series` history (1 h), and a
+  `Hub` that wakes the window only when a footer would look different.
+- Footer resource bars on every block (CPU, memory, disk or GPU, latency;
+  yellow ≥ 70%, red ≥ 90%, configurable) and the monitor page opened from the
+  footer, `⌘⌥M` or the block menu: overview cards, GPU chart and per-card
+  status (only on hosts with a GPU), CPU, memory and network charts, disks,
+  about; 1 / 5 / 15 / 60 minute windows and pause.
+- File transfer (`internal/transfer`, ADRs 0013–0015): upload, download and
+  server-to-server through this computer (streamed, nothing written to disk),
+  or direct `scp` / `rsync` with a temporary agent forward (opt-in; no private
+  key is written to the server). Two-pane SFTP browser, folders, multi-select,
+  drag and drop, queue with pause / resume / cancel, speed and time left,
+  resume from the byte where the link broke, retry, size and optional SHA-256
+  verification, overwrite / skip / ask policies, concurrency setting. Toolbar
+  icon with a badge, `⌘⇧T`, host menu "Transfer files…".
+- Transfers use their own connection per host so a copy never starves a shell
+  (ADR 0014); `transport.FS` (SFTP via `github.com/pkg/sftp`), `Ping` and
+  agent-forwarded exec on the SSH transport.
+- OSC 7 current folder (ADR 0016, [docs/OSC7.md](docs/OSC7.md)): new tabs and
+  the transfer sheet open in the folder the shell reports; without a report
+  Tako asks; the palette copies the bash/zsh/fish hook.
+- Tests: collector parsers on recorded (Linux) and composed (macOS, Windows,
+  NVIDIA, ROCm) fixtures, Linux collector against the real local sshd,
+  transfer queue/resume/policies/direct unit tests with goleak, integration
+  tests for relay, resume after a cut link, policies and direct mode, e2e for
+  nine monitored hosts; `ui.Tester` tests of the monitor page and transfer sheet.
+
+### Changed
+
+- The nine-terminal idle e2e budget is measured with monitoring off;
+  monitoring has its own test.
+- Monitor and transfer shortcuts and entries are no longer notices.
+
+### M3 acceptance (Linux VM, Xvfb, Mesa software renderer; fresh clone)
+
+| # | Criterion | Result |
+|---|---|---|
+| 1 | Readings within 5 points of the system tools; parser tests for all three systems | Linux: pass against the real sshd (CPU 13.6% vs `/proc/stat` 13.5%, 47.7% vs 47.7% under load; memory equal). macOS, Windows, NVIDIA, ROCm: parsers pass on **hand-composed** fixtures only; **not validated on real machines or GPUs** |
+| 2 | Remote cost < 1%; client idle ≈ 0%; no whole-window redraw every second | Remote: 4.2 ms CPU per sample = 0.21% of a core at 2 s. Client, nine hosts at 2 s: 0.6–0.7% of one core (0.00 frames/s); monitoring off: 0.00% |
+| 3 | 2.4 GB relay: ≥ 80% of the link, nothing on local disk, memory growth < 32 MB | Pass: 2400 MiB over 100 MB/s links: 100 MB/s vs 99 MB/s raw SFTP = 100%; heap growth 12.7 MiB; 0 KiB written by the client. Unthrottled loopback (informational): 69% on a shared CPU |
+| 4 | Link cut mid-transfer: Paused, resumes from the break, verified; also for folders | Pass (file: paused at 160 of 400 MiB, resumed from 144 MiB; folder likewise) |
+| 5 | Direct mode only when enabled; no key left on the server; forwarding off afterwards | Pass for `scp` against a real sshd; the `rsync` branch is covered with a fake environment only (no rsync on the box) |
+| 6 | Overwrite / skip / ask policies | Pass (unit and integration on a real SFTP server) |
+| 7 | Monitor page and transfer sheet match `monitor.png` / `transfer.png` in structure | Pass in `ui.Tester` structure tests; screenshots in `docs/screenshots/m3/` |
+
+### Known issues and limits
+
+- macOS and Windows collectors and the GPU parsers have never seen a real
+  machine; replace the composed fixtures with recordings before a release
+  (`internal/monitor/testdata/README.md`).
+- Monitoring costs the client about 0.6% of a core with nine hosts at 2 s
+  (software SSH crypto and parsing); it is not exactly zero.
+- Direct directory copies cannot resume part-way; direct mode needs an SSH
+  agent that holds the source's key.
+- The shape of the 2.4 GB test depends on the loopback; real links are
+  unmeasured. GPU-backed rendering is still unmeasured on macOS and Windows.
+- Module path and licence are still placeholders.
+
 ## [0.2.0-m2] - 2026-11-11
 
 Second milestone: synchronized input UI, minimap, draggable layouts. Local
