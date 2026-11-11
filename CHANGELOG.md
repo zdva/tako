@@ -64,7 +64,7 @@ has been published.
 | 2 | Outage: banner, scrollback kept, no EOF, input not replayed | Pass in the integration test (relay paused, then cut; the outage is shorter than 60 s and the backoff is shortened, the mechanism is the same) |
 | 3 | Changed host key refused with a clear message | Pass |
 | 4 | `~/.ssh/config` import ≥ 12 hosts | Pass (14-host fixture with Include, ProxyJump, IdentityFile) |
-| 5 | 9 idle blocks: 0% CPU, RSS ≤ 100 MB, cold start ≤ 1 s | CPU 0.00% over 10 s; RSS 63.8 MB (private 20.9 MB); window in 0.13 s and 9 blocks connected in 0.19 s (0.5–0.6 s on a first run with an empty fontconfig cache) |
+| 5 | 9 idle blocks: 0% CPU, RSS ≤ 100 MB, cold start ≤ 1 s | CPU 0.00% over 10 s; cold start: window in 0.13–0.15 s, 9 blocks connected in 0.19–0.22 s (0.5–0.6 s on a first run with an empty fontconfig cache). **RSS depends on the Xvfb setup:** 63.8 MB on a plain long-running Xvfb, 116.5 MB under `xvfb-run` where Mesa loads LLVM (87 MB of that is shared libraries; private memory is 21–30 MB). The e2e test asserts private memory ≤ 100 MB and logs total RSS. Total RSS on a real GPU is unmeasured (see 9) |
 | 6 | Restore after quit; `kill -9` recovers ≤ 1 s | Pass; window 0.14 s, 9 reconnected 0.20 s |
 | 7 | Secrets absent from files, logs, export | Pass (grep test) |
 | 8 | Race, lint, govulncheck green; coverage ≥ 80% | Pass; core coverage 83.5% |
