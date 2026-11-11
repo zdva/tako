@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"strings"
 	"sync"
 	"time"
 
@@ -29,6 +28,7 @@ type Transport struct {
 	err       error
 	wg        sync.WaitGroup
 	stopKA    chan struct{}
+	kaTimeout time.Duration
 }
 
 var _ transport.Transport = (*Transport)(nil)
@@ -93,7 +93,7 @@ func (t *Transport) keepalive(interval time.Duration) {
 				t.finish(fmt.Errorf("keepalive failed: %w", err))
 				return
 			}
-		case <-time.After(keepaliveTimeout):
+		case <-time.After(t.kaTimeout):
 			t.finish(errors.New("keepalive timed out"))
 			return
 		case <-t.stopKA:
@@ -175,12 +175,17 @@ func (t *Transport) newSession(ctx context.Context) (*gossh.Session, error) {
 	}
 }
 
-// classifyChannel maps "administratively prohibited" (MaxSessions) to
-// ErrChannelLimit.
+// classifyChannel maps a server's refusal to open another session channel to
+// ErrChannelLimit. OpenSSH answers "connect failed" when MaxSessions is
+// reached; other servers say "administratively prohibited" or "resource
+// shortage". Failures after the channel opened (a refused pty, say) are not
+// limits and pass through.
 func classifyChannel(err error) error {
-	if oce, ok := errors.AsType[*gossh.OpenChannelError](err); ok && oce.Reason == gossh.ResourceShortage ||
-		strings.Contains(err.Error(), "administratively prohibited") {
-		return fmt.Errorf("%w: %w", transport.ErrChannelLimit, err)
+	if oce, ok := errors.AsType[*gossh.OpenChannelError](err); ok {
+		switch oce.Reason {
+		case gossh.ResourceShortage, gossh.Prohibited, gossh.ConnectionFailed:
+			return fmt.Errorf("%w: %w", transport.ErrChannelLimit, err)
+		}
 	}
 	return err
 }

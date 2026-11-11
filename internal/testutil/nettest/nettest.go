@@ -15,6 +15,7 @@ import (
 	"net"
 	"net/http"
 	"path/filepath"
+	"strconv"
 	"sync"
 	"sync/atomic"
 	"testing"
@@ -284,6 +285,20 @@ func (r *Relay) waitResume() {
 	ch := r.resume
 	r.mu.Unlock()
 	<-ch
+}
+
+// PortInt returns the relay's listening port.
+func (r *Relay) PortInt(t testing.TB) int {
+	t.Helper()
+	_, ps, err := net.SplitHostPort(r.Addr)
+	if err != nil {
+		t.Fatal(err)
+	}
+	n, err := strconv.Atoi(ps)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return n
 }
 
 // Pause makes the relay hold all traffic, as a dead link does: the TCP

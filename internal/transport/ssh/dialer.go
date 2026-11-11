@@ -1,6 +1,7 @@
 package ssh
 
 import (
+	"cmp"
 	"context"
 	"errors"
 	"fmt"
@@ -36,6 +37,9 @@ type Dialer struct {
 	// DialTimeout bounds one connect plus handshake; zero means
 	// [DefaultDialTimeout].
 	DialTimeout time.Duration
+	// KeepAliveTimeout is how long a keepalive may go unanswered before the
+	// connection counts as dead; zero means 15 seconds.
+	KeepAliveTimeout time.Duration
 	// AgentConn opens a connection to the SSH agent; nil uses SSH_AUTH_SOCK.
 	AgentConn func() (net.Conn, error)
 }
@@ -59,7 +63,7 @@ func (d *Dialer) Dial(ctx context.Context, h model.Host) (transport.Transport, e
 	if err != nil {
 		return nil, err
 	}
-	t := &Transport{done: make(chan struct{})}
+	t := &Transport{done: make(chan struct{}), kaTimeout: cmp.Or(d.KeepAliveTimeout, keepaliveTimeout)}
 	var prev *gossh.Client
 	for i, hop := range hops {
 		client, err := d.connect(ctx, t, prev, h, hop, prompter)
@@ -98,7 +102,7 @@ func (d *Dialer) path(h model.Host) ([]model.Host, error) {
 func (d *Dialer) connect(
 	ctx context.Context, t *Transport, prev *gossh.Client, target, hop model.Host, prompter transport.Prompter,
 ) (*gossh.Client, error) {
-	timeout := cmpDuration(d.DialTimeout, DefaultDialTimeout)
+	timeout := cmp.Or(d.DialTimeout, DefaultDialTimeout)
 	ctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
 
@@ -197,11 +201,4 @@ func ctxCause(ctx context.Context, fallback error) error {
 		return context.Cause(ctx)
 	}
 	return fallback
-}
-
-func cmpDuration(d, def time.Duration) time.Duration {
-	if d > 0 {
-		return d
-	}
-	return def
 }

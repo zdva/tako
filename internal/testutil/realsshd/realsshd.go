@@ -7,18 +7,21 @@
 // scripts/fetch-sshd.sh), in <repo>/.cache/openssh, or at /usr/sbin/sshd. When
 // none works, [Start] skips the test.
 //
-// Password and keyboard-interactive logins go through a PAM stack whose only
-// check is a script comparing the password with [Server.Password]; that is
-// what lets an unprivileged sshd authenticate by password.
+// Only public key (and agent) logins work: an unprivileged sshd cannot check
+// passwords, because that needs root-only PAM/shadow access. Password and
+// keyboard-interactive authentication are covered against the in-process
+// server in package memssh instead.
 package realsshd
 
 import (
 	"bytes"
+	"cmp"
 	"context"
 	"crypto/ed25519"
 	"crypto/rand"
 	"encoding/pem"
 	"fmt"
+	"io"
 	"net"
 	"os"
 	"os/exec"
@@ -32,9 +35,6 @@ import (
 
 	"golang.org/x/crypto/ssh"
 )
-
-// Password is the password every server accepts.
-const Password = "tako-secret"
 
 // Options configure a server.
 type Options struct {
@@ -56,8 +56,6 @@ type Server struct {
 	Port int
 	// User is the account to log in as (the current user).
 	User string
-	// Password is accepted by password and keyboard-interactive auth.
-	Password string
 	// ClientKeyPath is an OpenSSH private key (no passphrase) that is
 	// authorized for User; ClientKey is the same key as a signer.
 	ClientKeyPath string
@@ -75,6 +73,17 @@ type Server struct {
 
 // Addr returns "host:port".
 func (s *Server) Addr() string { return net.JoinHostPort(s.Host, strconv.Itoa(s.Port)) }
+
+// AuthorizeKey adds pub to the keys accepted for User.
+func (s *Server) AuthorizeKey(t testing.TB, pub ssh.PublicKey) {
+	t.Helper()
+	path := filepath.Join(s.Dir, "authorized_keys")
+	f, err := os.OpenFile(path, os.O_APPEND|os.O_WRONLY, 0o600)
+	must(t, err)
+	_, err = f.Write(ssh.MarshalAuthorizedKey(pub))
+	must(t, err)
+	must(t, f.Close())
+}
 
 // Stop kills sshd and its sessions.
 func (s *Server) Stop() {
@@ -166,7 +175,7 @@ func Start(t testing.TB, opts Options) *Server {
 	}
 	dir := t.TempDir()
 	// sshd re-executes itself and needs absolute paths everywhere.
-	s := &Server{Host: "127.0.0.1", User: u.Username, Password: Password, Dir: dir, HostKeyDir: opts.HostKeyDir}
+	s := &Server{Host: "127.0.0.1", User: u.Username, Dir: dir, HostKeyDir: opts.HostKeyDir}
 	if s.HostKeyDir == "" {
 		s.HostKeyDir = filepath.Join(dir, "hostkey")
 		must(t, os.MkdirAll(s.HostKeyDir, 0o700))
@@ -175,14 +184,13 @@ func Start(t testing.TB, opts Options) *Server {
 	s.ClientKeyPath = filepath.Join(dir, "client_key")
 	makeClientKey(t, s)
 
-	pamCfg := writePAM(t, in, dir)
 	for attempt := range 5 {
 		port := opts.Port
 		if port == 0 {
 			port = freePort(t)
 		}
 		s.Port = port
-		cfg := writeConfig(t, in, s, pamCfg, opts)
+		cfg := writeConfig(t, in, s, opts)
 		if err := s.launch(t, in, cfg); err == nil {
 			break
 		} else if attempt == 4 || opts.Port != 0 {
@@ -228,33 +236,14 @@ func makeClientKey(t testing.TB, s *Server) {
 	must(t, os.WriteFile(filepath.Join(s.Dir, "authorized_keys"), ssh.MarshalAuthorizedKey(sshPub), 0o600))
 }
 
-// writePAM writes the PAM stack that checks the password with a script.
-func writePAM(t testing.TB, in install, dir string) string {
-	t.Helper()
-	check := filepath.Join(dir, "check-password.sh")
-	must(t, os.WriteFile(check, []byte("#!/bin/sh\nread -r pw\n[ \"$pw\" = '"+Password+"' ]\n"), 0o700))
-	mod := func(name string) string {
-		if in.root == "" {
-			return name
-		}
-		return filepath.Join(in.root, "usr", "lib", "x86_64-linux-gnu", "security", name)
-	}
-	cfg := fmt.Sprintf("auth required %s expose_authtok quiet %s\naccount required %s\nsession required %s\n",
-		mod("pam_exec.so"), check, mod("pam_permit.so"), mod("pam_permit.so"))
-	path := filepath.Join(dir, "pam-tako")
-	must(t, os.WriteFile(path, []byte(cfg), 0o600))
-	return path
-}
-
-func writeConfig(t testing.TB, in install, s *Server, pam string, opts Options) string {
+func writeConfig(t testing.TB, in install, s *Server, opts Options) string {
 	t.Helper()
 	var b strings.Builder
 	fmt.Fprintf(&b, "Port %d\nListenAddress %s\n", s.Port, s.Host)
 	fmt.Fprintf(&b, "HostKey %s\nPidFile %s\n", filepath.Join(s.HostKeyDir, "ssh_host_ed25519_key"), filepath.Join(s.Dir, "sshd.pid"))
 	fmt.Fprintf(&b, "AuthorizedKeysFile %s\nStrictModes no\n", filepath.Join(s.Dir, "authorized_keys"))
-	fmt.Fprintf(&b, "UsePAM yes\nPAMServiceName %s\n", pam)
-	b.WriteString("PasswordAuthentication yes\nKbdInteractiveAuthentication yes\nPubkeyAuthentication yes\n")
-	b.WriteString("PermitRootLogin yes\nPrintMotd no\nPrintLastLog no\nLogLevel ERROR\n")
+	b.WriteString("UsePAM no\nPasswordAuthentication no\nKbdInteractiveAuthentication no\nPubkeyAuthentication yes\n")
+	b.WriteString("PermitRootLogin yes\nPrintMotd no\nPrintLastLog no\nLogLevel " + cmp.Or(os.Getenv("TAKO_SSHD_LOGLEVEL"), "ERROR") + "\n")
 	if in.root != "" {
 		lib := filepath.Join(in.root, "usr", "lib", "openssh")
 		fmt.Fprintf(&b, "SshdSessionPath %s\nSshdAuthPath %s\nSubsystem sftp %s\n",
@@ -279,6 +268,9 @@ func (s *Server) launch(t testing.TB, in install, cfg string) error {
 	cmd := exec.CommandContext(context.WithoutCancel(t.Context()), in.sshd, "-D", "-e", "-f", cfg)
 	cmd.Env = in.env
 	cmd.Stderr = &stderr
+	if os.Getenv("TAKO_SSHD_LOGLEVEL") != "" {
+		cmd.Stderr = io.MultiWriter(&stderr, os.Stderr)
+	}
 	if err := cmd.Start(); err != nil {
 		return fmt.Errorf("running %s: %w", in.sshd, err)
 	}

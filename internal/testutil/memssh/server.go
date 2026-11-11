@@ -104,6 +104,16 @@ func (s *Server) serverConfig() *ssh.ServerConfig {
 			return nil, errors.New("invalid credentials")
 		},
 	}
+	cfg.KeyboardInteractiveCallback = func(c ssh.ConnMetadata, ask ssh.KeyboardInteractiveChallenge) (*ssh.Permissions, error) {
+		answers, err := ask(c.User(), "", []string{"Password: "}, []bool{false})
+		if err != nil {
+			return nil, fmt.Errorf("asking for the password: %w", err)
+		}
+		if c.User() == s.opts.User && len(answers) == 1 && answers[0] == s.opts.Password {
+			return nil, nil
+		}
+		return nil, errors.New("invalid credentials")
+	}
 	if len(s.opts.AuthorizedKeys) > 0 {
 		cfg.PublicKeyCallback = func(c ssh.ConnMetadata, key ssh.PublicKey) (*ssh.Permissions, error) {
 			for _, ok := range s.opts.AuthorizedKeys {
