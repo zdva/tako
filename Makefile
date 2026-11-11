@@ -1,12 +1,12 @@
 .DEFAULT_GOAL := help
-MILESTONE ?= m3
+MILESTONE ?= m4
 
 .PHONY: help screenshots package-linux build run test race cover lint vuln fmt tidy integration e2e fuzz build-all check clean
 
 PLATFORMS ?= windows/amd64,windows/arm64,darwin/universal,linux/amd64,linux/arm64
 COVER_PKGS := ./internal/model/... ./internal/hostlib/... ./internal/session/... ./internal/layout/... \
 	./internal/inputbus/... ./internal/workspace/... ./internal/transport/... ./internal/store/... \
-	./internal/secrets/... ./internal/importer/... ./internal/settings/... ./internal/monitor/... ./internal/transfer/... ./internal/scheme/...
+	./internal/secrets/... ./internal/importer/... ./internal/settings/... ./internal/monitor/... ./internal/transfer/... ./internal/scheme/... ./internal/diag/... ./internal/i18n/...
 
 help: ## List the targets
 	@grep -E '^[a-z-]+:.*##' $(MAKEFILE_LIST) | awk -F':.*## ' '{printf "  %-12s %s\n", $$1, $$2}'

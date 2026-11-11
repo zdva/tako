@@ -94,5 +94,4 @@ func TestPseudoLocale_EverySurfaceComesFromTheTables(t *testing.T) {
 	if !h.tt.HasText("⟦") {
 		t.Error("the transfer sheet shows no translated text")
 	}
-	h.shot("pseudo-transfer")
 }
