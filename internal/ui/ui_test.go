@@ -161,6 +161,7 @@ func (h *harness) shot(name string) {
 	if dir == "" {
 		return
 	}
+	h.tt.Advance(600 * time.Millisecond) // let panels settle into their places
 	h.tt.Frame()
 	if err := os.MkdirAll(dir, 0o755); err != nil {
 		h.t.Fatal(err)
