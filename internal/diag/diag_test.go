@@ -122,7 +122,7 @@ func TestCrashReportSurvivesAPanicInAnotherGoroutine(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer again.Close()
+	defer func() { _ = again.Close() }()
 	if again.Previous != "" {
 		t.Errorf("a clean exit was reported as a crash: %s", again.Previous)
 	}
@@ -141,7 +141,7 @@ func TestOldReportsArePruned(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer c.Close()
+	defer func() { _ = c.Close() }()
 	if got := len(c.Reports()); got != diag.KeepReports {
 		t.Errorf("kept %d reports, want %d", got, diag.KeepReports)
 	}

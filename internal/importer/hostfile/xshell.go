@@ -31,7 +31,8 @@ func parseXshellSession(p string, data []byte, o Options) (Result, error) {
 		return res, errNotSession
 	}
 	proto := strings.ToLower(f.get(conn, "Protocol"))
-	if !(proto == "ssh" || proto == "ssh2" || (legacy && proto == "0") || proto == "") {
+	supported := proto == "ssh" || proto == "ssh2" || proto == "" || (legacy && proto == "0")
+	if !supported {
 		res.warn("%s: %s sessions are not supported, skipped", label, strings.ToUpper(proto))
 		return res, nil
 	}

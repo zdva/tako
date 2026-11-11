@@ -240,7 +240,7 @@ func TestSettings_ExportHasNoSecretsAndImportsOnAnotherComputer(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	for _, bad := range []string{secret, string(ref), "pw-web-01", "SecretRef", "secret"} {
+	for _, bad := range []string{secret, ref, "pw-web-01", "SecretRef", "secret"} {
 		if strings.Contains(strings.ToLower(string(raw)), strings.ToLower(bad)) {
 			t.Errorf("the export contains %q", bad)
 		}

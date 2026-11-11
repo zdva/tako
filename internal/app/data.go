@@ -63,7 +63,7 @@ func (a *App) importColors(path string) (scheme.Scheme, error) {
 	if err != nil {
 		return scheme.Scheme{}, fmt.Errorf("opening %s: %w", path, err)
 	}
-	defer f.Close()
+	defer func() { _ = f.Close() }()
 	buf := make([]byte, scheme.MaxITermSize+1)
 	n, _ := f.Read(buf)
 	name := strings.TrimSuffix(filepath.Base(path), filepath.Ext(path))

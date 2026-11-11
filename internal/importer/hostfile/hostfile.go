@@ -224,7 +224,7 @@ func readLimited(fsys fs.FS, p string) ([]byte, error) {
 	if err != nil {
 		return nil, fmt.Errorf("opening: %w", err)
 	}
-	defer f.Close()
+	defer func() { _ = f.Close() }()
 	data, err := io.ReadAll(io.LimitReader(f, MaxFileSize+1))
 	if err != nil {
 		return nil, fmt.Errorf("reading: %w", err)

@@ -89,15 +89,15 @@ func (c *Crashes) prune() {
 	}
 }
 
-// ReadReport returns up to max bytes from the start of a crash report: the
+// ReadReport returns up to limit bytes from the start of a crash report: the
 // panic message and the first goroutine are at the top.
-func ReadReport(path string, max int) (string, error) {
+func ReadReport(path string, limit int) (string, error) {
 	f, err := os.Open(path)
 	if err != nil {
 		return "", fmt.Errorf("opening the crash report: %w", err)
 	}
-	defer f.Close()
-	buf := make([]byte, max)
+	defer func() { _ = f.Close() }()
+	buf := make([]byte, limit)
 	n, err := f.Read(buf)
 	if err != nil && !errors.Is(err, fs.ErrClosed) && n == 0 {
 		return "", fmt.Errorf("reading the crash report: %w", err)

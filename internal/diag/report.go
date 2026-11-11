@@ -134,7 +134,7 @@ func Tail(path string, n, maxBytes int) []string {
 	if err != nil {
 		return nil
 	}
-	defer f.Close()
+	defer func() { _ = f.Close() }()
 	st, err := f.Stat()
 	if err != nil {
 		return nil

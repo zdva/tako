@@ -70,6 +70,33 @@ func dword(v string) (int, bool) {
 	return n, err == nil
 }
 
+// Value kinds of SecureCRT settings: S: / <string> and D: / <dword>.
+const (
+	kindString = "S"
+	kindDword  = "D"
+)
+
+// set records one setting of a session; settings the importer does not use
+// are ignored.
+func (s *scrt) set(kind, key, val string) {
+	switch {
+	case kind == kindString && key == "Hostname":
+		s.host = val
+	case kind == kindString && key == "Username":
+		s.user = val
+	case kind == kindString && key == "Protocol Name":
+		s.proto = val
+	case kind == kindString && key == "Identity Filename V2":
+		s.identity = val
+	case kind == kindString && key == "Firewall Name":
+		s.firewall = val
+	case kind == kindString && key == "Password" && val != "":
+		s.hasPassword = true
+	case kind == kindDword && key == "[SSH2] Port":
+		s.port, s.portSet = dword(val)
+	}
+}
+
 // parseSecureCRTSession reads a Sessions/*.ini file: lines of
 // S:"name"=text and D:"name"=hex.
 func parseSecureCRTSession(p string, data []byte, o Options) (Result, error) {
@@ -89,22 +116,7 @@ func parseSecureCRTSession(p string, data []byte, o Options) (Result, error) {
 		if !ok {
 			continue
 		}
-		switch {
-		case kind == "S" && key == "Hostname":
-			s.host = val
-		case kind == "S" && key == "Username":
-			s.user = val
-		case kind == "S" && key == "Protocol Name":
-			s.proto = val
-		case kind == "S" && key == "Identity Filename V2":
-			s.identity = val
-		case kind == "S" && key == "Firewall Name":
-			s.firewall = val
-		case kind == "S" && key == "Password" && val != "":
-			s.hasPassword = true
-		case kind == "D" && key == "[SSH2] Port":
-			s.port, s.portSet = dword(val)
-		}
+		s.set(kind, key, val)
 	}
 	if s.host == "" {
 		return Result{}, errNotSession
@@ -140,26 +152,11 @@ func parseSecureCRTXML(data []byte, o Options) (Result, error) {
 			return
 		}
 		s := scrt{name: n.Name}
-		found := false
 		for _, k := range n.Kids {
-			text := strings.TrimSpace(k.Text)
-			switch {
-			case k.XMLName.Local == "string" && k.Name == "Hostname":
-				s.host, found = text, text != ""
-			case k.XMLName.Local == "string" && k.Name == "Username":
-				s.user = text
-			case k.XMLName.Local == "string" && k.Name == "Protocol Name":
-				s.proto = text
-			case k.XMLName.Local == "string" && k.Name == "Identity Filename V2":
-				s.identity = text
-			case k.XMLName.Local == "string" && k.Name == "Firewall Name":
-				s.firewall = text
-			case k.XMLName.Local == "string" && k.Name == "Password" && text != "":
-				s.hasPassword = true
-			case k.XMLName.Local == "dword" && k.Name == "[SSH2] Port":
-				s.port, s.portSet = dword(text)
-			}
+			kind := map[string]string{"string": kindString, "dword": kindDword}[k.XMLName.Local]
+			s.set(kind, k.Name, strings.TrimSpace(k.Text))
 		}
+		found := s.host != ""
 		if found && n.Name != "Default" {
 			s.group = strings.Join(groups, "/")
 			one := s.result(n.Name, o)

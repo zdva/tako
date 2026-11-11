@@ -44,20 +44,8 @@ func parseTermius(data []byte, o Options) (Result, error) {
 	if err != nil {
 		return res, fmt.Errorf("reading Termius CSV header: %w", err)
 	}
-	col := map[string]int{}
-	for i, c := range head {
-		c = strings.ToLower(strings.TrimSpace(strings.TrimPrefix(c, "\ufeff")))
-		if isHostCol(c) {
-			c = "host"
-		}
-		if c == "ssh_key" || c == "ssh key" || c == "key" {
-			c = "key"
-		}
-		if _, dup := col[c]; !dup {
-			col[c] = i
-		}
-	}
-	if _, ok := col["host"]; !ok {
+	col := termiusColumns(head)
+	if _, ok := col[colHost]; !ok {
 		return res, fmt.Errorf("%w: no Hostname/IP column", ErrUnknownFormat)
 	}
 	get := func(rec []string, name string) string {
@@ -66,7 +54,7 @@ func parseTermius(data []byte, o Options) (Result, error) {
 		}
 		return ""
 	}
-	for row := 2; ; row++ {
+	for row := 2; len(res.Hosts) < MaxHosts; row++ {
 		rec, err := r.Read()
 		if errors.Is(err, io.EOF) {
 			break
@@ -75,41 +63,12 @@ func parseTermius(data []byte, o Options) (Result, error) {
 			res.warn("row %d: %v", row, err)
 			continue
 		}
-		if len(res.Hosts) >= MaxHosts {
-			break
-		}
 		label := fmt.Sprintf("row %d", row)
 		if p := strings.ToLower(get(rec, "protocol")); p != "" && p != "ssh" {
 			res.warn("%s: %s hosts are not supported, skipped", label, p)
 			continue
 		}
-		h := model.Host{
-			Name: get(rec, "label"), Addr: get(rec, "host"), User: get(rec, "username"),
-			Auth: []model.Auth{{Kind: model.AuthPassword}},
-			Tags: groupTags(get(rec, "groups")),
-		}
-		for t := range strings.SplitSeq(get(rec, "tags"), ",") {
-			if t = strings.TrimSpace(t); t != "" && !slices.Contains(h.Tags, t) {
-				h.Tags = append(h.Tags, t)
-			}
-		}
-		if v := get(rec, "port"); v != "" {
-			n, perr := strconv.Atoi(v)
-			if perr != nil {
-				res.warn("%s: port %q is not a number, using 22", label, v)
-			}
-			h.Port = n
-		}
-		if get(rec, "password") != "" {
-			res.Passwords++
-		}
-		if k := get(rec, "key"); k != "" {
-			res.warn("%s: key %q is not a file; choose it in Edit host", label, k)
-			h.Auth = []model.Auth{{Kind: model.AuthAgent}, {Kind: model.AuthPassword}}
-		}
-		if h.Name == "" {
-			h.Name = h.Addr
-		}
+		h := termiusHost(&res, label, func(name string) string { return get(rec, name) })
 		h, msg, ok := finishHost(h, label+" ("+h.Name+")", o)
 		if !ok {
 			res.warn("%s", msg)
@@ -118,4 +77,62 @@ func parseTermius(data []byte, o Options) (Result, error) {
 		res.Hosts = append(res.Hosts, h)
 	}
 	return res, nil
+}
+
+// Termius columns the importer looks for, by their normalized names.
+const (
+	colHost = "host"
+	colKey  = "key"
+)
+
+// termiusColumns maps normalized column names to their index; the first of
+// duplicated columns wins.
+func termiusColumns(head []string) map[string]int {
+	col := map[string]int{}
+	for i, c := range head {
+		c = strings.ToLower(strings.TrimSpace(strings.TrimPrefix(c, "\ufeff")))
+		if isHostCol(c) {
+			c = colHost
+		}
+		if c == "ssh_key" || c == "ssh key" || c == colKey {
+			c = colKey
+		}
+		if _, dup := col[c]; !dup {
+			col[c] = i
+		}
+	}
+	return col
+}
+
+// termiusHost builds the host of one row, counting a saved password and
+// warning about a key (Termius keeps keys in its own store).
+func termiusHost(res *Result, label string, get func(string) string) model.Host {
+	h := model.Host{
+		Name: get("label"), Addr: get(colHost), User: get("username"),
+		Auth: []model.Auth{{Kind: model.AuthPassword}},
+		Tags: groupTags(get("groups")),
+	}
+	for t := range strings.SplitSeq(get("tags"), ",") {
+		if t = strings.TrimSpace(t); t != "" && !slices.Contains(h.Tags, t) {
+			h.Tags = append(h.Tags, t)
+		}
+	}
+	if v := get("port"); v != "" {
+		n, err := strconv.Atoi(v)
+		if err != nil {
+			res.warn("%s: port %q is not a number, using 22", label, v)
+		}
+		h.Port = n
+	}
+	if get("password") != "" {
+		res.Passwords++
+	}
+	if k := get(colKey); k != "" {
+		res.warn("%s: key %q is not a file; choose it in Edit host", label, k)
+		h.Auth = []model.Auth{{Kind: model.AuthAgent}, {Kind: model.AuthPassword}}
+	}
+	if h.Name == "" {
+		h.Name = h.Addr
+	}
+	return h
 }
