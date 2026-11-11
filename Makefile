@@ -6,7 +6,7 @@ MILESTONE ?= m3
 PLATFORMS ?= windows/amd64,windows/arm64,darwin/universal,linux/amd64,linux/arm64
 COVER_PKGS := ./internal/model/... ./internal/hostlib/... ./internal/session/... ./internal/layout/... \
 	./internal/inputbus/... ./internal/workspace/... ./internal/transport/... ./internal/store/... \
-	./internal/secrets/... ./internal/importer/... ./internal/settings/... ./internal/monitor/... ./internal/transfer/...
+	./internal/secrets/... ./internal/importer/... ./internal/settings/... ./internal/monitor/... ./internal/transfer/... ./internal/scheme/...
 
 help: ## List the targets
 	@grep -E '^[a-z-]+:.*##' $(MAKEFILE_LIST) | awk -F':.*## ' '{printf "  %-12s %s\n", $$1, $$2}'
@@ -58,6 +58,7 @@ e2e: package-linux ## Live-window checks under Xvfb: idle CPU/RSS, cold start, k
 fuzz: ## Short fuzz run of the parsers
 	go test -run '^$$' -fuzz FuzzReadPPK -fuzztime 20s ./internal/transport/ssh
 	go test -run '^$$' -fuzz FuzzParse -fuzztime 20s ./internal/importer/sshconfig
+	go test -run '^$$' -fuzz FuzzParseITerm -fuzztime 20s ./internal/scheme
 
 build-all: ## Cross-compile every platform (no installers, no signing)
 	go tool mygo build -platform $(PLATFORMS) -skip-installer
