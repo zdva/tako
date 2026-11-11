@@ -1,5 +1,5 @@
 .DEFAULT_GOAL := help
-.PHONY: help package-linux build run test race cover lint vuln fmt tidy integration e2e fuzz build-all check clean
+.PHONY: help screenshots package-linux build run test race cover lint vuln fmt tidy integration e2e fuzz build-all check clean
 
 PLATFORMS ?= windows/amd64,windows/arm64,darwin/universal,linux/amd64,linux/arm64
 COVER_PKGS := ./internal/model/... ./internal/hostlib/... ./internal/session/... ./internal/layout/... \
@@ -43,6 +43,11 @@ integration: ## Tests against a real OpenSSH (downloads a portable sshd once)
 
 package-linux: ## Packaged linux/amd64 app in build/linux-amd64 (ships libghostty-vt next to the binary)
 	go tool mygo build -platform linux/amd64 -skip-installer
+
+screenshots: package-linux ## Real-window screenshots into docs/screenshots/m1 (needs DISPLAY, e.g. under xvfb-run)
+	sh scripts/fetch-sshd.sh
+	TAKO_SHOTS=$(CURDIR)/docs/screenshots/m1 TAKO_BIN=$(CURDIR)/build/linux-amd64/tako go test -count=1 -tags e2e -run Screenshots -v ./test/e2e/...
+	TAKO_SHOTS=$(CURDIR)/docs/screenshots/m1/tester go test -count=1 ./internal/ui
 
 e2e: package-linux ## Live-window checks under Xvfb: idle CPU/RSS, cold start, kill -9 recovery
 	sh scripts/fetch-sshd.sh

@@ -33,7 +33,7 @@ const (
 	maxRSSMB       = 100
 	maxColdStart   = time.Second
 	maxIdleCPU     = 1.0 // percent of one core
-	maxRecovery    = 3 * time.Second
+	maxRecovery    = time.Second
 	clockTicksPerS = 100
 )
 
@@ -116,11 +116,13 @@ func (f *fixture) warmFontCache() {
 	}
 }
 
-func (f *fixture) start() *run {
+func (f *fixture) start() *run { return f.startEnv("LANG=en_US.UTF-8", "LC_ALL=en_US.UTF-8") }
+
+func (f *fixture) startEnv(extra ...string) *run {
 	f.t.Helper()
 	cmd := exec.Command(f.bin)
-	cmd.Env = append(os.Environ(), "HOME="+f.home, "XDG_CACHE_HOME="+f.cache(), "TAKO_CONFIG_DIR="+f.dirs.Config, "TAKO_STATE_DIR="+f.dirs.State,
-		"LANG=en_US.UTF-8", "LC_ALL=en_US.UTF-8")
+	cmd.Env = append(os.Environ(), "HOME="+f.home, "XDG_CACHE_HOME="+f.cache(), "TAKO_CONFIG_DIR="+f.dirs.Config, "TAKO_STATE_DIR="+f.dirs.State)
+	cmd.Env = append(cmd.Env, extra...)
 	cmd.Stdout, cmd.Stderr = os.Stderr, os.Stderr
 	r := &run{cmd: cmd, started: time.Now(), f: f}
 	if err := cmd.Start(); err != nil {
@@ -150,7 +152,7 @@ func (f *fixture) established() int {
 	if err != nil {
 		f.t.Fatal(err)
 	}
-	defer file.Close()
+	defer func() { _ = file.Close() }()
 	want := fmt.Sprintf("%04X", f.srv.Port)
 	n := 0
 	sc := bufio.NewScanner(file)
@@ -167,15 +169,17 @@ func (f *fixture) established() int {
 	return n
 }
 
-func (r *run) allConnected() time.Duration {
+func (r *run) allConnected() time.Duration { return r.connected(blocks) }
+
+func (r *run) connected(want int) time.Duration {
 	r.f.t.Helper()
 	for time.Since(r.started) < 30*time.Second {
-		if r.f.established() >= blocks {
+		if r.f.established() >= want {
 			return time.Since(r.started)
 		}
 		time.Sleep(10 * time.Millisecond)
 	}
-	r.f.t.Fatalf("only %d of %d connections came up", r.f.established(), blocks)
+	r.f.t.Fatalf("only %d of %d connections came up", r.f.established(), want)
 	return 0
 }
 
