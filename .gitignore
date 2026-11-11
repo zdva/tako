@@ -1,0 +1,27 @@
+# Build output
+/build/
+/dist/
+/tako
+/tako.exe
+*.test
+*.out
+coverage.*
+
+# MyGo dev bundle
+/.mygo/
+
+# Local tooling caches (portable OpenSSH for integration tests, etc.)
+/.cache/
+
+# Editors and OS
+.idea/
+.vscode/
+*.swp
+.DS_Store
+Thumbs.db
+
+# Never commit secrets
+*.pem
+*.key
+*.ppk
+.env
