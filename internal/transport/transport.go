@@ -5,6 +5,9 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"io/fs"
+	"net"
+	"time"
 
 	"github.com/wei-dong/tako/internal/model"
 )
@@ -29,12 +32,55 @@ type Transport interface {
 	// Exec runs a command on its own channel (no PTY) and returns its
 	// combined output.
 	Exec(ctx context.Context, cmd string) ([]byte, error)
+	// SFTP opens the file transfer subsystem on its own channel.
+	SFTP(ctx context.Context) (FS, error)
+	// Ping measures the round trip of the connection.
+	Ping(ctx context.Context) (time.Duration, error)
 	// Close ends the connection and every channel on it.
 	Close() error
 	// Done is closed when the connection ends, for any reason.
 	Done() <-chan struct{}
 	// Err is why the connection ended; it is nil while Done is open.
 	Err() error
+}
+
+// AgentExecer is a [Transport] that can run a command with the user's SSH
+// agent forwarded to it, for the length of that command only (a direct
+// server-to-server copy needs the keys without leaving any on the server).
+type AgentExecer interface {
+	// ExecAgent runs cmd with agent forwarding requested on its channel.
+	// agent opens a connection to the local agent for each request the remote
+	// side makes; nothing is forwarded after ExecAgent returns.
+	ExecAgent(ctx context.Context, cmd string, agent func() (net.Conn, error)) ([]byte, error)
+}
+
+// FS is a file system, local or remote over SFTP. Paths use "/" on remote
+// systems.
+type FS interface {
+	// Open opens a file for reading.
+	Open(name string) (File, error)
+	// OpenFile opens a file with os.OpenFile flags (O_WRONLY|O_CREATE|...).
+	OpenFile(name string, flag int) (File, error)
+	Stat(name string) (fs.FileInfo, error)
+	ReadDir(name string) ([]fs.FileInfo, error)
+	MkdirAll(name string) error
+	Remove(name string) error
+	Rename(oldName, newName string) error
+	// Home is the directory a new session starts in.
+	Home() (string, error)
+	// Join joins path elements the way this system writes paths.
+	Join(elem ...string) string
+	Close() error
+}
+
+// File is an open file of an [FS].
+type File interface {
+	io.Reader
+	io.Writer
+	io.Seeker
+	io.Closer
+	Stat() (fs.FileInfo, error)
+	Truncate(size int64) error
 }
 
 // Dialer connects to hosts.

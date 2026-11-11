@@ -79,9 +79,13 @@ func (t *fakeTransport) OpenShell(_ context.Context, size transport.Size) (trans
 	return sh, nil
 }
 func (t *fakeTransport) Exec(context.Context, string) ([]byte, error) { return []byte("ok"), nil }
-func (t *fakeTransport) Close() error                                 { t.kill(nil); return nil }
-func (t *fakeTransport) Done() <-chan struct{}                        { return t.done }
-func (t *fakeTransport) Err() error                                   { return t.err }
+func (t *fakeTransport) SFTP(context.Context) (transport.FS, error) {
+	return nil, errors.New("no sftp in the fake")
+}
+func (t *fakeTransport) Ping(context.Context) (time.Duration, error) { return time.Millisecond, nil }
+func (t *fakeTransport) Close() error                                { t.kill(nil); return nil }
+func (t *fakeTransport) Done() <-chan struct{}                       { return t.done }
+func (t *fakeTransport) Err() error                                  { return t.err }
 
 // kill simulates the connection dying: shells end, Done closes.
 func (t *fakeTransport) kill(err error) {

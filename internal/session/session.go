@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"math/rand/v2"
+	"net"
 	"sync"
 	"time"
 
@@ -141,6 +142,10 @@ func New(opts Options) *Session {
 // ErrNotConnected is returned by Exec when no connection is up.
 var ErrNotConnected = errors.New("not connected")
 
+// ErrNoAgentForwarding is returned by ExecAgent when the transport cannot
+// forward the agent.
+var ErrNoAgentForwarding = errors.New("this connection cannot forward the agent")
+
 // ErrClosed is returned after Close.
 var ErrClosed = errors.New("session closed")
 
@@ -239,18 +244,54 @@ func (s *Session) addLinkLocked() *link {
 	return l
 }
 
+// primary is the live transport of the first link, or nil.
+func (s *Session) primary() transport.Transport {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if len(s.links) == 0 {
+		return nil
+	}
+	return s.links[0].current()
+}
+
 // Exec runs a command on the primary connection.
 func (s *Session) Exec(ctx context.Context, cmd string) ([]byte, error) {
-	s.mu.Lock()
-	var t transport.Transport
-	if len(s.links) > 0 {
-		t = s.links[0].current()
-	}
-	s.mu.Unlock()
+	t := s.primary()
 	if t == nil {
 		return nil, ErrNotConnected
 	}
 	return t.Exec(ctx, cmd) //nolint:wrapcheck // the transport's error already names the failure
+}
+
+// SFTP opens a file system on the primary connection. The caller closes it.
+func (s *Session) SFTP(ctx context.Context) (transport.FS, error) {
+	t := s.primary()
+	if t == nil {
+		return nil, ErrNotConnected
+	}
+	return t.SFTP(ctx) //nolint:wrapcheck // the transport's error already names the failure
+}
+
+// Ping measures the round trip of the primary connection.
+func (s *Session) Ping(ctx context.Context) (time.Duration, error) {
+	t := s.primary()
+	if t == nil {
+		return 0, ErrNotConnected
+	}
+	return t.Ping(ctx) //nolint:wrapcheck // the transport's error already names the failure
+}
+
+// ExecAgent runs a command with the SSH agent forwarded for its length only.
+func (s *Session) ExecAgent(ctx context.Context, cmd string, agent func() (net.Conn, error)) ([]byte, error) {
+	t := s.primary()
+	if t == nil {
+		return nil, ErrNotConnected
+	}
+	ae, ok := t.(transport.AgentExecer)
+	if !ok {
+		return nil, ErrNoAgentForwarding
+	}
+	return ae.ExecAgent(ctx, cmd, agent) //nolint:wrapcheck // the transport's error already names the failure
 }
 
 // Reconnect restarts connecting now: it skips a pending backoff wait, retries

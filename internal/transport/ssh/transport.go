@@ -7,6 +7,7 @@ import (
 	"io"
 	"slices"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	gossh "golang.org/x/crypto/ssh"
@@ -30,6 +31,9 @@ type Transport struct {
 	wg        sync.WaitGroup
 	stopKA    chan struct{}
 	kaTimeout time.Duration
+
+	agentOnce sync.Once
+	agent     atomic.Pointer[agentSource] // set only while ExecAgent runs
 }
 
 var _ transport.Transport = (*Transport)(nil)
