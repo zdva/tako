@@ -44,7 +44,7 @@ func (a *App) brandRow(c *ui.Context) {
 			ui.Image(c, img).Size(28, 28)
 		}
 		ui.Text(c, "Tako").Bold().FontSize(15)
-		ui.Text(c, a.T(kBrandSub)).FontSize(11).TextColor(a.tk.Text3)
+		ui.Text(c, a.T(kBrandSub)).FontSize(11).TextColor(a.tk.Text3).MinWidth(0).NoWrap().Ellipsis("…")
 		ui.Spacer(c)
 		if a.iconButton(c, iconSidebar, a.T(kToggleSidebar), 26).Clicked() {
 			a.sidebarCollapsed = !a.sidebarCollapsed

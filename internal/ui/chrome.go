@@ -63,7 +63,7 @@ func (a *App) searchBox(c *ui.Context) {
 		Background(a.tk.Surface).Border(1, a.tk.BorderStrong).Cursor(ui.CursorPointer).Label(a.T(kSearchPlaceholder))
 	box.Children(func() {
 		ui.Icon(c, iconSearch).FontSize(14).TextColor(a.tk.Text3)
-		ui.Text(c, a.T(kSearchPlaceholder)).FontSize(12).TextColor(a.tk.Text3).Grow(1)
+		ui.Text(c, a.T(kSearchPlaceholder)).FontSize(12).TextColor(a.tk.Text3).Grow(1).MinWidth(0).NoWrap().Ellipsis("…")
 		ui.Box(c).Padding(1, 6).Radius(5).Background(a.tk.Surface3).Children(func() {
 			ui.Text(c, hint(actPalette)).FontSize(10.5).TextColor(a.tk.Text2)
 		})
