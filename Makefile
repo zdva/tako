@@ -1,5 +1,5 @@
 .DEFAULT_GOAL := help
-.PHONY: help build run test race cover lint vuln fmt tidy integration e2e fuzz build-all check clean
+.PHONY: help package-linux build run test race cover lint vuln fmt tidy integration e2e fuzz build-all check clean
 
 PLATFORMS ?= windows/amd64,windows/arm64,darwin/universal,linux/amd64,linux/arm64
 COVER_PKGS := ./internal/model/... ./internal/hostlib/... ./internal/session/... ./internal/layout/... \
@@ -41,9 +41,12 @@ integration: ## Tests against a real OpenSSH (downloads a portable sshd once)
 	sh scripts/fetch-sshd.sh
 	go test -race -count=1 -tags integration ./test/integration/...
 
-e2e: build ## Live-window checks under Xvfb: idle CPU/RSS, cold start, kill -9 recovery
+package-linux: ## Packaged linux/amd64 app in build/linux-amd64 (ships libghostty-vt next to the binary)
+	go tool mygo build -platform linux/amd64 -skip-installer
+
+e2e: package-linux ## Live-window checks under Xvfb: idle CPU/RSS, cold start, kill -9 recovery
 	sh scripts/fetch-sshd.sh
-	TAKO_BIN=$(CURDIR)/tako xvfb-run -a go test -count=1 -tags e2e -v ./test/e2e/...
+	TAKO_BIN=$(CURDIR)/build/linux-amd64/tako xvfb-run -a go test -count=1 -tags e2e -v ./test/e2e/...
 
 fuzz: ## Short fuzz run of the parsers
 	go test -run '^$$' -fuzz FuzzReadPPK -fuzztime 20s ./internal/transport/ssh

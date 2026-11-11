@@ -59,7 +59,9 @@ func run(exitAfter time.Duration) error {
 	}
 	defer a.Close()
 
+	started := time.Now()
 	mygo.App.WhenReady(func() {
+		slog.Info("runtime ready", "since_start", time.Since(started))
 		win := mygo.NewWindow(mygo.WindowOptions{
 			Title: "Tako", Width: defaultWidth, Height: defaultHeight,
 			MinWidth: minWidth, MinHeight: minHeight,
@@ -67,6 +69,7 @@ func run(exitAfter time.Duration) error {
 		})
 		a.SetWake(win.Invalidate)
 		a.Restore()
+		slog.Info("window created and session restored", "since_start", time.Since(started))
 		if exitAfter > 0 {
 			time.AfterFunc(exitAfter, func() { mygo.App.Quit() })
 		}
