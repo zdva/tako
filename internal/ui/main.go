@@ -259,19 +259,6 @@ func (a *App) dropCard(c *ui.Context, b *workspace.Block) {
 	})
 }
 
-// blockFooter holds the block's resource readings, which arrive with the
-// monitor in M3; until then they show a dash.
-func (a *App) blockFooter(c *ui.Context, _ *workspace.Block) {
-	ui.Row(c).Key("foot").Height(blockFoot).Padding(0, 12).Gap(14).Background(a.tk.Surface2).Shrink(0).Children(func() {
-		for _, m := range []string{a.T(kMetricCPU), a.T(kMetricMem), a.T(kMetricDisk)} {
-			ui.Row(c).Gap(4).Children(func() {
-				a.caption(c, m)
-				ui.Text(c, "—").FontSize(11).Bold().TextColor(a.tk.Text3)
-			})
-		}
-	})
-}
-
 // bannerButtons are the actions of the disconnect banner.
 func (a *App) bannerButtons(c *ui.Context, b *workspace.Block, link session.StateChange) {
 	if link.State == session.StateConnecting {

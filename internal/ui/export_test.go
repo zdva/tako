@@ -4,6 +4,7 @@ import (
 	"github.com/egoist/mygo/ui"
 
 	"github.com/wei-dong/tako/internal/layout"
+	"github.com/wei-dong/tako/internal/model"
 )
 
 // Geometry the tests need to aim the pointer.
@@ -66,3 +67,20 @@ func ShortcutHint(name string) string {
 
 // HoldModifiers makes pointer events count as made with mods held.
 func (a *App) HoldModifiers(mods ui.Modifiers) { a.heldMods = mods }
+
+// OpenTransfer opens the transfer sheet with host as the source.
+func (a *App) OpenTransfer(host model.ID) { a.openTransfer(host) }
+
+// MonitorOpen is the host whose monitor page is open, or "".
+func (a *App) MonitorOpen() model.ID { return a.mon.host }
+
+// Level names the threshold color of a percentage: green, amber or red.
+func (a *App) Level(p float64) string {
+	switch a.level(p) {
+	case a.tk.Red:
+		return "red"
+	case a.tk.Amber:
+		return "amber"
+	}
+	return "green"
+}

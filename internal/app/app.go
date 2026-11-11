@@ -18,10 +18,12 @@ import (
 	"github.com/wei-dong/tako/internal/importer/sshconfig"
 	"github.com/wei-dong/tako/internal/inputbus"
 	"github.com/wei-dong/tako/internal/model"
+	"github.com/wei-dong/tako/internal/monitor"
 	"github.com/wei-dong/tako/internal/secrets"
 	"github.com/wei-dong/tako/internal/session"
 	"github.com/wei-dong/tako/internal/settings"
 	"github.com/wei-dong/tako/internal/store"
+	"github.com/wei-dong/tako/internal/transfer"
 	tssh "github.com/wei-dong/tako/internal/transport/ssh"
 	tui "github.com/wei-dong/tako/internal/ui"
 	"github.com/wei-dong/tako/internal/workspace"
@@ -58,6 +60,9 @@ type Options struct {
 	AgentConn func() (net.Conn, error)
 	// PickFile is the native file chooser.
 	PickFile func(title string) (string, error)
+	// Files overrides the file endpoints of the transfer sheet and queue
+	// (tests); nil reaches hosts over SSH.
+	Files transfer.Provider
 	// OnQuit is called when the window asks to quit.
 	OnQuit func()
 }
@@ -70,7 +75,11 @@ type App struct {
 	Secrets  *secrets.Layered
 	Settings *settings.Settings
 	Prompts  *tui.Prompts
+	// Monitor measures the hosts that have a block; Transfers moves files.
+	Monitor   *monitor.Hub
+	Transfers *transfer.Queue
 
+	fleet   *fleet
 	dirs    store.Dirs
 	opts    Options
 	lock    *store.Lock
@@ -168,12 +177,33 @@ func New(parent context.Context, o Options) (*App, error) {
 		KnownHosts: dialer.KnownHosts, Secrets: a.Secrets, Prompter: a.Prompts,
 		Lookup: a.Library.Get, AgentConn: o.AgentConn,
 	}}
+	a.fleet = newFleet(&tssh.Dialer{
+		KnownHosts: dialer.KnownHosts, Secrets: a.Secrets, Prompter: a.Prompts,
+		Lookup: a.Library.Get, Remembered: a.remembered, AgentConn: o.AgentConn,
+	}, a.Library.Get, o.AgentConn)
+	prefs := a.Settings.Values()
+	a.Monitor = monitor.NewHub(monitor.HubOptions{
+		Interval: time.Duration(prefs.Monitor.Interval()) * time.Second,
+		OnChange: func(model.ID) { a.doWake() },
+	})
+	var files transfer.Provider = a.fleet
+	if o.Files != nil {
+		files = o.Files
+	}
+	topts := transfer.Options{Provider: files, Concurrency: prefs.Transfer.Parallel()}
+	if prefs.Transfer.AllowDirect {
+		topts.Direct = &transfer.Direct{Env: a.fleet}
+	}
+	a.Transfers = transfer.New(topts)
 	a.UI = tui.New(tui.Deps{
-		Model: a.Model, Library: a.Library, Secrets: a.Secrets, Connector: connector,
+		Monitor: a.Monitor, Transfers: a.Transfers, Files: files,
+		SetDirect: a.setDirect,
+		Model:     a.Model, Library: a.Library, Secrets: a.Secrets, Connector: connector,
 		Prompts: a.Prompts, Settings: a.Settings, Locale: o.Locale, Wake: a.doWake,
 		PickFile: o.PickFile, OnQuit: o.OnQuit, Version: o.Version,
 		ImportSSHConfig: a.importSSHConfig,
 	})
+	a.Transfers.Subscribe(a.UI.OnJob)
 	ok = true
 	return a, nil
 }
@@ -278,6 +308,15 @@ func (a *App) Close() {
 		a.Model.Close()
 	}
 	a.cancel()
+	if a.Transfers != nil {
+		a.Transfers.Close()
+	}
+	if a.Monitor != nil {
+		a.Monitor.Close()
+	}
+	if a.fleet != nil {
+		a.fleet.close()
+	}
 	if a.Library != nil {
 		a.Library.Close()
 	}
@@ -307,4 +346,17 @@ func (a *App) notice(ev session.Event, at time.Time) []byte {
 		text = "reconnected " + at.Format("15:04:05")
 	}
 	return []byte("\r\n\x1b[2m── " + text + " ──\x1b[0m\r\n")
+}
+
+// setDirect turns direct server-to-server transfers on or off for jobs added
+// from now on.
+func (a *App) setDirect(on bool) {
+	a.Transfers.SetDirect(a.directRunner(on))
+}
+
+func (a *App) directRunner(on bool) transfer.DirectRunner {
+	if !on {
+		return nil
+	}
+	return &transfer.Direct{Env: a.fleet}
 }

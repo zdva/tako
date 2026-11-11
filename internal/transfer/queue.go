@@ -86,7 +86,8 @@ type job struct {
 	cur       atomic.Int64 // bytes of the current file in place
 	doneBytes atomic.Int64 // bytes of finished files
 	done      map[string]bool
-	part      string // the part file being written, for clean-up
+	touched   map[string]bool // files this job has started (for Spec.Fresh)
+	part      string          // the part file being written, for clean-up
 	partEnd   Endpoint
 
 	lastBytes int64
@@ -113,10 +114,11 @@ func cmpOr[T comparable](v, def T) T {
 
 // Add queues a job and returns its ID.
 func (q *Queue) Add(spec Spec) (int, error) {
+	q.mu.Lock()
 	if spec.Mode == ModeDirect && q.opts.Direct == nil {
+		q.mu.Unlock()
 		return 0, ErrDirectDisabled
 	}
-	q.mu.Lock()
 	if q.closed {
 		q.mu.Unlock()
 		return 0, ErrQueueClosed
@@ -132,6 +134,14 @@ func (q *Queue) Add(spec Spec) (int, error) {
 	q.changed(j)
 	q.pump()
 	return j.info.ID, nil
+}
+
+// SetDirect turns direct mode on (a runner) or off (nil) for jobs added from
+// now on.
+func (q *Queue) SetDirect(d DirectRunner) {
+	q.mu.Lock()
+	q.opts.Direct = d
+	q.mu.Unlock()
 }
 
 // SetConcurrency changes how many jobs run at once.
@@ -624,7 +634,17 @@ func (q *Queue) copyTree(ctx context.Context, j *job, src, dst Endpoint) error {
 			src: src, dst: dst, srcPath: at(src, spec.Src.Path, it.rel), dstPath: target,
 			size: it.size, verify: spec.Verify, cur: &j.cur,
 		}
+		if spec.Fresh && !j.touched[it.rel] {
+			_ = dfs.Remove(target + PartSuffix)
+		}
+		if j.touched == nil {
+			j.touched = map[string]bool{}
+		}
+		j.touched[it.rel] = true
 		err = copyFile(ctx, c)
+		if c.resumed > 0 {
+			q.set(j, func(i *JobInfo) { i.Resumed = true })
+		}
 		if err != nil {
 			return err
 		}

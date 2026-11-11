@@ -148,6 +148,10 @@ func (b *Block) Link() session.StateChange {
 	return b.sess.State()
 }
 
+// Session returns the block's SSH session, nil for a local block. The monitor
+// runs its commands on it.
+func (b *Block) Session() *session.Session { return b.sess }
+
 // Reconnect retries an SSH block's connection at once.
 func (b *Block) Reconnect() {
 	if b.sess != nil {

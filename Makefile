@@ -1,5 +1,5 @@
 .DEFAULT_GOAL := help
-MILESTONE ?= m2
+MILESTONE ?= m3
 
 .PHONY: help screenshots package-linux build run test race cover lint vuln fmt tidy integration e2e fuzz build-all check clean
 

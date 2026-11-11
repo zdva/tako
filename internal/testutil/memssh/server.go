@@ -36,6 +36,9 @@ type Options struct {
 	// MaxSessions limits concurrent session channels per connection; zero is
 	// unlimited.
 	MaxSessions int
+	// Exec answers exec requests: it returns the output and the exit status.
+	// Nil answers every command with "ran: <command>".
+	Exec func(cmd string) (out string, status int)
 }
 
 // Server is a running server.
@@ -299,8 +302,12 @@ func (s *Server) serveSession(ctx context.Context, ch ssh.Channel, reqs <-chan *
 				var e struct{ Command string }
 				_ = ssh.Unmarshal(req.Payload, &e)
 				_ = req.Reply(true, nil)
-				_, _ = io.WriteString(ch, "ran: "+e.Command+"\n")
-				_, _ = ch.SendRequest("exit-status", false, []byte{0, 0, 0, 0})
+				out, status := "ran: "+e.Command+"\n", 0
+				if s.opts.Exec != nil {
+					out, status = s.opts.Exec(e.Command)
+				}
+				_, _ = io.WriteString(ch, out)
+				_, _ = ch.SendRequest("exit-status", false, []byte{0, 0, 0, byte(status)})
 				return
 			default:
 				_ = req.Reply(false, nil)

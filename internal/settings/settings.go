@@ -34,7 +34,68 @@ type Values struct {
 	// CompactBlocks lets blocks shrink to about 48x16 columns before the
 	// grid scrolls; the default keeps them at 80x24.
 	CompactBlocks bool `json:"compactBlocks,omitempty"`
+	// Monitor and Transfer tune the footer readings and file transfers; the
+	// zero values are the defaults.
+	Monitor  Monitor  `json:"monitor,omitzero"`
+	Transfer Transfer `json:"transfer,omitzero"`
 }
+
+// Monitor settings.
+type Monitor struct {
+	// Off stops all monitoring.
+	Off bool `json:"off,omitempty"`
+	// IntervalSec is the time between samples; 0 means 2.
+	IntervalSec int `json:"intervalSec,omitempty"`
+	// WarnPct and CritPct color a reading amber and red; 0 means 70 and 90.
+	WarnPct int `json:"warnPct,omitempty"`
+	CritPct int `json:"critPct,omitempty"`
+}
+
+// Monitor defaults.
+const (
+	DefaultMonitorInterval = 2
+	DefaultWarnPct         = 70
+	DefaultCritPct         = 90
+)
+
+// Interval is the sampling interval in seconds.
+func (m Monitor) Interval() int { return cmp.Or(m.IntervalSec, DefaultMonitorInterval) }
+
+// Warn is the percentage from which a reading turns amber.
+func (m Monitor) Warn() int { return cmp.Or(m.WarnPct, DefaultWarnPct) }
+
+// Crit is the percentage from which a reading turns red.
+func (m Monitor) Crit() int { return cmp.Or(m.CritPct, DefaultCritPct) }
+
+// Conflict is what a transfer does with a same-name file.
+type Conflict string
+
+// Conflict policies.
+const (
+	ConflictAsk       Conflict = "ask"
+	ConflictOverwrite Conflict = "overwrite"
+	ConflictSkip      Conflict = "skip"
+)
+
+// Transfer settings.
+type Transfer struct {
+	// Concurrency is how many transfers run at once; 0 means 3.
+	Concurrency int `json:"concurrency,omitempty"`
+	// Conflict is the same-name policy; "" means ask.
+	Conflict Conflict `json:"conflict,omitempty"`
+	// Verify is "auto" (default), "hash" or "size".
+	Verify string `json:"verify,omitempty"`
+	// AllowDirect enables the direct scp/rsync mode between servers. It is
+	// off by default because it forwards the SSH agent to the destination
+	// for the length of a copy.
+	AllowDirect bool `json:"allowDirect,omitempty"`
+}
+
+// Parallel is the number of simultaneous transfers.
+func (t Transfer) Parallel() int { return cmp.Or(t.Concurrency, 3) }
+
+// Policy is the same-name policy, ask by default.
+func (t Transfer) Policy() Conflict { return cmp.Or(t.Conflict, ConflictAsk) }
 
 // Settings is the live, saved preferences.
 type Settings struct {

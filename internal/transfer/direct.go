@@ -57,7 +57,13 @@ func (q *Queue) attemptDirect(ctx context.Context, j *job) error {
 	}
 	spec := j.info.Spec
 	spec.Policy = h.Policy()
-	err := q.opts.Direct.Run(ctx, spec, h)
+	q.mu.Lock()
+	runner := q.opts.Direct
+	q.mu.Unlock()
+	if runner == nil {
+		return ErrDirectDisabled
+	}
+	err := runner.Run(ctx, spec, h)
 	if err == nil {
 		q.set(j, func(i *JobInfo) { i.FilesDone = i.FilesTotal })
 	}

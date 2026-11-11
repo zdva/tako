@@ -596,11 +596,16 @@ func TestShortcuts_FocusMovesBySpace(t *testing.T) {
 	}
 }
 
-func TestShortcuts_StubsToastAndCloseBlockUsesTheDesignKey(t *testing.T) {
+func TestShortcuts_MonitorOpensAndCloseBlockUsesTheDesignKey(t *testing.T) {
 	h := newHarness(t, harnessOpts{})
 	h.openAll(2)
 	h.tt.Key(ctrlAlt, ui.KeyM)
-	h.waitText("Coming in the next release")
+	h.waitText("Back to terminals")
+	h.tt.Key(0, ui.KeyEscape)
+	h.tt.Frame()
+	if h.app.UI.MonitorOpen() != "" {
+		t.Fatal("Escape did not close the monitor page")
+	}
 	n := len(h.app.Model.Blocks())
 	h.tt.Key(ctrlAlt, ui.KeyW)
 	h.tt.Frame()

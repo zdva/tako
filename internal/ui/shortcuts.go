@@ -199,6 +199,10 @@ func menuKey(it *ui.MenuItem, act actID) *ui.MenuItem {
 
 // shortcuts runs the action of the key pressed this frame, if any.
 func (a *App) shortcuts(c *ui.Context) {
+	if a.mon.host != "" && !a.overlayOpen() && c.Shortcut(0, ui.KeyEscape) {
+		a.closeMonitor()
+		return
+	}
 	for _, s := range shortcutTable {
 		k, _ := s.keyOf()
 		if c.Shortcut(s.mods(), k) {
@@ -233,6 +237,10 @@ func (a *App) do(act actID, arg int) { //nolint:gocyclo // one case per action
 		}
 		a.focusBlock(b)
 	case actCloseTab:
+		if a.mon.host != "" {
+			a.closeMonitor()
+			return
+		}
 		if b != nil {
 			m.CloseTab(b, b.Active)
 		}
@@ -257,8 +265,14 @@ func (a *App) do(act actID, arg int) { //nolint:gocyclo // one case per action
 		}
 	case actSyncAll:
 		m.ToggleSyncAll()
-	case actMonitor, actTransfer:
-		a.toast(a.T(kSoon))
+	case actMonitor:
+		a.toggleMonitor(b)
+	case actTransfer:
+		if a.xfer.open {
+			a.xfer.open = false
+			return
+		}
+		a.openTransfer("")
 	case actMinimap:
 		p := m.MinimapPrefs()
 		p.Hidden = !p.Hidden

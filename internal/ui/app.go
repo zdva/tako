@@ -6,6 +6,7 @@ package ui
 import (
 	"context"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/egoist/mygo/ui"
@@ -14,9 +15,11 @@ import (
 	"github.com/wei-dong/tako/internal/i18n"
 	"github.com/wei-dong/tako/internal/layout"
 	"github.com/wei-dong/tako/internal/model"
+	"github.com/wei-dong/tako/internal/monitor"
 	"github.com/wei-dong/tako/internal/secrets"
 	"github.com/wei-dong/tako/internal/settings"
 	"github.com/wei-dong/tako/internal/theme"
+	"github.com/wei-dong/tako/internal/transfer"
 	"github.com/wei-dong/tako/internal/workspace"
 )
 
@@ -53,6 +56,14 @@ type Deps struct {
 	OnQuit func()
 	// Version is shown in the settings sheet.
 	Version string
+
+	// Monitor measures the hosts that have a block; nil turns monitoring off.
+	Monitor *monitor.Hub
+	// Transfers runs file transfers and Files lists directories for the
+	// transfer sheet; SetDirect switches direct mode on or off.
+	Transfers *transfer.Queue
+	Files     transfer.Provider
+	SetDirect func(on bool)
 }
 
 // App is the state of the window.
@@ -92,6 +103,13 @@ type App struct {
 	mm           minimapState
 	rename       renameState
 	find         findState
+	mon          monitorUI
+	xfer         transferUI
+	// jobState is what OnJob last saw, so a progress tick wakes the window
+	// only while the sheet shows it.
+	jobMu    sync.Mutex
+	jobState map[int]transfer.State
+	xferOpen atomic.Bool
 	// heldMods are modifiers the pointer events do not carry: tests set
 	// them, since the Tester's pointer events have none.
 	heldMods ui.Modifiers
@@ -159,6 +177,7 @@ func (a *App) syncPrefs(c *ui.Context) {
 func (a *App) Build(c *ui.Context) {
 	a.drain()
 	a.syncPrefs(c)
+	a.syncMonitors()
 	ui.Themed(c, a.tk.UI()).Fill().Background(a.tk.Bg).Children(func() {
 		a.shortcuts(c)
 		ui.Row(c).Fill().AlignItems(ui.Stretch).Children(func() {
@@ -167,13 +186,19 @@ func (a *App) Build(c *ui.Context) {
 			}
 			ui.Column(c).Grow(1).MinWidth(0).Children(func() {
 				a.toolbar(c)
-				a.main(c)
+				ui.Column(c).Key("stage").Grow(1).MinHeight(0).Children(func() {
+					a.main(c)
+					if a.mon.host != "" {
+						a.monitorPage(c)
+					}
+				})
 				a.statusBar(c)
 			})
 		})
 		a.sheet.build(c, a)
 		a.paletteView(c)
 		a.settingsView(c)
+		a.transferSheet(c)
 		a.promptView(c)
 		a.deleteView(c)
 		a.renameView(c)

@@ -65,6 +65,9 @@ type Spec struct {
 	Mode     Mode
 	Policy   Policy
 	Verify   VerifyMode
+	// Fresh ignores part files that were already there when the job began;
+	// the job's own retries still continue from the part it wrote.
+	Fresh bool
 }
 
 // State is where a job is in its life.
@@ -135,6 +138,8 @@ type JobInfo struct {
 	Err string
 	// Conflict is set while Asking.
 	Conflict *Conflict
+	// Resumed is set once a file continued from an earlier part.
+	Resumed bool
 	// Attempt counts automatic retries since the last progress.
 	Attempt  int
 	Started  time.Time

@@ -17,6 +17,7 @@ import (
 	"github.com/wei-dong/tako/internal/secrets"
 	"github.com/wei-dong/tako/internal/store"
 	"github.com/wei-dong/tako/internal/testutil/memssh"
+	"github.com/wei-dong/tako/internal/transfer"
 )
 
 func TestMain(m *testing.M) {
@@ -37,6 +38,7 @@ type harness struct {
 	kc   *secrets.Memory
 
 	resizeDelay time.Duration
+	files       transfer.Provider
 }
 
 type harnessOpts struct {
@@ -45,6 +47,10 @@ type harnessOpts struct {
 	keepDirs  *store.Dirs
 	// resizeDelay overrides how long a terminal size must stay still.
 	resizeDelay time.Duration
+	// exec answers the test server's exec requests (nil echoes them).
+	exec func(cmd string) (string, int)
+	// files replaces the SSH file endpoints of the transfer sheet.
+	files transfer.Provider
 }
 
 func newHarness(t *testing.T, o harnessOpts) *harness {
@@ -52,7 +58,7 @@ func newHarness(t *testing.T, o harnessOpts) *harness {
 	if err := terminal.Load(); err != nil {
 		t.Skipf("the terminal library is not available: %v", err)
 	}
-	srv, err := memssh.Start(t.Context(), memssh.Options{Password: "pw"})
+	srv, err := memssh.Start(t.Context(), memssh.Options{Password: "pw", Exec: o.exec})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -65,7 +71,7 @@ func newHarness(t *testing.T, o harnessOpts) *harness {
 	if locale == "" {
 		locale = "en_US.UTF-8"
 	}
-	h := &harness{t: t, srv: srv, dirs: dirs, kc: secrets.NewMemory(), resizeDelay: o.resizeDelay}
+	h := &harness{t: t, srv: srv, dirs: dirs, kc: secrets.NewMemory(), resizeDelay: o.resizeDelay, files: o.files}
 	h.start(locale, o.sshConfig)
 	t.Cleanup(h.stop)
 	return h
@@ -77,7 +83,7 @@ func (h *harness) start(locale, sshConfig string) {
 		Dirs: h.dirs, Keychain: h.kc, Locale: locale, Version: "test",
 		SSHConfig: sshConfig, Home: h.t.TempDir(),
 		SaveDelay: 20 * time.Millisecond, Backoff: []time.Duration{100 * time.Millisecond},
-		ResizeDelay: h.resizeDelay,
+		ResizeDelay: h.resizeDelay, Files: h.files,
 	})
 	if err != nil {
 		h.t.Fatal(err)

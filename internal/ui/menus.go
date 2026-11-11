@@ -32,6 +32,12 @@ func (a *App) blockMenu(m *ui.Menu, b *workspace.Block) {
 	a.moveToMenu(m, b)
 	if b.Kind == workspace.KindSSH {
 		m.Separator()
+		if menuKey(m.Item(a.T(kCmdMonitor)), actMonitor).Chosen() {
+			a.openMonitor(b.HostID)
+		}
+		if menuKey(m.Item(a.T(kXferMenu)), actTransfer).Chosen() {
+			a.openTransfer(b.HostID)
+		}
 		if m.Item(a.T(kReconnectNow)).Chosen() {
 			b.Reconnect()
 		}

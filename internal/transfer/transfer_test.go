@@ -9,6 +9,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"slices"
 	"sync"
 	"sync/atomic"
 	"syscall"
@@ -760,5 +761,42 @@ func TestLocalFS(t *testing.T) {
 	}
 	if l.Join("a", "b") != filepath.Join("a", "b") || l.Close() != nil {
 		t.Error("join/close")
+	}
+}
+
+func TestListAndParent(t *testing.T) {
+	dir := t.TempDir()
+	randomFile(t, filepath.Join(dir, "b.txt"), 5)
+	randomFile(t, filepath.Join(dir, "A.txt"), 7)
+	if err := os.MkdirAll(filepath.Join(dir, "zdir"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Symlink("zdir", filepath.Join(dir, "linkdir")); err != nil {
+		t.Fatal(err)
+	}
+	got, err := List(t.Context(), Local(), dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var names []string
+	for _, e := range got {
+		names = append(names, e.Name)
+	}
+	if want := []string{"linkdir", "zdir", "A.txt", "b.txt"}; !slices.Equal(names, want) {
+		t.Errorf("order %v, want %v", names, want)
+	}
+	if !got[0].Dir || !got[0].Link {
+		t.Errorf("a link to a folder shows as %+v", got[0])
+	}
+	if Parent(Local(), dir) != filepath.Dir(dir) {
+		t.Errorf("parent %q", Parent(Local(), dir))
+	}
+	if _, err := List(t.Context(), Local(), filepath.Join(dir, "none")); err == nil {
+		t.Error("listed a missing directory")
+	}
+	ctx, cancel := context.WithCancel(t.Context())
+	cancel()
+	if _, err := List(ctx, Local(), dir); err == nil {
+		t.Error("listed after cancel")
 	}
 }

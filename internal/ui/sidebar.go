@@ -169,6 +169,13 @@ func (a *App) hostMenu(m *ui.Menu, h model.Host, st hostState) {
 		}
 	}
 	m.Separator()
+	if m.Item(a.T(kXferMenu)).Chosen() {
+		a.openTransfer(h.ID)
+	}
+	if st.open && m.Item(a.T(kCmdMonitorHost, h.Name)).Chosen() {
+		a.openMonitor(h.ID)
+	}
+	m.Separator()
 	if m.Item(a.T(kMenuEdit)).Chosen() {
 		a.openEditHost(h)
 	}
