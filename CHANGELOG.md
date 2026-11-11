@@ -6,6 +6,70 @@ All notable changes are recorded here. The format follows
 
 ## [Unreleased]
 
+## [0.2.0-m2] - 2026-11-11
+
+Second milestone: synchronized input UI, minimap, draggable layouts. Local
+tag only; nothing has been published.
+
+### Added
+
+- Sync UI: a synced block has a 1 px coral border and one small chip; sync is
+  switched from the chip, minimap, command palette, shortcuts and menus; all
+  on/off (`⌘⌥⇧S`, `Ctrl+Shift+Alt+A`); a disconnected synced block is paused and
+  resumes after reconnect without affecting the others.
+- Floating minimap: 176 px, translucent at rest and opaque on hover or drag;
+  opacity slider; click toggles sync, box select (⇧ adds, ⌥ inverts), drag to
+  reorder, corner snapping, show/hide; position and opacity are remembered.
+- Manual layout: binary split tree (`internal/layout.Tree`), draggable
+  dividers snapping to ½, ⅓, ⅔ with a guide line (⌥ disables), minimum block
+  sizes, about 150 ms spring animation, zoom a block (`⌘⇧↵`, double-click),
+  layout presets; manual layout, sync flags and minimap prefs survive restarts.
+- Full shortcut set per DESIGN §4.6 ([docs/SHORTCUTS.md](docs/SHORTCUTS.md)),
+  right-click menus (block header, tab, sidebar host and tag, minimap), block
+  rename, find bar, move block to…, monitor and transfer entries (notice until M3).
+- Hidden title bar with the brand row and toolbar as drag handles.
+- `session.Options.ResizeDelay` (tests); ADRs 0009–0011; e2e frame-rate,
+  restart and screenshot tests; `make screenshots MILESTONE=m2`.
+
+### Changed
+
+- UI aligned with the final design's no-redundancy rule: removed the
+  "auto layout 3×2" toolbar button, the big "syncing" buttons, "session saved"
+  and "connected" texts, the always-green status dot, the sidebar sync link
+  icon, status-bar counts and latency, and the minimap's title, close button
+  and hint row. Toolbar: search, minimap toggle, transfer icon.
+- The status bar shows the focused host and the terminal's size and encoding.
+
+### M2 acceptance (Linux VM, Xvfb, Mesa software renderer; fresh clone)
+
+| # | Criterion | Result |
+|---|---|---|
+| 1 | 9 synced blocks get identical bytes, no cross-replies; a 10 KB/s target does not delay the other 8 | Pass (`inputbus` acceptance tests, StripReplies fuzz; real window: one command ran in all 9 blocks) |
+| 2 | Minimap click, box (⇧/⌥), reorder, corner snap, opacity in `ui.Tester`; translucent vs opaque by screenshot | Pass (Tester tests; e2e compares real-window pixels: 94% of the header pixels change between rest and hover) |
+| 3 | Divider snapping ½/⅓/⅔ with guide; layout property tests | Pass |
+| 4 | Disconnected block's sync pauses, others unaffected, resumes | Pass |
+| 5 | Resize and layout drag debounce terminal resizes | Pass: 60 pointer moves, 2 blocks, 2 window-size changes, none during the drag |
+| 6 | Restart restores manual layout and sync state | Pass (Tester; real window with `kill -9`) |
+| 7 | Shortcuts match the DESIGN table | Pass (test parses DESIGN.md §4.6) |
+| 8 | 9-block flood ≥ 18 fps | Pass: 59 frames/s, mean frame 3.5 ms (1440×900, software renderer) |
+
+Also: idle with 9 blocks CPU 0.00%, private memory 24 MB (RSS 71 MB), cold
+start 0.15 s, `kill -9` recovery 0.21 s; core coverage 85.0%; `govulncheck`
+clean; lint clean.
+
+### Known issues and limits
+
+- The terminal's own right-click menu (Copy, Paste, Select All, Clear) cannot
+  be extended, so "search" and "open current directory" are not in it
+  (ADR 0011).
+- Hover uses the toolkit's own opacity animation; frosted-glass blur was not
+  attempted, so the minimap falls back to plain translucency.
+- Windows and macOS builds compile but have never been run, so the hidden
+  title bar is only checked under X11.
+- Monitor and transfer entries show a notice until M3; footer metrics are
+  placeholders.
+- Module path and licence are still placeholders.
+
 ## [0.1.0-m1] - 2026-11-11
 
 First milestone: connect, terminal, grid, sidebar. Local tag only; nothing
