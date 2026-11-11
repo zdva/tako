@@ -28,5 +28,5 @@ and a log full of host names, addresses and paths is not safe to paste.
 - Reports contain stack traces with function names and paths of the build, not
   of the user's machine.
 - There is no telemetry and no upload; the user decides what to paste.
-- The scrubber is heuristic; the About page tells the user to read the text
-  before sharing.
+- The scrubber is heuristic; the manual tells the user to read the text before
+  sharing it.
