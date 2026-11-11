@@ -13,14 +13,17 @@ import (
 	"time"
 
 	"github.com/egoist/mygo"
+	"github.com/egoist/mygo/plugins/updater"
+	"github.com/egoist/mygo/plugins/updater/native"
 	"github.com/egoist/mygo/ui"
 
 	"github.com/wei-dong/tako/internal/app"
+	"github.com/wei-dong/tako/internal/diag"
 	"github.com/wei-dong/tako/internal/store"
 )
 
 // version is set at build time with -ldflags "-X main.version=...".
-var version = "0.3.0-m3"
+var version = "0.4.0"
 
 const (
 	defaultWidth  = 1280
@@ -54,14 +57,25 @@ func run(exitAfter time.Duration) error {
 	if err != nil {
 		return fmt.Errorf("finding data directories: %w", err)
 	}
+	// A crash on any goroutine leaves a report next to the logs; a clean
+	// exit removes the empty file.
+	crashes, err := diag.Install(dirs.Logs())
+	if err != nil {
+		slog.Warn("crash reports are off", "err", err)
+	}
+	defer func() { _ = crashes.Close() }()
 	a, err := app.New(ctx, app.Options{
-		Dirs: dirs, Locale: locale(), Version: version, PickFile: pickFile,
-		OnQuit: func() { mygo.App.Quit() },
+		Dirs: dirs, Locale: locale(), Version: version, PickFile: pickFile, PickSave: pickSave,
+		OnQuit: func() { mygo.App.Quit() }, Crashes: crashes,
+		CheckUpdates: updater.CheckForUpdates, UpdateAvailable: updater.AvailableVersion,
 	})
 	if err != nil {
 		return fmt.Errorf("starting: %w", err)
 	}
 	defer a.Close()
+	// Signed updates from GitHub Releases (mygo.json "updates"). The window
+	// speaks the interface language; development builds never check.
+	mygo.Use(native.New(updater.Options{Language: string(a.Settings.Values().ResolveLanguage(locale()))}))
 
 	started := time.Now()
 	mygo.App.WhenReady(func() {
@@ -115,4 +129,9 @@ func pickFile(title string) (string, error) {
 		return "", err //nolint:wrapcheck // a cancelled dialog is not an error to explain
 	}
 	return paths[0], nil
+}
+
+func pickSave(title, name string) (string, error) {
+	path, err := mygo.Dialog.Save(mygo.SaveDialogOptions{Title: title, DefaultPath: name, CreateDirectories: true})
+	return path, err //nolint:wrapcheck // a cancelled dialog is not an error to explain
 }

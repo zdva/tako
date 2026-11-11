@@ -53,6 +53,26 @@ type Deps struct {
 	Wake func()
 	// PickFile shows a native file chooser (nil in tests); it blocks.
 	PickFile func(title string) (string, error)
+	// PickSave shows a native "save as" chooser (nil in tests); it blocks.
+	PickSave func(title, name string) (string, error)
+	// ImportHosts reads a host file or folder of another terminal (Xshell,
+	// SecureCRT, Termius) or a Tako export; ExportHosts writes the library
+	// without secrets; ImportColors reads an iTerm2 color preset.
+	ImportHosts  func(path string) (ImportSummary, error)
+	ExportHosts  func(path string) error
+	ImportColors func(path string) (scheme.Scheme, error)
+	// DefaultExport is the path the export field starts with.
+	DefaultExport string
+	// Paths are the folders shown on the Data page.
+	Paths struct{ Config, Logs string }
+	// Diagnostics returns the text "Copy diagnostics" puts on the clipboard.
+	Diagnostics func() string
+	// CrashNotice describes the crash log of the previous run, or "".
+	CrashNotice func() string
+	// CheckUpdates opens the update window; UpdateAvailable is the newer
+	// version found by a check, or "".
+	CheckUpdates    func()
+	UpdateAvailable func() string
 	// OnQuit asks the app to quit.
 	OnQuit func()
 	// Version is shown in the settings sheet.
@@ -150,6 +170,9 @@ func (a *App) drain() {
 		fn()
 	}
 }
+
+// SetPaths tells the Data page where the settings and the logs are.
+func (a *App) SetPaths(config, logs string) { a.d.Paths.Config, a.d.Paths.Logs = config, logs }
 
 // Tokens returns the palette in use.
 func (a *App) Tokens() theme.Tokens { return a.tk }

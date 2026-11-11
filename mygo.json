@@ -1,7 +1,7 @@
 {
   "name": "Tako",
   "identifier": "dev.tako.app",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "main": "./cmd/tako",
   "out": "build",
   "macos": { "minimumSystemVersion": "13.0" }

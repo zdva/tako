@@ -13,6 +13,7 @@ import (
 
 	"github.com/egoist/mygo/plugins/terminal"
 
+	"github.com/wei-dong/tako/internal/diag"
 	"github.com/wei-dong/tako/internal/hostlib"
 	"github.com/wei-dong/tako/internal/i18n"
 	"github.com/wei-dong/tako/internal/importer/sshconfig"
@@ -63,6 +64,14 @@ type Options struct {
 	// Files overrides the file endpoints of the transfer sheet and queue
 	// (tests); nil reaches hosts over SSH.
 	Files transfer.Provider
+	// PickSave is the native "save as" chooser.
+	PickSave func(title, name string) (string, error)
+	// Crashes tells about the crash report of the previous run; nil for none.
+	Crashes *diag.Crashes
+	// CheckUpdates opens the update window and UpdateAvailable names a newer
+	// version the updater found; nil when the build cannot update itself.
+	CheckUpdates    func()
+	UpdateAvailable func() string
 	// OnQuit is called when the window asks to quit.
 	OnQuit func()
 }
@@ -93,6 +102,7 @@ type App struct {
 	// restored is set once Restore ran: before that the saved session must
 	// not be overwritten with an empty one.
 	restored bool
+	started  time.Time
 }
 
 // New opens the stores and builds the workspace. Call [App.Restore] once the
@@ -106,7 +116,7 @@ func New(parent context.Context, o Options) (*App, error) {
 		return nil, fmt.Errorf("another Tako instance is using %s: %w", o.Dirs.Config, err)
 	}
 	ctx, cancel := context.WithCancel(parent)
-	a := &App{dirs: o.Dirs, opts: o, lock: lock, cancel: cancel}
+	a := &App{dirs: o.Dirs, opts: o, lock: lock, cancel: cancel, started: time.Now()}
 	ok := false
 	defer func() {
 		if !ok {
@@ -145,7 +155,7 @@ func New(parent context.Context, o Options) (*App, error) {
 		KnownHosts: tssh.NewKnownHosts(o.Dirs.KnownHosts()),
 		Secrets:    a.Secrets,
 		Prompter:   a.Prompts,
-		Lookup:     a.Library.Get,
+		Lookup:     a.lookup,
 		Remembered: a.remembered,
 		AgentConn:  o.AgentConn,
 	}
@@ -179,12 +189,12 @@ func New(parent context.Context, o Options) (*App, error) {
 	})
 	connector := &Connector{Dialer: &tssh.Dialer{
 		KnownHosts: dialer.KnownHosts, Secrets: a.Secrets, Prompter: a.Prompts,
-		Lookup: a.Library.Get, AgentConn: o.AgentConn,
+		Lookup: a.lookup, AgentConn: o.AgentConn,
 	}}
 	a.fleet = newFleet(&tssh.Dialer{
 		KnownHosts: dialer.KnownHosts, Secrets: a.Secrets, Prompter: a.Prompts,
-		Lookup: a.Library.Get, Remembered: a.remembered, AgentConn: o.AgentConn,
-	}, a.Library.Get, o.AgentConn)
+		Lookup: a.lookup, Remembered: a.remembered, AgentConn: o.AgentConn,
+	}, a.lookup, o.AgentConn)
 	prefs := a.Settings.Values()
 	a.Monitor = monitor.NewHub(monitor.HubOptions{
 		Interval: time.Duration(prefs.Monitor.Interval()) * time.Second,
@@ -204,9 +214,14 @@ func New(parent context.Context, o Options) (*App, error) {
 		SetDirect: a.setDirect,
 		Model:     a.Model, Library: a.Library, Secrets: a.Secrets, Connector: connector,
 		Prompts: a.Prompts, Settings: a.Settings, Locale: o.Locale, Wake: a.doWake,
-		PickFile: o.PickFile, OnQuit: o.OnQuit, Version: o.Version,
+		PickFile: o.PickFile, PickSave: o.PickSave, OnQuit: o.OnQuit, Version: o.Version,
 		ImportSSHConfig: a.importSSHConfig,
+		ImportHosts:     a.importHosts, ExportHosts: a.exportHosts, ImportColors: a.importColors,
+		DefaultExport: filepath.Join(homeOr(o.Home), "tako-hosts.json"),
+		Diagnostics:   a.diagnostics, CrashNotice: a.crashNotice,
+		CheckUpdates: o.CheckUpdates, UpdateAvailable: o.UpdateAvailable,
 	})
+	a.UI.SetPaths(o.Dirs.Config, o.Dirs.Logs())
 	a.Transfers.Subscribe(a.UI.OnJob)
 	ok = true
 	return a, nil
@@ -363,4 +378,15 @@ func (a *App) directRunner(on bool) transfer.DirectRunner {
 		return nil
 	}
 	return &transfer.Direct{Env: a.fleet}
+}
+
+func homeOr(home string) string {
+	if home != "" {
+		return home
+	}
+	h, err := os.UserHomeDir()
+	if err != nil {
+		return "."
+	}
+	return h
 }
