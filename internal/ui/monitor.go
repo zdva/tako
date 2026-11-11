@@ -139,8 +139,7 @@ func (a *App) blockFooter(c *ui.Context, b *workspace.Block) {
 			a.meter(c, m.label, m.value, have && !failing)
 		}
 		if have && p.Latency > 0 {
-			ui.Spacer(c)
-			a.caption(c, fmt.Sprintf("%d ms", max(int(p.Latency.Round(time.Millisecond)/time.Millisecond), 1)))
+			a.caption(c, fmt.Sprintf("%d ms", max(int(p.Latency.Round(time.Millisecond)/time.Millisecond), 1))).NoWrap().Shrink(0)
 		}
 	})
 	if b.Kind == workspace.KindSSH && row.Clicked() {
@@ -150,16 +149,18 @@ func (a *App) blockFooter(c *ui.Context, b *workspace.Block) {
 
 // meter is one labelled bar of the footer; without a reading it is a dash.
 func (a *App) meter(c *ui.Context, label string, value float64, ok bool) {
-	ui.Row(c).Key("m-" + label).Gap(5).AlignItems(ui.Center).Children(func() {
-		a.caption(c, label)
+	// The meters share the footer and their bars give way when it is narrow,
+	// so the labels and values never wrap.
+	ui.Row(c).Key("m-" + label).Gap(5).AlignItems(ui.Center).Grow(1).Shrink(1).MinWidth(0).MaxWidth(130).Children(func() {
+		a.caption(c, label).NoWrap().Shrink(0)
 		if !ok {
 			ui.Text(c, "—").FontSize(11).Bold().TextColor(a.tk.Text3)
 			return
 		}
-		ui.Box(c).Width(40).Height(4).Radius(2).Background(a.tk.Surface4).Clip().Children(func() {
-			ui.Box(c).Width(max(40*float32(value)/100, 2)).Height(4).Background(a.level(value))
+		ui.Box(c).Grow(1).MinWidth(10).MaxWidth(44).Height(4).Radius(2).Background(a.tk.Surface4).Clip().Children(func() {
+			ui.Box(c).WidthPercent(max(float32(value), 6)).Height(4).Background(a.level(value))
 		})
-		ui.Text(c, fmt.Sprintf("%d%%", pct(value))).FontSize(11).Bold().TextColor(a.tk.Text).Width(30)
+		ui.Text(c, fmt.Sprintf("%d%%", pct(value))).FontSize(11).Bold().TextColor(a.tk.Text).NoWrap().Shrink(0)
 	})
 }
 
