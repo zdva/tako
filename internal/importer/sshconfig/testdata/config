@@ -1,0 +1,51 @@
+# Tako test fixture: a realistic ~/.ssh/config with 14 concrete hosts.
+Include conf.d/*.conf
+
+Host bastion
+    HostName 52.74.18.6
+    User ubuntu
+    IdentityFile ~/.ssh/id_bastion
+    Port 2222
+
+Host web-01 web-02 web-03
+    HostName 10.0.1.%h
+    ProxyJump bastion
+    User ubuntu
+
+Host db-01
+    HostName 10.0.2.21
+    ProxyJump bastion
+    User postgres
+    IdentityFile "~/.ssh/db key"
+
+Host gpu-01 gpu-02
+    HostName 10.0.5.31
+    ProxyJump deploy@jump.example.com:2200
+    User root
+
+Host legacy
+    HostName=192.168.1.5
+    Port=22
+
+Host win-build
+    HostName 10.0.7.40
+    User Administrator
+
+Host mac-mini
+    HostName 10.0.7.50
+    User wei
+
+Host *.corp !skipme.corp
+    User corp
+
+Host ci-runner
+    HostName ci.corp
+    ProxyCommand ssh -W %h:%p somewhere
+
+Host *
+    ServerAliveInterval 45
+    IdentityFile ~/.ssh/id_default
+    User ops
+
+Match host never
+    User nobody

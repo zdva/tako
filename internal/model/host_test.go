@@ -107,7 +107,7 @@ func TestResolveJumps(t *testing.T) {
 		{"missing", Host{ID: "t", Jump: []Hop{{HostID: "zz"}}}, ErrNotFound, ""},
 		{"self", Host{ID: "t", Jump: []Hop{{HostID: "t"}}}, ErrJumpLoop, ""},
 		{"repeat", Host{ID: "t", Jump: []Hop{{HostID: "a"}, {HostID: "a"}}}, ErrJumpLoop, ""},
-		{"nested", Host{ID: "t", Jump: []Hop{{HostID: "c"}}}, ErrJumpLoop, ""},
+		{"hop with own chain is not followed", Host{ID: "t", Jump: []Hop{{HostID: "c"}}}, nil, "c"},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {

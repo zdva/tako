@@ -262,7 +262,7 @@ func SecretRef(id ID, kind string) string {
 
 // ResolveJumps returns the hosts of h's jump chain, first hop first, looked up
 // with find. It fails when a hop is missing or the chain loops back on h or on
-// itself.
+// itself. The chain is the whole path: a hop's own Jump list is not followed.
 func ResolveJumps(h Host, find func(ID) (Host, bool)) ([]Host, error) {
 	seen := map[ID]bool{h.ID: true}
 	chain := make([]Host, 0, len(h.Jump))
@@ -274,9 +274,6 @@ func ResolveJumps(h Host, find func(ID) (Host, bool)) ([]Host, error) {
 		jh, ok := find(hop.HostID)
 		if !ok {
 			return nil, fmt.Errorf("jump host %s: %w", hop.HostID, ErrNotFound)
-		}
-		if len(jh.Jump) > 0 {
-			return nil, fmt.Errorf("%w: jump host %s has its own jump chain", ErrJumpLoop, jh.Name)
 		}
 		chain = append(chain, jh)
 	}
