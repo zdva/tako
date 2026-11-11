@@ -24,7 +24,7 @@ func meterPixels(img image.Image) int {
 	palette := [][3]int{{0x3D, 0xD6, 0x8C}, {0xF5, 0xB8, 0x3D}, {0xFF, 0x63, 0x69}}
 	n := 0
 	b := img.Bounds()
-	for y := 0; y < min(b.Max.Y, windowH); y++ {
+	for y := range min(b.Max.Y, windowH) {
 		for x := 280; x < min(b.Max.X, windowW); x++ {
 			r, g, bl, _ := img.At(x, y).RGBA()
 			for _, want := range palette {
