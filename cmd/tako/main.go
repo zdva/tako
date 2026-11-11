@@ -9,6 +9,7 @@ import (
 	"log/slog"
 	"os"
 	"os/signal"
+	"sync"
 	"time"
 
 	"github.com/egoist/mygo"
@@ -68,8 +69,19 @@ func run(exitAfter time.Duration) error {
 			Content: ui.View(a.UI.Build),
 		})
 		a.SetWake(win.Invalidate)
-		a.Restore()
-		slog.Info("window created and session restored", "since_start", time.Since(started))
+		// Restore after the window drew its first frame, on the UI
+		// goroutine: terminals created before that render black (seen with
+		// Mesa's software GL under Xvfb).
+		var once sync.Once
+		win.OnReadyToShow(func() {
+			once.Do(func() {
+				a.UI.Post(func() {
+					a.Restore()
+					slog.Info("session restored", "since_start", time.Since(started))
+				})
+			})
+		})
+		slog.Info("window created", "since_start", time.Since(started))
 		if exitAfter > 0 {
 			time.AfterFunc(exitAfter, func() { mygo.App.Quit() })
 		}
