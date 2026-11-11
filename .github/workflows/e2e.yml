@@ -1,0 +1,24 @@
+name: E2E (live window)
+
+# Real-window checks under Xvfb: idle CPU and memory, cold start, kill -9
+# recovery. Slower and sensitive to the runner, so it runs on demand and nightly.
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "17 3 * * *"
+
+permissions:
+  contents: read
+
+jobs:
+  e2e:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+      - name: Dependencies
+        run: sudo apt-get update && sudo apt-get install -y xvfb xdotool fontconfig fonts-noto-cjk openssh-server python3-pil libgtk-3-0
+      - name: e2e
+        run: make e2e
