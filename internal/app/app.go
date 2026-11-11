@@ -51,6 +51,9 @@ type Options struct {
 	SaveDelay time.Duration
 	// Backoff overrides the reconnect schedule (tests).
 	Backoff []time.Duration
+	// ResizeDelay overrides how long a terminal size must stay still before
+	// the shell is told (tests).
+	ResizeDelay time.Duration
 	// AgentConn overrides the SSH agent connection (tests).
 	AgentConn func() (net.Conn, error)
 	// PickFile is the native file chooser.
@@ -151,7 +154,7 @@ func New(parent context.Context, o Options) (*App, error) {
 		Ctx: ctx, Bus: bus,
 		NewSession: func(h model.Host) *session.Session {
 			return session.New(session.Options{
-				Host: h, Dialer: dialer, Limit: limit, Backoff: o.Backoff,
+				Host: h, Dialer: dialer, Limit: limit, Backoff: o.Backoff, ResizeDelay: o.ResizeDelay,
 				StartDir: h.StartDir, StartCmd: h.StartCmd, Notice: a.notice,
 			})
 		},

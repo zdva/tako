@@ -94,6 +94,8 @@ type Options struct {
 	// StartDir and StartCmd run in the first shell of each pane only.
 	StartDir string
 	StartCmd string
+	// ResizeDelay overrides [DefaultResizeDelay].
+	ResizeDelay time.Duration
 	// Now and Rand are test hooks.
 	Now  func() time.Time
 	Rand func() float64
@@ -200,7 +202,7 @@ func (s *Session) OpenPaneAt(size transport.Size, dir, cmd string) (*Pane, error
 	if s.closed {
 		return nil, ErrClosed
 	}
-	p := newPane(size)
+	p := newPane(size, s.opts.ResizeDelay)
 	p.startDir, p.startCmd = dir, cmd
 	s.panesAll = append(s.panesAll, p)
 	s.assignLocked(p)

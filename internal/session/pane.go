@@ -24,17 +24,22 @@ type Pane struct {
 	exited  bool   // the remote shell ended on its own
 
 	resizeTimer        *time.Timer
-	startDir, startCmd string      // typed into the first shell only
-	started            atomic.Bool // a shell has been attached at least once
+	delay              time.Duration // how long a size must stay still before it is sent
+	startDir, startCmd string        // typed into the first shell only
+	started            atomic.Bool   // a shell has been attached at least once
 	dropped            atomic.Uint64
 	onDrop             atomic.Pointer[func()]
 }
 
-func newPane(size transport.Size) *Pane {
+func newPane(size transport.Size, resizeDelay time.Duration) *Pane {
+	if resizeDelay <= 0 {
+		resizeDelay = DefaultResizeDelay
+	}
 	return &Pane{
 		out:    make(chan []byte, 64),
 		closed: make(chan struct{}),
 		size:   size,
+		delay:  resizeDelay,
 	}
 }
 
@@ -101,13 +106,14 @@ func (p *Pane) Write(b []byte) (int, error) {
 	return len(b), nil
 }
 
-// resizeDelay is how long a window-change waits for the size to settle, so
-// dragging a window edge sends one request instead of one per frame.
-const resizeDelay = 100 * time.Millisecond
+// DefaultResizeDelay is how long a window-change waits for the size to settle,
+// so dragging a window edge or a divider sends one request instead of one per
+// frame.
+const DefaultResizeDelay = 100 * time.Millisecond
 
 // Resize implements the terminal's Resize(cols, rows int) error. The size is
 // remembered at once and applied to the next shell after a reconnect; the
-// running shell is told after the size has been still for [resizeDelay].
+// running shell is told after the size has been still for [DefaultResizeDelay].
 func (p *Pane) Resize(cols, rows int) error {
 	p.mu.Lock()
 	defer p.mu.Unlock()
@@ -121,7 +127,7 @@ func (p *Pane) Resize(cols, rows int) error {
 	if p.resizeTimer != nil {
 		p.resizeTimer.Stop()
 	}
-	p.resizeTimer = time.AfterFunc(resizeDelay, p.applyResize)
+	p.resizeTimer = time.AfterFunc(p.delay, p.applyResize)
 	return nil
 }
 
