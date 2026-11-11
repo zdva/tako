@@ -90,20 +90,19 @@ func (a *App) shortcuts(c *ui.Context) { //nolint:gocyclo // one case per shortc
 				a.focusBlock(b)
 			}
 		}
-		cols, _ := layout.Dims(len(m.Blocks()))
 		arrow := secondMod(ui.Alt)
 		switch {
 		case c.Shortcut(arrow, ui.KeyLeft):
-			m.MoveFocus(cols, -1, 0)
+			m.MoveFocus(-1, 0)
 			a.focusBlock(m.Focused())
 		case c.Shortcut(arrow, ui.KeyRight):
-			m.MoveFocus(cols, 1, 0)
+			m.MoveFocus(1, 0)
 			a.focusBlock(m.Focused())
 		case c.Shortcut(arrow, ui.KeyUp):
-			m.MoveFocus(cols, 0, -1)
+			m.MoveFocus(0, -1)
 			a.focusBlock(m.Focused())
 		case c.Shortcut(arrow, ui.KeyDown):
-			m.MoveFocus(cols, 0, 1)
+			m.MoveFocus(0, 1)
 			a.focusBlock(m.Focused())
 		}
 	}

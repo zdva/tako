@@ -163,6 +163,13 @@ type Model struct {
 	nextID int
 	// sessions are shared by the blocks of one host.
 	sessions map[model.ID]*sharedSession
+
+	view      Viewport
+	manual    bool
+	tree      layout.Tree
+	mini      Minimap
+	zoom      inputbus.ID
+	restoring bool
 }
 
 type sharedSession struct {
@@ -184,7 +191,13 @@ func New(deps Deps) *Model {
 	if deps.Save == nil {
 		deps.Save = func() {}
 	}
-	return &Model{deps: deps, sessions: map[model.ID]*sharedSession{}}
+	return &Model{
+		deps: deps, sessions: map[model.ID]*sharedSession{},
+		mini: Minimap{Corner: layout.BottomRight, Opacity: DefaultOpacity},
+		view: Viewport{
+			Size: layout.Size{W: 1200, H: 800}, Gap: 8, Min: layout.Size{W: 240, H: 150},
+		},
+	}
 }
 
 // Blocks returns the blocks in display order. Do not modify the slice.
@@ -296,8 +309,17 @@ func (m *Model) addBlock(h model.Host) (*Block, error) {
 	return b, nil
 }
 
-// attach adds b to the grid and the bus.
+// attach adds b to the grid and the bus. In a manual layout the new block
+// takes half of the focused one.
 func (m *Model) attach(b *Block) error {
+	if m.manual && !m.restoring {
+		id := string(b.ID)
+		if target := m.Focused(); target != nil {
+			m.tree = m.tree.AddBeside(id, string(target.ID), m.view.Size, m.view.Gap)
+		} else {
+			m.tree = m.tree.Reconcile(append(m.blockIDs(), id), m.view.Size, m.view.Gap)
+		}
+	}
 	m.blocks = append(m.blocks, b)
 	m.deps.Bus.Register(b.ID, b)
 	return nil
@@ -464,6 +486,15 @@ func (m *Model) removeBlock(b *Block) {
 		return
 	}
 	m.blocks = slices.Delete(m.blocks, i, i+1)
+	if m.manual {
+		m.tree = m.tree.Remove(string(b.ID))
+		if m.tree.Empty() {
+			m.manual = false
+		}
+	}
+	if m.zoom == b.ID {
+		m.zoom = ""
+	}
 	if m.focus == b.ID {
 		m.focus = ""
 		if len(m.blocks) > 0 {
@@ -488,29 +519,6 @@ func (m *Model) SyncedCount() int {
 		}
 	}
 	return n
-}
-
-// Move takes the block at from and puts it at index to.
-func (m *Model) Move(from, to int) {
-	m.blocks = layout.Move(m.blocks, from, to)
-	m.changed(true)
-}
-
-// MoveFocus moves the focus to the neighbor block in a direction, in the
-// grid of the given column count; dx and dy are -1, 0 or 1.
-func (m *Model) MoveFocus(cols, dx, dy int) {
-	cur := m.IndexOf(m.Focused())
-	if cur < 0 || cols < 1 {
-		return
-	}
-	next := cur + dx + dy*cols
-	if dy == 0 && (cur/cols != next/cols) {
-		return // do not wrap across rows
-	}
-	if next < 0 || next >= len(m.blocks) {
-		return
-	}
-	m.Focus(m.blocks[next])
 }
 
 // DuplicateTab opens a new tab like the active one (same host, same

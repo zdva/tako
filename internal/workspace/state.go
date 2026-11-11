@@ -3,8 +3,11 @@ package workspace
 import (
 	"fmt"
 	"log/slog"
+	"slices"
+	"strconv"
 
 	"github.com/wei-dong/tako/internal/inputbus"
+	"github.com/wei-dong/tako/internal/layout"
 	"github.com/wei-dong/tako/internal/model"
 )
 
@@ -20,7 +23,32 @@ type State struct {
 	Focus   int         `json:"focus"`
 	Window  WindowState `json:"window"`
 	Sidebar bool        `json:"sidebarCollapsed,omitempty"`
+	// Layout is set once the user dragged a divider or chose a preset.
+	Layout LayoutState `json:"layout,omitzero"`
+	// Minimap is where the minimap sits and how opaque it is.
+	Minimap MinimapState `json:"minimap,omitzero"`
 }
+
+// LayoutState is a manual layout. Blocks are named "b<N>" after their index in
+// [State.Blocks], because block IDs change from one run to the next.
+type LayoutState struct {
+	Manual bool        `json:"manual,omitempty"`
+	Tree   layout.Tree `json:"tree,omitzero"`
+}
+
+// MinimapState is the saved minimap preferences.
+type MinimapState struct {
+	Hidden  bool    `json:"hidden,omitempty"`
+	Corner  string  `json:"corner,omitempty"`
+	Opacity float32 `json:"opacity,omitempty"`
+}
+
+var cornerNames = [...]string{
+	layout.TopLeft: "top-left", layout.TopRight: "top-right",
+	layout.BottomLeft: "bottom-left", layout.BottomRight: "bottom-right",
+}
+
+func blockRef(i int) string { return "b" + strconv.Itoa(i) }
 
 // BlockState is one saved block. Blocks appear in grid order, which is the
 // automatic layout: the grid is recomputed from their number and window size.
@@ -60,6 +88,14 @@ func (m *Model) Snapshot() State {
 			s.Focus = i
 		}
 	}
+	if m.manual {
+		refs := map[string]string{}
+		for i, b := range m.blocks {
+			refs[string(b.ID)] = blockRef(i)
+		}
+		s.Layout = LayoutState{Manual: true, Tree: m.tree.MapIDs(func(id string) string { return refs[id] })}
+	}
+	s.Minimap = MinimapState{Hidden: m.mini.Hidden, Corner: cornerNames[m.mini.Corner], Opacity: m.mini.Opacity}
 	return s
 }
 
@@ -69,6 +105,9 @@ func (m *Model) Snapshot() State {
 func (m *Model) Restore(s State) int {
 	restored := 0
 	var focus inputbus.ID
+	refs := map[string]string{}
+	m.restoring = true
+	defer func() { m.restoring = false }()
 	for i, bs := range s.Blocks {
 		if len(bs.Tabs) == 0 {
 			continue
@@ -79,6 +118,7 @@ func (m *Model) Restore(s State) int {
 			continue
 		}
 		restored++
+		refs[blockRef(i)] = string(b.ID)
 		if i == s.Focus {
 			focus = b.ID
 		}
@@ -88,8 +128,41 @@ func (m *Model) Restore(s State) int {
 	} else if len(m.blocks) > 0 {
 		m.focus = m.blocks[0].ID
 	}
+	m.restoreLayout(s, refs)
+	m.restoreMinimap(s.Minimap)
 	m.changed(false)
 	return restored
+}
+
+// restoreLayout brings back a saved manual layout, dropping blocks that did
+// not restore and placing any that the file did not mention. A layout that is
+// malformed is ignored and the grid is automatic.
+func (m *Model) restoreLayout(s State, refs map[string]string) {
+	if !s.Layout.Manual || len(m.blocks) == 0 {
+		return
+	}
+	if err := s.Layout.Tree.Validate(); err != nil {
+		slog.Warn("ignoring the saved layout", "err", err)
+		return
+	}
+	t := s.Layout.Tree.MapIDs(func(ref string) string { return refs[ref] })
+	// Leaves of blocks that did not restore are now "" and are removed here;
+	// Reconcile keeps exactly the blocks that exist.
+	for t.Has("") {
+		t = t.Remove("")
+	}
+	m.tree = t.Reconcile(m.blockIDs(), m.view.Size, m.view.Gap)
+	m.manual = true
+}
+
+func (m *Model) restoreMinimap(s MinimapState) {
+	m.mini.Hidden = s.Hidden
+	if i := slices.Index(cornerNames[:], s.Corner); i >= 0 {
+		m.mini.Corner = layout.Corner(i)
+	}
+	if s.Opacity > 0 {
+		m.mini.Opacity = min(max(s.Opacity, MinOpacity), 1)
+	}
 }
 
 func (m *Model) restoreBlock(bs BlockState) (*Block, error) {

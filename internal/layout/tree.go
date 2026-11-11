@@ -606,3 +606,24 @@ func equalNodes(axis Axis, nodes []*Node, span, gap float32) *Node {
 		B: equalNodes(axis, nodes[1:], span-share-gap, gap),
 	}
 }
+
+// MapIDs returns a tree with every block ID replaced by f(ID). It is how a
+// saved tree, which names blocks by position, is pointed at the blocks that
+// were restored.
+func (t Tree) MapIDs(f func(string) string) Tree {
+	out := t.Clone()
+	var walk func(*Node)
+	walk = func(n *Node) {
+		if n == nil {
+			return
+		}
+		if n.leaf() {
+			n.ID = f(n.ID)
+			return
+		}
+		walk(n.A)
+		walk(n.B)
+	}
+	walk(out.Root)
+	return out
+}

@@ -213,24 +213,24 @@ func TestMoveFocus(t *testing.T) {
 		bs = append(bs, b)
 	}
 	e.m.Focus(bs[0])
-	e.m.MoveFocus(2, 1, 0)
+	e.m.MoveFocus(1, 0)
 	if e.m.Focused() != bs[1] {
 		t.Error("right from a should be b")
 	}
-	e.m.MoveFocus(2, 1, 0)
+	e.m.MoveFocus(1, 0)
 	if e.m.Focused() != bs[1] {
 		t.Error("right from the end of a row must not wrap")
 	}
-	e.m.MoveFocus(2, 0, 1)
+	e.m.MoveFocus(0, 1)
 	if e.m.Focused() != bs[3] {
 		t.Error("down from b should be d")
 	}
-	e.m.MoveFocus(2, 0, 1)
+	e.m.MoveFocus(0, 1)
 	if e.m.Focused() != bs[3] {
 		t.Error("down from the last row stays")
 	}
-	e.m.MoveFocus(2, -1, 0)
-	e.m.MoveFocus(2, 0, -1)
+	e.m.MoveFocus(-1, 0)
+	e.m.MoveFocus(0, -1)
 	if e.m.Focused() != bs[0] {
 		t.Error("up and left should reach a")
 	}
