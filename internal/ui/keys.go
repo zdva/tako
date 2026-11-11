@@ -336,4 +336,5 @@ const (
 	kSetVerifySize        = "settings.verify.size"
 	kSetDirect            = "settings.direct"
 	kSetDirectHint        = "settings.directhint"
+	kXferDoneJustNow      = "xfer.donejustnow"
 )

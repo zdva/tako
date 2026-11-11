@@ -2,7 +2,9 @@ package ui_test
 
 import (
 	"context"
+	"fmt"
 	"math"
+	"net/url"
 	"os"
 	"path/filepath"
 	"strings"
@@ -21,7 +23,7 @@ import (
 
 // monitorFixture answers the collector's commands with recorded Linux output
 // and, for the GPU machine, the NVIDIA section.
-func monitorFixture(t *testing.T, gpu bool) func(string) (string, int) {
+func monitorFixture(t *testing.T, gpu bool, steady ...bool) func(string) (string, int) {
 	t.Helper()
 	read := func(name string) string {
 		data, err := os.ReadFile(filepath.Join("..", "monitor", "testdata", name))
@@ -40,7 +42,7 @@ func monitorFixture(t *testing.T, gpu bool) func(string) (string, int) {
 			return info, 0
 		case monitor.Linux{}.Command():
 			out := one
-			if n.Add(1)%2 == 0 {
+			if n.Add(1)%2 == 0 && len(steady) == 0 {
 				out = two
 			}
 			if gpu {
@@ -227,6 +229,23 @@ type homeFS struct {
 
 func (f homeFS) Home() (string, error) { return f.home, nil }
 
+// Open slows down files whose name starts with "slow", so a job stays
+// running long enough to be seen and paused.
+func (f homeFS) Open(name string) (transport.File, error) {
+	file, err := f.FS.Open(name)
+	if err != nil || !strings.HasPrefix(filepath.Base(name), "slow") {
+		return file, err
+	}
+	return slowFile{File: file}, nil
+}
+
+type slowFile struct{ transport.File }
+
+func (f slowFile) Read(p []byte) (int, error) {
+	time.Sleep(4 * time.Millisecond)
+	return f.File.Read(p[:min(len(p), 64<<10)])
+}
+
 func write(t *testing.T, path string, size int) {
 	t.Helper()
 	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
@@ -345,3 +364,113 @@ func TestTransfer_SettingsReachTheQueue(t *testing.T) {
 }
 
 func sin(x float64) float64 { return math.Sin(x) }
+
+func TestTransfer_QueueShowsRunningPausedAndDone(t *testing.T) {
+	h, src, dst, local := transferHarness(t)
+	write(t, filepath.Join(src, "slow-a.dump"), 60<<20)
+	write(t, filepath.Join(src, "slow-b.dump"), 60<<20)
+	write(t, filepath.Join(src, "small.cfg"), 2000)
+	write(t, filepath.Join(local, "notes.txt"), 500)
+	h.openSheetFrom("web-01")
+	h.waitText("slow-a.dump")
+	for _, name := range []string{"slow-a.dump", "slow-b.dump", "small.cfg"} {
+		h.click(name)
+	}
+	h.click("Start transfer  ↵")
+	h.waitFor("progress text", func() bool { return h.tt.HasText("Running 2") || h.tt.HasText("Running 3") })
+	h.waitFor("small file done", func() bool { _, err := os.Stat(filepath.Join(dst, "small.cfg")); return err == nil })
+
+	jobs := h.app.Transfers.Snapshot()
+	var paused int
+	for _, j := range jobs {
+		if j.Name == "slow-b.dump" {
+			paused = j.ID
+		}
+	}
+	if err := h.app.Transfers.Pause(paused); err != nil {
+		t.Fatal(err)
+	}
+	h.waitFor("a paused row", func() bool { return h.tt.HasText("Paused 1") })
+	if !h.tt.HasText("Paused · can resume from") && !h.tt.HasText("Network lost") {
+		t.Fatalf("the paused row does not say how far it got; screen: %q", h.tt.Texts())
+	}
+	h.shot("transfer-queue")
+	h.click(fmt.Sprintf("Resume %d", paused))
+	h.waitFor("running again", func() bool { return h.tt.HasText("Running 2") })
+	for _, j := range h.app.Transfers.Snapshot() {
+		_ = h.app.Transfers.Cancel(j.ID)
+	}
+	h.waitFor("canceled rows", func() bool { return h.tt.HasText("Canceled") })
+}
+
+// report makes the shell of a block announce its folder with OSC 7, as a
+// shell with the hook does (the test server echoes what it is sent).
+func (h *harness) report(name, dir string) {
+	h.t.Helper()
+	b := blockByName(h, name)
+	u := (&url.URL{Scheme: "file", Host: "localhost", Path: dir}).String()
+	if _, err := b.Write([]byte("\x1b]7;" + u + "\x07")); err != nil {
+		h.t.Fatal(err)
+	}
+	h.waitFor("the folder of "+name, func() bool { return b.ActiveTab().Dir() == dir })
+}
+
+func TestTransfer_DefaultFoldersFollowOSC7(t *testing.T) {
+	h, src, dst, _ := transferHarness(t)
+	srcDir, dstDir := filepath.Join(src, "my backups"), filepath.Join(dst, "restore")
+	for _, d := range []string{srcDir, dstDir} {
+		if err := os.MkdirAll(d, 0o755); err != nil {
+			t.Fatal(err)
+		}
+	}
+	h.report("web-01", srcDir)
+	h.report("web-02", dstDir)
+	h.openSheetFrom("web-01")
+	h.waitFor("the folders", func() bool { return !h.tt.HasText("Loading…") })
+	gotSrc, gotDst := h.app.UI.PaneFolders()
+	if gotSrc != srcDir || gotDst != dstDir {
+		t.Fatalf("folders = %q, %q; want %q, %q", gotSrc, gotDst, srcDir, dstDir)
+	}
+	h.shot("transfer-osc7-folders")
+}
+
+func TestTransfer_FolderOfAnotherHostIsNotUsed(t *testing.T) {
+	h, src, dst, _ := transferHarness(t)
+	h.report("web-02", filepath.Join(dst, "elsewhere"))
+	h.openSheetFrom("web-01")
+	h.waitFor("the folders", func() bool { return !h.tt.HasText("Loading…") })
+	gotSrc, _ := h.app.UI.PaneFolders()
+	if gotSrc != src {
+		t.Fatalf("source folder = %q, want the home of web-01 (%q)", gotSrc, src)
+	}
+}
+
+func TestMonitor_IdleFleetDoesNotWakeTheWindow(t *testing.T) {
+	h := newHarness(t, harnessOpts{exec: monitorFixture(t, false, true)})
+	h.fastMonitor()
+	h.openAll(6)
+	ids := make([]model.ID, 0, 6)
+	for _, b := range h.app.Model.Blocks() {
+		ids = append(ids, b.HostID)
+	}
+	h.waitFor("every host sampled twice", func() bool {
+		for _, id := range ids {
+			if s := h.app.Monitor.Series(id); s == nil || s.Len() < 2 {
+				return false
+			}
+		}
+		return true
+	})
+	var wakes atomic.Int32
+	h.app.SetWake(func() { wakes.Add(1) })
+	before := h.app.Monitor.Series(ids[0]).Len()
+	time.Sleep(3500 * time.Millisecond)
+	if grew := h.app.Monitor.Series(ids[0]).Len() - before; grew < 2 {
+		t.Fatalf("only %d samples in 3.5 s: the test measured nothing", grew)
+	}
+	// Six hosts sampled for 3.5 s on a steady machine: nothing on screen
+	// changed, so nothing should have asked for a frame.
+	if n := wakes.Load(); n > 2 {
+		t.Fatalf("%d wake-ups from monitoring an idle fleet", n)
+	}
+}

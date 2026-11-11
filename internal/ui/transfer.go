@@ -88,43 +88,28 @@ func (a *App) openTransfer(from model.ID) {
 			break
 		}
 	}
-	a.setPane(&x.src, src, a.paneDir(src, focus))
-	a.setPane(&x.dst, dst, a.paneDir(dst, a.otherBlock(dst)))
+	a.setPane(&x.src, src, a.paneDir(src))
+	a.setPane(&x.dst, dst, a.paneDir(dst))
 }
 
-// otherBlock is the first block showing the host.
-func (a *App) otherBlock(h model.ID) *workspace.Block {
+// paneDir is the folder a shell on the machine last reported (OSC 7), or
+// empty when no block is on it or none reported one. The focused block wins.
+func (a *App) paneDir(h model.ID) string {
+	dir := ""
+	focus := a.d.Model.Focused()
 	for _, b := range a.d.Model.Blocks() {
-		if b.Kind == workspace.KindSSH && b.HostID == h {
-			return b
+		if (h == "") != (b.Kind == workspace.KindLocal) || (h != "" && b.HostID != h) {
+			continue
+		}
+		t := b.ActiveTab()
+		if t == nil || t.Dir() == "" {
+			continue
+		}
+		if dir = t.Dir(); b == focus {
+			break
 		}
 	}
-	return nil
-}
-
-// paneDir is the folder a block's shell reported for the host (OSC 7), or
-// empty when the block is not on that host or reported nothing.
-func (a *App) paneDir(h model.ID, b *workspace.Block) string {
-	if b == nil {
-		return ""
-	}
-	if (h == "" && b.Kind != workspace.KindLocal) || (h != "" && b.HostID != h) {
-		if h == "" {
-			// This computer: any local block will do.
-			for _, o := range a.d.Model.Blocks() {
-				if o.Kind == workspace.KindLocal {
-					if t := o.ActiveTab(); t != nil {
-						return t.Dir()
-					}
-				}
-			}
-		}
-		return ""
-	}
-	if t := b.ActiveTab(); t != nil {
-		return t.Dir()
-	}
-	return ""
+	return dir
 }
 
 // setPane points a pane at a host and a folder (the home folder when dir is
@@ -686,7 +671,11 @@ func (a *App) jobStatus(c *ui.Context, j transfer.JobInfo) {
 		text = a.T(key, humanBytes(float64(j.Resumable)))
 	case transfer.StateDone:
 		barCol, frac = a.tk.Green, 1
-		text = a.T(kXferDoneAgo, humanDuration(time.Since(j.Finished))) + " · " + a.verifiedText(j)
+		text = a.T(kXferDoneJustNow)
+		if ago := time.Since(j.Finished); ago >= 10*time.Second {
+			text = a.T(kXferDoneAgo, humanDuration(ago))
+		}
+		text += " · " + a.verifiedText(j)
 		if j.Skipped > 0 {
 			text += " · " + a.T(kXferSkipped, j.Skipped)
 		}
@@ -699,7 +688,7 @@ func (a *App) jobStatus(c *ui.Context, j transfer.JobInfo) {
 	case transfer.StateAsking:
 	}
 	ui.Row(c).Height(5).Radius(3).Background(a.tk.Surface3).Clip().Children(func() {
-		ui.Box(c).BasisPercent(float32(frac * 100)).Background(barCol)
+		ui.Box(c).BasisPercent(float32(frac * 100)).Height(5).Background(barCol)
 	})
 	a.caption(c, text).Ellipsis("…").SingleLine()
 }

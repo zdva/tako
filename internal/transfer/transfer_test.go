@@ -800,3 +800,38 @@ func TestListAndParent(t *testing.T) {
 		t.Error("listed after cancel")
 	}
 }
+
+func TestFreshIgnoresAPartFromBefore(t *testing.T) {
+	for _, fresh := range []bool{false, true} {
+		t.Run(fmt.Sprint("fresh=", fresh), func(t *testing.T) {
+			dir := t.TempDir()
+			want := randomFile(t, filepath.Join(dir, "src", "a.bin"), 2<<20)
+			// An earlier run left the first megabyte behind.
+			part := filepath.Join(dir, "dst", "a.bin"+PartSuffix)
+			if err := os.MkdirAll(filepath.Dir(part), 0o755); err != nil {
+				t.Fatal(err)
+			}
+			if err := os.WriteFile(part, want[:1<<20], 0o644); err != nil {
+				t.Fatal(err)
+			}
+			q, _ := newQueue(t, nil, Options{})
+			id, err := q.Add(Spec{
+				Src: Location{Path: filepath.Join(dir, "src", "a.bin")},
+				Dst: Location{Path: filepath.Join(dir, "dst")}, Fresh: fresh,
+			})
+			if err != nil {
+				t.Fatal(err)
+			}
+			info := wait(t, q, id, StateDone, StateFailed)
+			if info.State != StateDone {
+				t.Fatalf("%v: %s", info.State, info.Err)
+			}
+			if info.Resumed == fresh {
+				t.Errorf("Resumed = %v with Fresh = %v", info.Resumed, fresh)
+			}
+			if !bytes.Equal(mustRead(t, filepath.Join(dir, "dst", "a.bin")), want) {
+				t.Error("content differs")
+			}
+		})
+	}
+}

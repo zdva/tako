@@ -84,3 +84,6 @@ func (a *App) Level(p float64) string {
 	}
 	return "green"
 }
+
+// PaneFolders are the folders the transfer sheet's source and target show.
+func (a *App) PaneFolders() (src, dst string) { return a.xfer.src.path, a.xfer.dst.path }

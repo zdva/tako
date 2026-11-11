@@ -283,6 +283,7 @@
   "xfer.directoff": "直连模式未开启,可在 设置 → 传输 中开启。",
   "xfer.done": "已完成 %d",
   "xfer.doneago": "已完成 · %s前",
+  "xfer.donejustnow": "刚刚完成",
   "xfer.drop": "松开以传输到 %s",
   "xfer.dst": "目标",
   "xfer.empty": "此文件夹为空",

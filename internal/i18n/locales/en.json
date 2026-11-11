@@ -283,6 +283,7 @@
   "xfer.directoff": "Direct mode is off. Turn it on in Settings → Transfers.",
   "xfer.done": "Done %d",
   "xfer.doneago": "Done · %s ago",
+  "xfer.donejustnow": "Done just now",
   "xfer.drop": "Drop to transfer to %s",
   "xfer.dst": "Target",
   "xfer.empty": "This folder is empty",
