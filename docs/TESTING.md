@@ -6,9 +6,9 @@ their own targets.
 | Level | Command | What it covers | Needs |
 |---|---|---|---|
 | Unit + UI | `make race` (`go test -race ./...`) | Core packages, `ui.Tester` tests of every screen and flow (no window), i18n key alignment, secrets grep test | libghostty-vt (auto-downloaded; tests skip if unavailable) |
-| Coverage gate | `make cover` | Core packages (`model`, `hostlib`, `session`, `layout`, `inputbus`, `workspace`, `transport/ssh`, `store`, `secrets`, `importer/sshconfig`, `settings`) ≥ 80% in total | — |
-| Integration | `make integration` (`-tags integration`) | Auth × jump × proxy matrix, `vim`/`top`, MaxSessions, host-key change, outage and reconnect — against a **real OpenSSH** | Linux; `scripts/fetch-sshd.sh` or `/usr/sbin/sshd` |
-| End to end | `make e2e` (`-tags e2e`) | The packaged app in a real window under Xvfb: nine idle blocks (CPU, memory), cold start, `kill -9` recovery; nine synced blocks flooding (frame rate ≥ 18/s, read from `MYGO_FRAME_STATS`); a dragged divider surviving `kill -9`; minimap translucent at rest, opaque on hover | Linux, `xvfb-run`/`DISPLAY`, `xdotool`, Python PIL (screenshots only) |
+| Coverage gate | `make cover` | Core packages (`model`, `hostlib`, `session`, `layout`, `inputbus`, `workspace`, `transport/ssh`, `store`, `secrets`, `importer/sshconfig`, `settings`, `monitor`, `transfer`) ≥ 80% in total | — |
+| Integration | `make integration` (`-tags integration`) | Auth × jump × proxy matrix, `vim`/`top`, MaxSessions, host-key change, outage and reconnect; the Linux collector against the system tools and its cost on the remote; SFTP relay throughput and memory, resume after a cut link (files and directories), same-name policies, direct mode and its clean-up — against a **real OpenSSH** | Linux; `scripts/fetch-sshd.sh` or `/usr/sbin/sshd` |
+| End to end | `make e2e` (`-tags e2e`) | The packaged app in a real window under Xvfb: nine idle blocks (CPU, memory), cold start, `kill -9` recovery; nine synced blocks flooding (frame rate ≥ 18/s, read from `MYGO_FRAME_STATS`); a dragged divider surviving `kill -9`; minimap translucent at rest, opaque on hover; nine hosts monitored at the default interval (idle CPU, no redraws, bars present) | Linux, `xvfb-run`/`DISPLAY`, `xdotool`, Python PIL (screenshots only) |
 
 Also: `make fuzz` (PPK parser, ssh-config parser), `make vuln` (govulncheck),
 `make lint`.
@@ -28,6 +28,19 @@ Also: `make fuzz` (PPK parser, ssh-config parser), `make vuln` (govulncheck),
 - `internal/testutil/nettest`: SOCKS5 and HTTP CONNECT proxies (with or without
   credentials), a TCP relay that can be paused or cut to simulate an outage, and
   an in-process SSH agent.
+
+## What is recorded and what is composed (M3)
+
+- **Linux** collector tests use output recorded from a real machine
+  (`internal/monitor/testdata/linux-*.txt`) and the real local sshd.
+- **macOS, Windows, NVIDIA and ROCm** fixtures are hand-composed in the formats
+  the tools document (`testdata/README.md`). They are not recordings. Replace
+  them with recordings before a release; the tests stay as they are.
+- **Direct mode** with `rsync` is covered by unit tests with a fake
+  environment; the integration test runs the `scp` branch (no rsync on the box).
+- **Transfer throughput** is measured on rate-limited loopback links
+  (`nettest.Relay.SetRate`) against a raw SFTP baseline between the same two
+  hosts, because a shared-CPU loopback cannot show 80% of anything.
 
 ## Testing the UI without a window
 

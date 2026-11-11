@@ -7,10 +7,11 @@ terminals on one screen as a grid of *blocks*, reconnects the ones whose network
 dropped, and remembers what you had open. It is written in Go with the
 [MyGo](https://github.com/egoist/mygo) native UI toolkit, for macOS, Windows and Linux.
 
-> **Status: milestone M2 (v0.2.0-m2), pre-release.** Connections, terminals,
+> **Status: milestone M3 (v0.3.0-m3), pre-release.** Connections, terminals,
 > synchronized input with the floating minimap, draggable split layouts, the
-> host sidebar, session restore and `~/.ssh/config` import work. Monitoring and
-> file transfer (M3) and packaging polish (M4) are not done yet. See
+> host sidebar, session restore and `~/.ssh/config` import work, and so do the
+> block footers, the monitor page and file transfer with resume and a queue.
+> Packaging polish and more importers (M4) are not done yet. See
 > [docs/SPEC.md](docs/SPEC.md) and [docs/TECH-PLAN.md](docs/TECH-PLAN.md).
 
 ![Main window](docs/screenshots/m2/main-light.png)
@@ -21,6 +22,38 @@ dropped, and remembers what you had open. It is written in Go with the
 
 More in [docs/screenshots/m2](docs/screenshots/m2) (M1's are in
 [docs/screenshots/m1](docs/screenshots/m1)).
+
+## What works in M3
+
+| Monitor page | Transfer sheet |
+|---|---|
+| ![monitor](docs/screenshots/m3/tester/monitor-page.png) | ![transfers](docs/screenshots/m3/tester/transfer-queue.png) |
+
+The monitor page above shows a GPU machine from a Tester run with seeded
+history; the real-window shots are in [docs/screenshots/m3](docs/screenshots/m3).
+
+- **Monitoring with nothing installed on the server.** Every SSH block's
+  footer shows CPU, memory, disk and (when `nvidia-smi` or `rocm-smi` exist) GPU
+  bars; click it (or `Ctrl+Shift+Alt+M`) for the monitor page: stat cards,
+  CPU / memory / network charts for the last 1, 5, 15 or 60 minutes, per-GPU
+  status, disks and a description of the machine. Linux reads `/proc` and `df`,
+  macOS `top`, `vm_stat`, `iostat`, Windows PowerShell CIM; one command per
+  sample over the session the shell already uses. The window is redrawn only
+  when a footer visibly changes. See [ADR 0012](docs/adr/0012-agentless-monitoring.md).
+  **The macOS, Windows and GPU parsers are tested with fixtures composed by
+  hand from the tools' documented formats, not with recordings; only Linux was
+  measured on a real machine.**
+- **File transfer** (`Ctrl+Shift+Alt+T`, host menu *Transfer files…*, or drop
+  files on the target pane): upload, download and server to server, through
+  this computer (the bytes are never written to disk here) or, if you allow it
+  in Settings, directly with `scp`/`rsync` using your SSH agent for that one
+  command. Part files, automatic retry, resume after a lost connection with a
+  checksum check, same-name policy (ask / overwrite / skip), a queue with
+  speed, time left, pause, resume and cancel. See
+  [ADR 0013](docs/adr/0013-transfer-queue-and-resume.md) and
+  [ADR 0015](docs/adr/0015-direct-server-to-server.md).
+- **Folders from OSC 7**: the transfer sheet opens in the folder your shell
+  reports ([docs/OSC7.md](docs/OSC7.md)).
 
 ## What works in M2
 

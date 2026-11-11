@@ -19,8 +19,8 @@ adds `⌥` or `⇧` as a second modifier, the other systems add `Alt`.
 | `⌘⌥← ↑ → ↓` | `Ctrl+Shift+Alt+← ↑ → ↓` | Move focus to the neighbouring block (by position on screen) |
 | `⌘⌥S` | `Ctrl+Shift+Alt+S` | Turn input sync on / off for the focused block |
 | `⌘⌥⇧S` | `Ctrl+Shift+Alt+A` | Sync every block on, or all off when all were on |
-| `⌘⌥M` | `Ctrl+Shift+Alt+M` | Open monitoring (arrives in M3: shows a notice) |
-| `⌘⇧T` | `Ctrl+Shift+Alt+T` | Open the transfer panel (arrives in M3: shows a notice) |
+| `⌘⌥M` | `Ctrl+Shift+Alt+M` | Open the monitor page of the focused SSH block (again, or `Esc`, or `⌘W`: back to the terminals) |
+| `⌘⇧T` | `Ctrl+Shift+Alt+T` | Open or close the file transfer sheet |
 | `⌘⌥G` | `Ctrl+Shift+Alt+G` | Show / hide the minimap |
 | `⌘F` | `Ctrl+Shift+F` | Search in the terminal |
 | `⌘,` | `Ctrl+Shift+,` | Settings |

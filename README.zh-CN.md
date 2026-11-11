@@ -4,7 +4,7 @@
 
 Tako 是管理一群服务器的桌面终端。它把许多 SSH（和本地）终端放在同一屏的网格里（每个叫一个“块”），网络断了的块会自动重连，下次打开还记得你开过什么。用 Go 和 [MyGo](https://github.com/egoist/mygo) 原生 UI 工具包写成，支持 macOS、Windows、Linux。
 
-> **状态：里程碑 M2（v0.2.0-m2），预发布。** 已有：连接、终端、同步输入与悬浮小地图、可拖动的分割布局、主机侧栏、会话恢复、导入 `~/.ssh/config`。监控和文件传输（M3）、打包打磨（M4）还没做。详见 [docs/SPEC.md](docs/SPEC.md)、[docs/TECH-PLAN.md](docs/TECH-PLAN.md)。
+> **状态：里程碑 M3（v0.3.0-m3），预发布。** 已有：连接、终端、同步输入与悬浮小地图、可拖动的分割布局、主机侧栏、会话恢复、导入 `~/.ssh/config`，以及块底部的资源条、监控页、支持断点续传和队列的文件传输。打包打磨和更多导入来源（M4）还没做。详见 [docs/SPEC.md](docs/SPEC.md)、[docs/TECH-PLAN.md](docs/TECH-PLAN.md)。
 
 ![主窗口](docs/screenshots/m2/main-light.png)
 
@@ -13,6 +13,18 @@ Tako 是管理一群服务器的桌面终端。它把许多 SSH（和本地）�
 | ![小地图静止](docs/screenshots/m2/minimap-rest.png) | ![小地图悬停](docs/screenshots/m2/minimap-hover.png) | ![拖动分隔线](docs/screenshots/m2/divider-snap.png) |
 
 更多截图在 [docs/screenshots/m2](docs/screenshots/m2)（M1 的在 [docs/screenshots/m1](docs/screenshots/m1)）。
+
+## M3 能做什么
+
+| 监控页 | 传输面板 |
+|---|---|
+| ![监控](docs/screenshots/m3/tester/monitor-page.png) | ![传输](docs/screenshots/m3/tester/transfer-queue.png) |
+
+上图的监控页来自带预置历史的 Tester 截图（GPU 机器）；真实窗口截图在 [docs/screenshots/m3](docs/screenshots/m3)。
+
+- **服务器上什么都不用装的监控**：每个 SSH 块底部显示 CPU、内存、磁盘，以及（有 `nvidia-smi` / `rocm-smi` 时）GPU 的条；点它（或 `Ctrl+Shift+Alt+M`）进入监控页：数据卡片、最近 1 / 5 / 15 / 60 分钟的 CPU、内存、网络曲线、每块 GPU 的状态、磁盘与机器说明。Linux 读 `/proc` 和 `df`，macOS 用 `top`、`vm_stat`、`iostat`，Windows 用 PowerShell CIM；每次采样只跑一条命令，走终端本来就在用的会话。只有底部的数值肉眼可见地变了才会重绘窗口。见 [ADR 0012](docs/adr/0012-agentless-monitoring.md)。**macOS、Windows 和 GPU 的解析器用的是按工具文档格式手写的样例，不是实机录制；只有 Linux 在真机上测过。**
+- **文件传输**（`Ctrl+Shift+Alt+T`、主机菜单“传输文件…”，或把文件拖到目标面板）：上传、下载、服务器之间互传；可经本机中转（数据不落本机磁盘），也可在设置里允许后直连 `scp` / `rsync`（仅为这一条命令转发你的 SSH Agent）。分片文件、自动重试、断线后从断点续传并校验、同名文件策略（询问 / 覆盖 / 跳过）、带速度和剩余时间的队列，可暂停、继续、取消。见 [ADR 0013](docs/adr/0013-transfer-queue-and-resume.md)、[ADR 0015](docs/adr/0015-direct-server-to-server.md)。
+- **用 OSC 7 取得当前目录**：传输面板默认打开 shell 报告的目录（[docs/OSC7.md](docs/OSC7.md)）。
 
 ## M2 能做什么
 
