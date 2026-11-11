@@ -1,6 +1,6 @@
 # 0008. Layout model: auto grid now, split tree later
 
-Status: Accepted (M1 grid; split tree is M2)
+Status: Accepted (M1 grid). The manual split tree is decided in [0009](0009-manual-layout-tree.md).
 
 ## Context
 

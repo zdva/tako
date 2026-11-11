@@ -4,17 +4,24 @@
 
 Tako 是管理一群服务器的桌面终端。它把许多 SSH（和本地）终端放在同一屏的网格里（每个叫一个“块”），网络断了的块会自动重连，下次打开还记得你开过什么。用 Go 和 [MyGo](https://github.com/egoist/mygo) 原生 UI 工具包写成，支持 macOS、Windows、Linux。
 
-> **状态：里程碑 M1（v0.1.0-m1），预发布。** 已有：连接、终端、自适应网格、主机侧栏、会话恢复、导入 `~/.ssh/config`。同步输入界面和小地图（M2）、监控和文件传输（M3）、打包打磨（M4）还没做。详见 [docs/SPEC.md](docs/SPEC.md)、[docs/TECH-PLAN.md](docs/TECH-PLAN.md)。
+> **状态：里程碑 M2（v0.2.0-m2），预发布。** 已有：连接、终端、同步输入与悬浮小地图、可拖动的分割布局、主机侧栏、会话恢复、导入 `~/.ssh/config`。监控和文件传输（M3）、打包打磨（M4）还没做。详见 [docs/SPEC.md](docs/SPEC.md)、[docs/TECH-PLAN.md](docs/TECH-PLAN.md)。
 
-![主窗口](docs/screenshots/m1/main-light.png)
+![主窗口](docs/screenshots/m2/main-light.png)
 
 | 深色 | 连接中断 | 添加主机 |
 |---|---|---|
-| ![深色](docs/screenshots/m1/main-dark.png) | ![断线](docs/screenshots/m1/disconnected.png) | ![添加主机](docs/screenshots/m1/add-host.png) |
+| ![小地图静止](docs/screenshots/m2/minimap-rest.png) | ![小地图悬停](docs/screenshots/m2/minimap-hover.png) | ![拖动分隔线](docs/screenshots/m2/divider-snap.png) |
 
-更多截图在 [docs/screenshots/m1](docs/screenshots/m1)。
+更多截图在 [docs/screenshots/m2](docs/screenshots/m2)（M1 的在 [docs/screenshots/m1](docs/screenshots/m1)）。
 
-## M1 能做什么
+## M2 能做什么
+
+- **同步输入**：同步中的块有一圈珊瑚色边框和一个小标签。可从标签、小地图、命令面板、快捷键或右键菜单开关；`Ctrl+Shift+Alt+A` 全部开 / 关。连接断开的块会暂停，其他块不受影响。见 [ADR 0010](docs/adr/0010-sync-ui-and-minimap.md)。
+- **小地图**：悬浮的 176 px 面板，静止时半透明、鼠标悬停时不透明。点方块切换同步，拖框选择（`⇧` 追加、`⌥` 反选），拖方块重排，拖面板吸附到四角，透明度滑块。
+- **分割布局**：拖分隔线，自动吸附 ½、⅓、⅔ 并显示参考线（按住 `⌥` 不吸附）；布局和同步状态重启后保留。见 [ADR 0009](docs/adr/0009-manual-layout-tree.md)。
+- 完整的[快捷键](docs/SHORTCUTS.md)、右键菜单（块头、标签页、侧栏主机与标签、小地图）、块重命名、放大单个块、终端内搜索、自定义标题栏。
+
+## 另外 M1 已有
 
 - **SSH**：密码、公钥（OpenSSH、PEM、PuTTY `.ppk`）、SSH Agent、键盘交互认证；跳板机链；SOCKS5 和 HTTP 代理；保活；服务器 MaxSessions 不够时自动多开一条连接。
 - **不怕断线的面板**：链路断开时，块里显示重连横幅，滚动历史保留，按 1、2、5、10、30 秒退避重试，断线期间敲的键**不会**在恢复后补发。见 [ADR 0006](docs/adr/0006-session-pane-contract.md)。
@@ -42,6 +49,8 @@ make build-all      # Windows、macOS（通用）、Linux，amd64 与 arm64
 
 ### 快捷键
 
+完整列表见 [docs/SHORTCUTS.md](docs/SHORTCUTS.md)。
+
 Linux 和 Windows 的主修饰键是 `Ctrl+Shift`（这样单独的 `Ctrl+C` 还能到达 shell），macOS 用 `⌘`。
 
 | 按键 | 作用 |
@@ -53,6 +62,9 @@ Linux 和 Windows 的主修饰键是 `Ctrl+Shift`（这样单独的 `Ctrl+C` 还
 | `Ctrl+Shift+1…9` | 切换标签页 |
 | `Ctrl+Shift+Alt+←↑→↓` | 在块之间移动焦点 |
 | `Ctrl+Shift+Alt+S` | 切换当前块的同步输入 |
+| `Ctrl+Shift+Alt+A` | 全部块同步开 / 关 |
+| `Ctrl+Shift+Alt+G` | 显示 / 隐藏小地图 |
+| `Ctrl+Shift+F` | 终端内搜索 |
 | `Ctrl+Shift+B` | 显示 / 隐藏侧栏 |
 | `Ctrl+Shift+,` | 设置 |
 
@@ -71,7 +83,7 @@ Linux 和 Windows 的主修饰键是 `Ctrl+Shift`（这样单独的 `Ctrl+C` 还
 make check          # gofmt、vet、golangci-lint、go test -race、覆盖率门槛（核心 80%）
 make integration    # 对真实 OpenSSH 测试（scripts/fetch-sshd.sh 会下载便携版）
 make e2e            # Xvfb 下的真窗口：空闲 CPU/内存、冷启动、kill -9 恢复
-make screenshots    # 真窗口截图，输出到 docs/screenshots/m1
+make screenshots    # 真窗口截图，输出到 docs/screenshots/m2（`MILESTONE=m1` 生成旧的一套）
 make vuln           # govulncheck
 ```
 

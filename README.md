@@ -7,21 +7,40 @@ terminals on one screen as a grid of *blocks*, reconnects the ones whose network
 dropped, and remembers what you had open. It is written in Go with the
 [MyGo](https://github.com/egoist/mygo) native UI toolkit, for macOS, Windows and Linux.
 
-> **Status: milestone M1 (v0.1.0-m1), pre-release.** Connections, terminals,
-> the adaptive grid, the host sidebar, session restore and `~/.ssh/config`
-> import work. Synchronized input UI and the minimap (M2), monitoring and file
-> transfer (M3) and packaging polish (M4) are not done yet. See
+> **Status: milestone M2 (v0.2.0-m2), pre-release.** Connections, terminals,
+> synchronized input with the floating minimap, draggable split layouts, the
+> host sidebar, session restore and `~/.ssh/config` import work. Monitoring and
+> file transfer (M3) and packaging polish (M4) are not done yet. See
 > [docs/SPEC.md](docs/SPEC.md) and [docs/TECH-PLAN.md](docs/TECH-PLAN.md).
 
-![Main window](docs/screenshots/m1/main-light.png)
+![Main window](docs/screenshots/m2/main-light.png)
 
-| Dark | Connection lost | Add host |
+| Minimap at rest | Minimap hovered | Dragging a divider |
 |---|---|---|
-| ![dark](docs/screenshots/m1/main-dark.png) | ![disconnected](docs/screenshots/m1/disconnected.png) | ![add host](docs/screenshots/m1/add-host.png) |
+| ![rest](docs/screenshots/m2/minimap-rest.png) | ![hover](docs/screenshots/m2/minimap-hover.png) | ![divider](docs/screenshots/m2/divider-snap.png) |
 
-More in [docs/screenshots/m1](docs/screenshots/m1).
+More in [docs/screenshots/m2](docs/screenshots/m2) (M1's are in
+[docs/screenshots/m1](docs/screenshots/m1)).
 
-## What works in M1
+## What works in M2
+
+- **Synchronized input**: a synced block has a coral border and a small chip.
+  Turn sync on from the chip, the minimap, the command palette, the shortcuts
+  or the right-click menus; all on/off with `Ctrl+Shift+Alt+A`. A block whose
+  connection is down is paused and the others carry on. See
+  [ADR 0010](docs/adr/0010-sync-ui-and-minimap.md).
+- **Minimap**: a floating 176 px panel that is translucent at rest and opaque
+  under the pointer. Click a square to toggle sync, drag a box to select
+  (`⇧` adds, `⌥` inverts), drag squares to reorder, drag the panel to a corner,
+  opacity slider.
+- **Split layouts**: drag a divider; it snaps to ½, ⅓, ⅔ with a guide line
+  (`⌥` turns snapping off). The layout and sync state survive a restart.
+  See [ADR 0009](docs/adr/0009-manual-layout-tree.md).
+- Full [keyboard shortcuts](docs/SHORTCUTS.md), right-click menus (block
+  header, tab, sidebar host and tag, minimap), block rename, zoom a block,
+  search in the terminal, and a custom title bar.
+
+## Also in M1
 
 - **SSH**: password, public key (OpenSSH, PEM, PuTTY `.ppk`), SSH agent and
   keyboard-interactive authentication; jump-host chains; SOCKS5 and HTTP
@@ -61,6 +80,8 @@ will warn.
 
 ### Keyboard
 
+The complete table is in [docs/SHORTCUTS.md](docs/SHORTCUTS.md).
+
 The primary modifier is `Ctrl+Shift` on Linux and Windows (so plain `Ctrl+C`
 still reaches the shell) and `⌘` on macOS.
 
@@ -73,6 +94,9 @@ still reaches the shell) and `⌘` on macOS.
 | `Ctrl+Shift+1…9` | Switch tab |
 | `Ctrl+Shift+Alt+←↑→↓` | Move focus between blocks |
 | `Ctrl+Shift+Alt+S` | Toggle synchronized input for the focused block |
+| `Ctrl+Shift+Alt+A` | Sync all blocks on / off |
+| `Ctrl+Shift+Alt+G` | Show / hide the minimap |
+| `Ctrl+Shift+F` | Search in the terminal |
 | `Ctrl+Shift+B` | Toggle the sidebar |
 | `Ctrl+Shift+,` | Settings |
 
@@ -93,7 +117,7 @@ password" lasts for the running session only, and Tako says so.
 make check          # gofmt, vet, golangci-lint, go test -race, coverage gate (80% core)
 make integration    # against a real OpenSSH (scripts/fetch-sshd.sh downloads a portable one)
 make e2e            # live window under Xvfb: idle CPU/RSS, cold start, kill -9 recovery
-make screenshots    # real-window screenshots into docs/screenshots/m1
+make screenshots    # real-window screenshots into docs/screenshots/m2 (MILESTONE=m1 for the old set)
 make vuln           # govulncheck
 ```
 

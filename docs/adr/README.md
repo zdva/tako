@@ -13,4 +13,7 @@ decision that is replaced is marked *Superseded by* and kept.
 | [0005](0005-utf8-only.md) | UTF-8 only | Accepted |
 | [0006](0006-session-pane-contract.md) | `session.Pane` never reaches EOF while a link is down | Accepted |
 | [0007](0007-inputbus.md) | Synchronized input through an InputBus | Accepted |
-| [0008](0008-layout-model.md) | Layout model: auto grid now, split tree later | Accepted |
+| [0008](0008-layout-model.md) | Layout model: auto grid now, split tree later | Accepted (manual mode superseded by 0009) |
+| [0009](0009-manual-layout-tree.md) | Manual layout: a binary split tree | Accepted |
+| [0010](0010-sync-ui-and-minimap.md) | Sync UI and the floating minimap | Accepted |
+| [0011](0011-title-bar-and-terminal-menu.md) | Hidden title bar; terminal-area right-click menu | Accepted |

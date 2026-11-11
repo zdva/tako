@@ -38,7 +38,7 @@ machines at once, survives flaky networks and is honest about credentials.
 | | Scope | Status |
 |---|---|---|
 | **M1** | Connections (all auth methods, jump hosts, proxies), terminals, adaptive grid, host sidebar, tabs, palette, `~/.ssh/config` import, resilient panes, session restore, EN/zh, light/dark | **Done** (v0.1.0-m1) |
-| M2 | Sync UI (capsule, all on/off, selection), minimap, draggable split layout with snapping, sync settings | Planned |
+| **M2** | Sync UI (chip, all on/off, selection), floating minimap, draggable split layout with snapping, manual layout restore, full shortcuts, right-click menus, rename, custom title bar | **Done** (v0.2.0-m2) |
 | M3 | Per-block metrics (CPU, memory, disk, GPU) for Linux/macOS/Windows, monitor view, SFTP transfers | Planned |
 | M4 | Polish, more importers (Xshell, SecureCRT, Termius), packaging and release pipeline, signing | Planned |
 
