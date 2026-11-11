@@ -1,12 +1,14 @@
 package monitor_test
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"math"
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -392,4 +394,101 @@ func FuzzParsers(f *testing.F) {
 			_, _ = c.ParseInfo(data)
 		}
 	})
+}
+
+func TestHub_WatchesProbesAndReportsOnlyVisibleChanges(t *testing.T) {
+	h := &fakeHost{out: fixtureBytes("linux-1.txt")}
+	exec := func(ctx context.Context, cmd string) ([]byte, error) {
+		if cmd == monitor.ProbeCommand {
+			return []byte("Linux\n"), nil
+		}
+		return h.exec(ctx, cmd)
+	}
+	var mu sync.Mutex
+	var changes int
+	hub := monitor.NewHub(monitor.HubOptions{
+		Interval: 10 * time.Millisecond, Jitter: -1,
+		OnChange: func(model.ID) { mu.Lock(); changes++; mu.Unlock() },
+	})
+	defer hub.Close()
+	hub.Watch(monitor.Target{Host: "h1", Exec: exec})
+	eventually(t, "samples", func() bool { s := hub.Series("h1"); return s != nil && s.Len() >= 8 })
+	mu.Lock()
+	n := changes
+	mu.Unlock()
+	if n >= 8 {
+		t.Errorf("%d notifications for %d identical samples: the idle fleet would redraw", n, hub.Series("h1").Len())
+	}
+	if n == 0 {
+		t.Error("never told the window")
+	}
+
+	hub.SetFocus("h1")
+	mu.Lock()
+	before := changes
+	mu.Unlock()
+	time.Sleep(100 * time.Millisecond)
+	mu.Lock()
+	after := changes
+	mu.Unlock()
+	if after-before < 3 {
+		t.Errorf("a focused host reported only %d times in 100 ms", after-before)
+	}
+	hub.SetFocus("")
+
+	hub.SetInterval(5 * time.Millisecond)
+	hub.SetPaused(true)
+	time.Sleep(50 * time.Millisecond)
+	l1 := hub.Series("h1").Len()
+	time.Sleep(60 * time.Millisecond)
+	if l2 := hub.Series("h1").Len(); l2 != l1 {
+		t.Errorf("paused hub sampled %d times", l2-l1)
+	}
+	hub.SetPaused(false)
+	eventually(t, "samples after unpause", func() bool { return hub.Series("h1").Len() > l1+2 })
+
+	if !hub.Watching("h1") || hub.Watching("nope") {
+		t.Error("Watching")
+	}
+	hub.Forget("h1")
+	if hub.Series("h1") != nil {
+		t.Error("history kept after Forget")
+	}
+}
+
+func TestHub_ProbesTheOSAndRetriesUntilReachable(t *testing.T) {
+	var calls int
+	var mu sync.Mutex
+	exec := func(_ context.Context, cmd string) ([]byte, error) {
+		mu.Lock()
+		defer mu.Unlock()
+		if cmd == monitor.ProbeCommand {
+			calls++
+			if calls == 1 {
+				return nil, errors.New("not connected")
+			}
+			return []byte("Darwin\n"), nil
+		}
+		if cmd == (monitor.Darwin{}).InfoCommand() {
+			return fixtureBytes("darwin-info.txt"), nil
+		}
+		return fixtureBytes("darwin-1.txt"), nil
+	}
+	hub := monitor.NewHub(monitor.HubOptions{Interval: 10 * time.Millisecond, Jitter: -1})
+	defer hub.Close()
+	hub.Watch(monitor.Target{Host: "mac", Exec: exec})
+	// The first probe fails on a fresh connection and the second says Darwin;
+	// the first wait is a second, so allow for it.
+	deadline := time.Now().Add(5 * time.Second)
+	for {
+		if s := hub.Series("mac"); s != nil && s.Len() > 0 {
+			if p, ok := s.Latest(); ok && p.MemTotal > 0 {
+				return
+			}
+		}
+		if time.Now().After(deadline) {
+			t.Fatal("no macOS sample arrived")
+		}
+		time.Sleep(10 * time.Millisecond)
+	}
 }
