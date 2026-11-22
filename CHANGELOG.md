@@ -11,6 +11,16 @@ All notable changes are recorded here. The format follows
 - License is now GPL-3.0-or-later (ADR 0022). The Go module path and public
   repository are `github.com/zdva/tako`. Third-party notices are in
   [`THIRD_PARTY_LICENSES.md`](THIRD_PARTY_LICENSES.md).
+- Dependencies: MyGo `v0.8.3` → `v0.10.0` (the only documented Go API break in
+  this range is SQLite's library path, which Tako does not use);
+  `golang.org/x/crypto` `v0.58.0` → `v0.59.0`; `golang.org/x/net` `v0.62.0` →
+  `v0.63.0`; `golang.org/x/text` `v0.43.0` → `v0.44.0`. Indirect modules that
+  ship in the app: `purego` `v0.11.1` → `v0.11.3`, `golang.org/x/image`
+  `v0.46.0` → `v0.48.0`, `golang.org/x/sys` `v0.49.0` → `v0.50.0`. The pinned
+  `mygo` CLI now also requires RPM-packaging libraries, listed in
+  [`THIRD_PARTY_LICENSES.md`](THIRD_PARTY_LICENSES.md). The Go toolchain stays
+  at `go1.27.4` (latest 1.27 patch). `github.com/pkg/sftp` `v1.13.12` and
+  `go.uber.org/goleak` `v1.3.0` were already current.
 
 ## [0.4.0] - 2026-11-11
 
