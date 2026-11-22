@@ -13,8 +13,8 @@ import (
 
 	"golang.org/x/net/proxy"
 
-	"github.com/wei-dong/tako/internal/model"
-	"github.com/wei-dong/tako/internal/transport"
+	"github.com/zdva/tako/internal/model"
+	"github.com/zdva/tako/internal/transport"
 )
 
 // dialTCP opens the first TCP connection of a path: directly, or through the

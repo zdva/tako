@@ -23,13 +23,13 @@ import (
 
 	gossh "golang.org/x/crypto/ssh"
 
-	"github.com/wei-dong/tako/internal/model"
-	"github.com/wei-dong/tako/internal/secrets"
-	"github.com/wei-dong/tako/internal/session"
-	"github.com/wei-dong/tako/internal/testutil/nettest"
-	"github.com/wei-dong/tako/internal/testutil/realsshd"
-	"github.com/wei-dong/tako/internal/transport"
-	tssh "github.com/wei-dong/tako/internal/transport/ssh"
+	"github.com/zdva/tako/internal/model"
+	"github.com/zdva/tako/internal/secrets"
+	"github.com/zdva/tako/internal/session"
+	"github.com/zdva/tako/internal/testutil/nettest"
+	"github.com/zdva/tako/internal/testutil/realsshd"
+	"github.com/zdva/tako/internal/transport"
+	tssh "github.com/zdva/tako/internal/transport/ssh"
 )
 
 const ppkPassphrase = "secret"

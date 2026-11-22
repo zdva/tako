@@ -11,9 +11,9 @@ import (
 
 	"github.com/egoist/mygo/ui"
 
-	"github.com/wei-dong/tako/internal/hostlib"
-	"github.com/wei-dong/tako/internal/model"
-	"github.com/wei-dong/tako/internal/secrets"
+	"github.com/zdva/tako/internal/hostlib"
+	"github.com/zdva/tako/internal/model"
+	"github.com/zdva/tako/internal/secrets"
 )
 
 // Auth choices, in the order of the segmented control.

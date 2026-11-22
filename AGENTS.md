@@ -87,5 +87,7 @@ make build-all      # cross-compile all platforms
 
 ## Known placeholders
 
-Module path `github.com/wei-dong/tako` and the MIT license are placeholders
-pending the owner's decision.
+The maintainer e-mail `tako@example.invalid` (in `mygo.json` and
+`packaging/nfpm.yaml.tmpl`) is a placeholder. The module path is
+`github.com/zdva/tako`; the license is GPL-3.0-or-later (ADR 0022): new
+dependencies must be compatible and listed in `THIRD_PARTY_LICENSES.md`.

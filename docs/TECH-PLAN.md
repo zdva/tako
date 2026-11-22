@@ -50,7 +50,7 @@ Go 风格要点（来自两套规范，写进代码评审清单）：
 
 ## 3. 模块与目录
 
-模块路径：`github.com/wei-dong/tako`（原型是 `github.com/wei-dong/tako-spike`）。【待确认：仓库名与 GitHub 账号】
+模块路径：`github.com/zdva/tako`（原型是 `github.com/zdva/tako-spike`）。【待确认：仓库名与 GitHub 账号】
 
 ```
 tako/
@@ -663,7 +663,7 @@ Connected ──(Transport.Done)──▶ Reconnecting(attempt=1) ──成功�
 
 ## 15. 需要你决定 / 确认的事
 
-1. **仓库**：名称、归属账号，公开还是私有？需要先把 GitHub 连上，我才能直接在仓库里开发。（模块路径暂定 `github.com/wei-dong/tako`）
+1. **仓库**：名称、归属账号，公开还是私有？需要先把 GitHub 连上，我才能直接在仓库里开发。（模块路径暂定 `github.com/zdva/tako`）
 2. **架构与依赖注入**：我按“扁平 + 手写构造函数注入”定了默认；如果你想要别的（比如 DI 库），现在改成本最低。
 3. **发布与签名**：
    - macOS：是否有 Apple Developer 账号（Developer ID 证书 + 公证）？没有的话，M4 先发自签版，用户首次打开要手动放行。

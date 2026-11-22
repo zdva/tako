@@ -8,7 +8,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/wei-dong/tako/internal/transport"
+	"github.com/zdva/tako/internal/transport"
 )
 
 // link is one transport to the host plus the panes living on it, with its own

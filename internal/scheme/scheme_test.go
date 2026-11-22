@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/wei-dong/tako/internal/scheme"
+	"github.com/zdva/tako/internal/scheme"
 )
 
 func TestBuiltinSchemesAreValidAndUnique(t *testing.T) {

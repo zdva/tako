@@ -5,9 +5,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/wei-dong/tako/internal/model"
-	"github.com/wei-dong/tako/internal/transport"
-	tui "github.com/wei-dong/tako/internal/ui"
+	"github.com/zdva/tako/internal/model"
+	"github.com/zdva/tako/internal/transport"
+	tui "github.com/zdva/tako/internal/ui"
 )
 
 // Connector tries a host for the Add/Edit sheet: it connects, learns the

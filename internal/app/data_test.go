@@ -3,10 +3,10 @@ package app
 import (
 	"testing"
 
-	"github.com/wei-dong/tako/internal/model"
-	"github.com/wei-dong/tako/internal/secrets"
-	"github.com/wei-dong/tako/internal/settings"
-	"github.com/wei-dong/tako/internal/store"
+	"github.com/zdva/tako/internal/model"
+	"github.com/zdva/tako/internal/secrets"
+	"github.com/zdva/tako/internal/settings"
+	"github.com/zdva/tako/internal/store"
 )
 
 func TestLookup_AppliesTheKeepaliveSetting(t *testing.T) {

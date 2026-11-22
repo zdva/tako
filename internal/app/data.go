@@ -9,11 +9,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/wei-dong/tako/internal/diag"
-	"github.com/wei-dong/tako/internal/importer/hostfile"
-	"github.com/wei-dong/tako/internal/model"
-	"github.com/wei-dong/tako/internal/scheme"
-	tui "github.com/wei-dong/tako/internal/ui"
+	"github.com/zdva/tako/internal/diag"
+	"github.com/zdva/tako/internal/importer/hostfile"
+	"github.com/zdva/tako/internal/model"
+	"github.com/zdva/tako/internal/scheme"
+	tui "github.com/zdva/tako/internal/ui"
 )
 
 // importHosts reads a file or folder of hosts (Xshell, SecureCRT, Termius or

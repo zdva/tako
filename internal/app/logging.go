@@ -7,7 +7,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/wei-dong/tako/internal/store"
+	"github.com/zdva/tako/internal/store"
 )
 
 const redacted = "[redacted]"

@@ -1,4 +1,4 @@
-module github.com/wei-dong/tako
+module github.com/zdva/tako
 
 go 1.27.3
 

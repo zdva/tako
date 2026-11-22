@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/wei-dong/tako/internal/monitor"
+	"github.com/zdva/tako/internal/monitor"
 )
 
 // fakeHost is a machine whose command output the test controls.

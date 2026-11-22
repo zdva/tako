@@ -4,18 +4,29 @@
   "version": "0.4.0",
   "main": "./cmd/tako",
   "out": "build",
-  "license": "MIT",
-  "publisher": "Tako contributors",
-  "macos": { "minimumSystemVersion": "13.0" },
+  "license": "GPL-3.0-or-later",
+  "publisher": "zdva and Tako contributors",
+  "macos": {
+    "minimumSystemVersion": "13.0"
+  },
   "linux": {
-    "maintainer": "Tako contributors <tako@example.invalid>",
+    "maintainer": "zdva <tako@example.invalid>",
     "comment": "Octopus terminal: every one of your SSH servers in view",
-    "categories": ["Utility", "System", "TerminalEmulator"],
+    "categories": [
+      "Utility",
+      "System",
+      "TerminalEmulator"
+    ],
     "webview": false,
     "command": "tako"
   },
   "updates": {
     "publicKey": "f48Np6E0RfY49Vg79HoGyCxDaX5Btg04XcASgDi7Jw8=",
-    "github": "OWNER/tako"
-  }
+    "github": "zdva/tako"
+  },
+  "copyright": "© 2026 zdva and Tako contributors. Licensed under GPL-3.0-or-later.",
+  "resources": [
+    "LICENSE",
+    "THIRD_PARTY_LICENSES.md"
+  ]
 }

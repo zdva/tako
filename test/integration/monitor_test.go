@@ -12,9 +12,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/wei-dong/tako/internal/monitor"
-	"github.com/wei-dong/tako/internal/testutil/realsshd"
-	"github.com/wei-dong/tako/internal/transfer"
+	"github.com/zdva/tako/internal/monitor"
+	"github.com/zdva/tako/internal/testutil/realsshd"
+	"github.com/zdva/tako/internal/transfer"
 )
 
 // localCPU reads the machine's busy share between two readings of /proc/stat

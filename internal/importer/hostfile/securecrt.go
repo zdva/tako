@@ -10,7 +10,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/wei-dong/tako/internal/model"
+	"github.com/zdva/tako/internal/model"
 )
 
 // scrt is the part of a SecureCRT session the importer reads, whichever file

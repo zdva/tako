@@ -8,10 +8,10 @@ import (
 
 	"github.com/egoist/mygo/ui"
 
-	"github.com/wei-dong/tako/internal/i18n"
-	"github.com/wei-dong/tako/internal/model"
-	"github.com/wei-dong/tako/internal/scheme"
-	"github.com/wei-dong/tako/internal/settings"
+	"github.com/zdva/tako/internal/i18n"
+	"github.com/zdva/tako/internal/model"
+	"github.com/zdva/tako/internal/scheme"
+	"github.com/zdva/tako/internal/settings"
 )
 
 // openSettings opens the settings window on a page.

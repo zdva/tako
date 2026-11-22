@@ -8,8 +8,8 @@ import (
 
 	"github.com/egoist/mygo/ui"
 
-	"github.com/wei-dong/tako/internal/scheme"
-	"github.com/wei-dong/tako/internal/theme"
+	"github.com/zdva/tako/internal/scheme"
+	"github.com/zdva/tako/internal/theme"
 )
 
 // TestTokensMatchDesignDoc keeps the code and docs/DESIGN.md in step: every

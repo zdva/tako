@@ -14,7 +14,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/wei-dong/tako/internal/model"
+	"github.com/zdva/tako/internal/model"
 )
 
 // MaxIncludeDepth limits nested Include directives, which guards against

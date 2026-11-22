@@ -12,7 +12,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/wei-dong/tako/internal/transport"
+	"github.com/zdva/tako/internal/transport"
 )
 
 // Endpoint is a place files live: this computer or one host.

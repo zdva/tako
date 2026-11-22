@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	tui "github.com/wei-dong/tako/internal/ui"
+	tui "github.com/zdva/tako/internal/ui"
 )
 
 // designShortcuts reads the shortcut table of docs/DESIGN.md §4.6: the keys

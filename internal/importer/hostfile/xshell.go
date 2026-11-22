@@ -5,7 +5,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/wei-dong/tako/internal/model"
+	"github.com/zdva/tako/internal/model"
 )
 
 // parseXshellSession reads one .xsh file. p is its path inside the archive or

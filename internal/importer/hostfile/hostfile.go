@@ -14,7 +14,7 @@ import (
 	"strings"
 	"unicode/utf16"
 
-	"github.com/wei-dong/tako/internal/model"
+	"github.com/zdva/tako/internal/model"
 )
 
 // Limits that keep hostile or mistaken input from exhausting memory.

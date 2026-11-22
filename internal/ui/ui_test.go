@@ -12,12 +12,12 @@ import (
 	"github.com/egoist/mygo/ui"
 	"go.uber.org/goleak"
 
-	"github.com/wei-dong/tako/internal/app"
-	"github.com/wei-dong/tako/internal/model"
-	"github.com/wei-dong/tako/internal/secrets"
-	"github.com/wei-dong/tako/internal/store"
-	"github.com/wei-dong/tako/internal/testutil/memssh"
-	"github.com/wei-dong/tako/internal/transfer"
+	"github.com/zdva/tako/internal/app"
+	"github.com/zdva/tako/internal/model"
+	"github.com/zdva/tako/internal/secrets"
+	"github.com/zdva/tako/internal/store"
+	"github.com/zdva/tako/internal/testutil/memssh"
+	"github.com/zdva/tako/internal/transfer"
 )
 
 func TestMain(m *testing.M) {

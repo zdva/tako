@@ -11,17 +11,17 @@ import (
 
 	"github.com/egoist/mygo/ui"
 
-	"github.com/wei-dong/tako/internal/hostlib"
-	"github.com/wei-dong/tako/internal/i18n"
-	"github.com/wei-dong/tako/internal/layout"
-	"github.com/wei-dong/tako/internal/model"
-	"github.com/wei-dong/tako/internal/monitor"
-	"github.com/wei-dong/tako/internal/scheme"
-	"github.com/wei-dong/tako/internal/secrets"
-	"github.com/wei-dong/tako/internal/settings"
-	"github.com/wei-dong/tako/internal/theme"
-	"github.com/wei-dong/tako/internal/transfer"
-	"github.com/wei-dong/tako/internal/workspace"
+	"github.com/zdva/tako/internal/hostlib"
+	"github.com/zdva/tako/internal/i18n"
+	"github.com/zdva/tako/internal/layout"
+	"github.com/zdva/tako/internal/model"
+	"github.com/zdva/tako/internal/monitor"
+	"github.com/zdva/tako/internal/scheme"
+	"github.com/zdva/tako/internal/secrets"
+	"github.com/zdva/tako/internal/settings"
+	"github.com/zdva/tako/internal/theme"
+	"github.com/zdva/tako/internal/transfer"
+	"github.com/zdva/tako/internal/workspace"
 )
 
 // TestResult is what a successful "test connection" learned.

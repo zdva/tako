@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/wei-dong/tako/internal/model"
+	"github.com/zdva/tako/internal/model"
 )
 
 func parseFixture(t *testing.T) ([]model.Host, []Warning) {

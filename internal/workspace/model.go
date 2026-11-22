@@ -15,11 +15,11 @@ import (
 
 	"github.com/egoist/mygo/plugins/terminal"
 
-	"github.com/wei-dong/tako/internal/inputbus"
-	"github.com/wei-dong/tako/internal/layout"
-	"github.com/wei-dong/tako/internal/model"
-	"github.com/wei-dong/tako/internal/session"
-	"github.com/wei-dong/tako/internal/transport"
+	"github.com/zdva/tako/internal/inputbus"
+	"github.com/zdva/tako/internal/layout"
+	"github.com/zdva/tako/internal/model"
+	"github.com/zdva/tako/internal/session"
+	"github.com/zdva/tako/internal/transport"
 )
 
 // initialSize is the size panes and terminals start with, before the view

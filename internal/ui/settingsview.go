@@ -9,10 +9,10 @@ import (
 
 	"github.com/egoist/mygo/ui"
 
-	"github.com/wei-dong/tako/internal/i18n"
-	"github.com/wei-dong/tako/internal/scheme"
-	"github.com/wei-dong/tako/internal/settings"
-	"github.com/wei-dong/tako/internal/theme"
+	"github.com/zdva/tako/internal/i18n"
+	"github.com/zdva/tako/internal/scheme"
+	"github.com/zdva/tako/internal/settings"
+	"github.com/zdva/tako/internal/theme"
 )
 
 // ImportSummary is what importing a host file did.

@@ -7,7 +7,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/wei-dong/tako/internal/model"
+	"github.com/zdva/tako/internal/model"
 )
 
 // Target is a machine the hub can measure.

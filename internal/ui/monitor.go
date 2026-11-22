@@ -6,9 +6,9 @@ import (
 
 	"github.com/egoist/mygo/ui"
 
-	"github.com/wei-dong/tako/internal/model"
-	"github.com/wei-dong/tako/internal/monitor"
-	"github.com/wei-dong/tako/internal/workspace"
+	"github.com/zdva/tako/internal/model"
+	"github.com/zdva/tako/internal/monitor"
+	"github.com/zdva/tako/internal/workspace"
 )
 
 // monitorRanges are the time windows of the monitor page's charts.

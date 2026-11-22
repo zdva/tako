@@ -8,9 +8,9 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/wei-dong/tako/internal/i18n"
-	"github.com/wei-dong/tako/internal/scheme"
-	"github.com/wei-dong/tako/internal/store"
+	"github.com/zdva/tako/internal/i18n"
+	"github.com/zdva/tako/internal/scheme"
+	"github.com/zdva/tako/internal/store"
 )
 
 // Version is the settings file version.

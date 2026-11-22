@@ -7,7 +7,7 @@ import (
 
 	"github.com/egoist/mygo/ui"
 
-	"github.com/wei-dong/tako/internal/layout"
+	"github.com/zdva/tako/internal/layout"
 )
 
 const (

@@ -8,8 +8,8 @@ import (
 
 	"github.com/egoist/mygo/ui"
 
-	"github.com/wei-dong/tako/internal/model"
-	"github.com/wei-dong/tako/internal/monitor"
+	"github.com/zdva/tako/internal/model"
+	"github.com/zdva/tako/internal/monitor"
 )
 
 // monitorPage is the page opened from a block's footer: stat cards, charts of

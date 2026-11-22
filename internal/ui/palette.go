@@ -6,9 +6,9 @@ import (
 
 	"github.com/egoist/mygo/ui"
 
-	"github.com/wei-dong/tako/internal/model"
-	"github.com/wei-dong/tako/internal/settings"
-	"github.com/wei-dong/tako/internal/workspace"
+	"github.com/zdva/tako/internal/model"
+	"github.com/zdva/tako/internal/settings"
+	"github.com/zdva/tako/internal/workspace"
 )
 
 func contextBackground() context.Context { return context.Background() }

@@ -3,9 +3,9 @@ package workspace
 import (
 	"slices"
 
-	"github.com/wei-dong/tako/internal/inputbus"
-	"github.com/wei-dong/tako/internal/layout"
-	"github.com/wei-dong/tako/internal/session"
+	"github.com/zdva/tako/internal/inputbus"
+	"github.com/zdva/tako/internal/layout"
+	"github.com/zdva/tako/internal/session"
 )
 
 // Minimap holds the preferences of the floating minimap.

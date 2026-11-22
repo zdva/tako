@@ -11,9 +11,9 @@ import (
 
 	gossh "golang.org/x/crypto/ssh"
 
-	"github.com/wei-dong/tako/internal/model"
-	"github.com/wei-dong/tako/internal/secrets"
-	"github.com/wei-dong/tako/internal/transport"
+	"github.com/zdva/tako/internal/model"
+	"github.com/zdva/tako/internal/secrets"
+	"github.com/zdva/tako/internal/transport"
 )
 
 // DefaultDialTimeout bounds one TCP connect plus SSH handshake.

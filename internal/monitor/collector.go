@@ -5,7 +5,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/wei-dong/tako/internal/model"
+	"github.com/zdva/tako/internal/model"
 )
 
 // Raw is what a collector carries from one parse to the next: the counters

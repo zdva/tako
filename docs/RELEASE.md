@@ -99,16 +99,18 @@ Windows, no GPU, no GitHub repository):
 - [ ] **Updater end to end**: publish a draft `v0.4.0`, install it, publish
       `v0.4.1`, check that the app finds, verifies and installs it, and that a
       tampered archive is refused.
-- [ ] **GitHub repository**: create it, set `updates.github`, add the
+- [ ] **GitHub repository** (`zdva/tako` exists and `updates.github` is set): add the
       `MYGO_UPDATER_PRIVATE_KEY` secret, protect `main`, enable Dependabot and
       private vulnerability reporting (see SECURITY.md).
-- [ ] **Module path**: `github.com/wei-dong/tako` is a placeholder; change it
-      everywhere (`go.mod`, imports, `.golangci.yml`, README) before publishing.
-- [ ] **Licence**: MIT is in `LICENSE` and `mygo.json`; confirm it (or choose
-      another) before the repository is public. `publisher` and the `maintainer`
-      in `mygo.json` and `packaging/nfpm.yaml.tmpl` are placeholders too.
-- [ ] **A real project homepage / email** in `packaging/nfpm.yaml.tmpl`
-      (`homepage` is `example.invalid`) and the `.desktop` comment.
+- [x] **Module path** `github.com/zdva/tako` and the public repository
+      `github.com/zdva/tako` are decided.
+- [x] **Licence**: GPL-3.0-or-later ([ADR 0022](adr/0022-license-gpl-3-or-later.md));
+      `LICENSE` and `THIRD_PARTY_LICENSES.md` ship inside every package.
+- [ ] **A real maintainer e-mail**: `tako@example.invalid` in `mygo.json`
+      (`linux.maintainer`) and `packaging/nfpm.yaml.tmpl` is a placeholder; it
+      appears in the `.deb`/`.rpm` metadata.
+- [ ] **Source offer**: the release tag in the public repository is the
+      "corresponding source" of each binary; keep tags and releases in step.
 - [ ] **macOS and Windows CI** jobs have never run (`continue-on-error` in
       `ci.yml`); make them blocking once they are green.
 - [ ] **Screenshots** in the README are from Linux (Xvfb); retake on macOS for

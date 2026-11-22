@@ -9,14 +9,14 @@ import (
 
 	"github.com/egoist/mygo/plugins/terminal"
 
-	"github.com/wei-dong/tako/internal/inputbus"
-	"github.com/wei-dong/tako/internal/model"
-	"github.com/wei-dong/tako/internal/secrets"
-	"github.com/wei-dong/tako/internal/session"
-	"github.com/wei-dong/tako/internal/testutil/memssh"
-	"github.com/wei-dong/tako/internal/transport"
-	tssh "github.com/wei-dong/tako/internal/transport/ssh"
-	"github.com/wei-dong/tako/internal/workspace"
+	"github.com/zdva/tako/internal/inputbus"
+	"github.com/zdva/tako/internal/model"
+	"github.com/zdva/tako/internal/secrets"
+	"github.com/zdva/tako/internal/session"
+	"github.com/zdva/tako/internal/testutil/memssh"
+	"github.com/zdva/tako/internal/transport"
+	tssh "github.com/zdva/tako/internal/transport/ssh"
+	"github.com/zdva/tako/internal/workspace"
 )
 
 type env struct {

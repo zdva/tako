@@ -4,7 +4,7 @@ import (
 	"errors"
 	"time"
 
-	"github.com/wei-dong/tako/internal/model"
+	"github.com/zdva/tako/internal/model"
 )
 
 // PartSuffix marks a file that is still being written.

@@ -6,8 +6,8 @@ import (
 
 	"github.com/egoist/mygo/ui"
 
-	"github.com/wei-dong/tako/internal/layout"
-	"github.com/wei-dong/tako/internal/workspace"
+	"github.com/zdva/tako/internal/layout"
+	"github.com/zdva/tako/internal/workspace"
 )
 
 // Metrics of the minimap (DESIGN.md, Final: about 176 px wide).

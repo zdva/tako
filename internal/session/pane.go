@@ -7,7 +7,7 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/wei-dong/tako/internal/transport"
+	"github.com/zdva/tako/internal/transport"
 )
 
 // Pane is one interactive terminal channel on a [Session]. See the package

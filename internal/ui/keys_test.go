@@ -7,7 +7,7 @@ import (
 	"strconv"
 	"testing"
 
-	"github.com/wei-dong/tako/internal/i18n"
+	"github.com/zdva/tako/internal/i18n"
 )
 
 // Every translation key the code uses exists in both languages, and neither

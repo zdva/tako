@@ -12,7 +12,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/wei-dong/tako/internal/workspace"
+	"github.com/zdva/tako/internal/workspace"
 )
 
 // Real-window checks of the M2 features, under Xvfb with the packaged build.

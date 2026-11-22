@@ -11,8 +11,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/wei-dong/tako/internal/model"
-	"github.com/wei-dong/tako/internal/transport"
+	"github.com/zdva/tako/internal/model"
+	"github.com/zdva/tako/internal/transport"
 )
 
 // DirectRunner copies a file or directory server to server without passing

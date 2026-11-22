@@ -7,7 +7,7 @@ import (
 	"testing"
 	"unicode/utf8"
 
-	"github.com/wei-dong/tako/internal/i18n"
+	"github.com/zdva/tako/internal/i18n"
 )
 
 var verb = regexp.MustCompile(`%[-+# 0]*[0-9.]*[a-zA-Z]`)

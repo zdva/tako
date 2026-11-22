@@ -12,7 +12,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/wei-dong/tako/internal/model"
+	"github.com/zdva/tako/internal/model"
 )
 
 var knownHostsOpt = regexp.MustCompile(`UserKnownHostsFile=([^' ]+)`)

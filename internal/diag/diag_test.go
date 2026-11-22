@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/wei-dong/tako/internal/diag"
+	"github.com/zdva/tako/internal/diag"
 )
 
 func TestScrub(t *testing.T) {

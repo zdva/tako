@@ -46,5 +46,23 @@ By taking part you agree to the [Code of Conduct](CODE_OF_CONDUCT.md).
 
 ## Licensing
 
-The project is MIT-licensed (currently pending the owner's confirmation). By
-contributing you agree your work is released under the same license.
+Tako is licensed under the **GNU General Public License, version 3 or (at your
+option) any later version** (GPL-3.0-or-later, see [LICENSE](LICENSE) and
+[ADR 0022](docs/adr/0022-license-gpl-3-or-later.md)).
+
+**Inbound = outbound:** a contribution is licensed to the project and to everyone
+who receives it under the same GPL-3.0-or-later. You keep your copyright; there is
+no copyright assignment and no separate contributor license agreement.
+
+**Developer Certificate of Origin:** sign every commit off with
+`git commit -s`, which adds a `Signed-off-by: Your Name <you@example.com>` line
+and means you certify the [DCO 1.1](https://developercertificate.org/): the work
+is yours to submit (or you have the right to submit it) under this license.
+Do not contribute code you cannot license under the GPL (for example code copied
+from a project under an incompatible license). The sign-off is not enforced by CI
+yet; maintainers may ask you to add it.
+
+New dependencies must be GPL-3.0-or-later compatible (permissive licenses such as
+MIT, BSD, Apache-2.0 are fine; GPL-2.0-only, SSPL, "non-commercial" and
+proprietary licenses are not). Add the dependency to
+[THIRD_PARTY_LICENSES.md](THIRD_PARTY_LICENSES.md) in the same pull request.

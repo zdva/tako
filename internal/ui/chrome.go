@@ -6,8 +6,8 @@ import (
 
 	"github.com/egoist/mygo/ui"
 
-	"github.com/wei-dong/tako/internal/model"
-	"github.com/wei-dong/tako/internal/workspace"
+	"github.com/zdva/tako/internal/model"
+	"github.com/zdva/tako/internal/workspace"
 )
 
 // toolbar is the top strip: the search field that opens the command palette,

@@ -9,9 +9,9 @@ import (
 
 	"github.com/egoist/mygo/ui"
 
-	"github.com/wei-dong/tako/internal/layout"
-	tui "github.com/wei-dong/tako/internal/ui"
-	"github.com/wei-dong/tako/internal/workspace"
+	"github.com/zdva/tako/internal/layout"
+	tui "github.com/zdva/tako/internal/ui"
+	"github.com/zdva/tako/internal/workspace"
 )
 
 const (

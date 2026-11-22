@@ -8,10 +8,10 @@ import (
 	"os"
 	"sync"
 
-	"github.com/wei-dong/tako/internal/model"
-	"github.com/wei-dong/tako/internal/transfer"
-	"github.com/wei-dong/tako/internal/transport"
-	tssh "github.com/wei-dong/tako/internal/transport/ssh"
+	"github.com/zdva/tako/internal/model"
+	"github.com/zdva/tako/internal/transfer"
+	"github.com/zdva/tako/internal/transport"
+	tssh "github.com/zdva/tako/internal/transport/ssh"
 )
 
 // fleet gives the transfer queue and the file browser a connection of their

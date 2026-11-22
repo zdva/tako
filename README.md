@@ -2,6 +2,10 @@
 
 [English](README.md) · [简体中文](README.zh-CN.md)
 
+[![License: GPL-3.0-or-later](https://img.shields.io/badge/license-GPL--3.0--or--later-blue.svg)](LICENSE)
+[![CI](https://github.com/zdva/tako/actions/workflows/ci.yml/badge.svg)](https://github.com/zdva/tako/actions/workflows/ci.yml)
+[![Go 1.27](https://img.shields.io/badge/go-1.27-00ADD8.svg)](go.mod)
+
 Tako is a desktop terminal for a fleet of servers. It keeps many SSH (and local)
 terminals on one screen as a grid of *blocks*, reconnects the ones whose network
 dropped, and remembers what you had open. It is written in Go with the
@@ -194,10 +198,22 @@ Read [AGENTS.md](AGENTS.md) for the layout and conventions and
 
 ## Notes for maintainers
 
-- The Go module path `github.com/wei-dong/tako` is a **placeholder** until the
-  repository has a home; it will be changed in one commit.
-- The [MIT license](LICENSE) is a **placeholder pending the owner's confirmation**.
+- The public repository and the Go module path are
+  <https://github.com/zdva/tako>.
+- The maintainer e-mail in `mygo.json` and `packaging/nfpm.yaml.tmpl`
+  (`tako@example.invalid`) is a **placeholder**; replace it with a real address
+  before the first public release.
 
 ## License
 
-MIT, see [LICENSE](LICENSE) (pending confirmation, see above).
+Tako is free software: you can redistribute it and/or modify it under the terms of
+the [GNU General Public License](LICENSE) as published by the Free Software
+Foundation, either version 3 of the License, or (at your option) any later version
+(**GPL-3.0-or-later**). It is distributed in the hope that it will be useful, but
+**without any warranty**; see the license for details.
+
+Third-party components keep their own licenses, all compatible with the GPL;
+they are listed with their notices in [THIRD_PARTY_LICENSES.md](THIRD_PARTY_LICENSES.md),
+and the reasoning is in [ADR 0022](docs/adr/0022-license-gpl-3-or-later.md).
+Contributions are accepted under the same license
+(see [CONTRIBUTING.md](CONTRIBUTING.md)).

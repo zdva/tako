@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/wei-dong/tako/internal/workspace"
+	"github.com/zdva/tako/internal/workspace"
 )
 
 func readSession(t *testing.T, path string) (workspace.State, error) {

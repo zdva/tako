@@ -17,9 +17,9 @@ import (
 	"github.com/egoist/mygo/plugins/updater/native"
 	"github.com/egoist/mygo/ui"
 
-	"github.com/wei-dong/tako/internal/app"
-	"github.com/wei-dong/tako/internal/diag"
-	"github.com/wei-dong/tako/internal/store"
+	"github.com/zdva/tako/internal/app"
+	"github.com/zdva/tako/internal/diag"
+	"github.com/zdva/tako/internal/store"
 )
 
 // version is set at build time with -ldflags "-X main.version=...".

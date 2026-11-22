@@ -10,7 +10,7 @@ import (
 	"sync"
 	"sync/atomic"
 
-	"github.com/wei-dong/tako/internal/transport"
+	"github.com/zdva/tako/internal/transport"
 )
 
 const (

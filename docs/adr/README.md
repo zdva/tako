@@ -27,3 +27,4 @@ decision that is replaced is marked *Superseded by* and kept.
 | [0019](0019-i18n-pseudo-and-regional-formats.md) | Pseudo-locale and system-region number and date formats | Accepted |
 | [0020](0020-crash-reports-and-diagnostics.md) | Crash reports from the Go runtime; scrubbed diagnostics on request | Accepted |
 | [0021](0021-unsigned-releases-and-signed-updates.md) | Unsigned installers, ed25519-signed updates from GitHub Releases | Accepted |
+| [0022](0022-license-gpl-3-or-later.md) | License: GPL-3.0-or-later, dependency compatibility, DCO | Accepted |

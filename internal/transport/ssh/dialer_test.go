@@ -14,11 +14,11 @@ import (
 
 	gossh "golang.org/x/crypto/ssh"
 
-	"github.com/wei-dong/tako/internal/model"
-	"github.com/wei-dong/tako/internal/secrets"
-	"github.com/wei-dong/tako/internal/testutil/memssh"
-	"github.com/wei-dong/tako/internal/testutil/nettest"
-	"github.com/wei-dong/tako/internal/transport"
+	"github.com/zdva/tako/internal/model"
+	"github.com/zdva/tako/internal/secrets"
+	"github.com/zdva/tako/internal/testutil/memssh"
+	"github.com/zdva/tako/internal/testutil/nettest"
+	"github.com/zdva/tako/internal/transport"
 )
 
 func startServer(t *testing.T, opts memssh.Options) *memssh.Server {

@@ -6,6 +6,12 @@ All notable changes are recorded here. The format follows
 
 ## [Unreleased]
 
+### Changed
+
+- License is now GPL-3.0-or-later (ADR 0022). The Go module path and public
+  repository are `github.com/zdva/tako`. Third-party notices are in
+  [`THIRD_PARTY_LICENSES.md`](THIRD_PARTY_LICENSES.md).
+
 ## [0.4.0] - 2026-11-11
 
 First full release candidate. Local tag only; nothing has been published, and

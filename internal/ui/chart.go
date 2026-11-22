@@ -7,7 +7,7 @@ import (
 
 	"github.com/egoist/mygo/ui"
 
-	"github.com/wei-dong/tako/internal/monitor"
+	"github.com/zdva/tako/internal/monitor"
 )
 
 // line is one curve of a chart.

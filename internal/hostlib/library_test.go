@@ -6,9 +6,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/wei-dong/tako/internal/model"
-	"github.com/wei-dong/tako/internal/secrets"
-	"github.com/wei-dong/tako/internal/store"
+	"github.com/zdva/tako/internal/model"
+	"github.com/zdva/tako/internal/secrets"
+	"github.com/zdva/tako/internal/store"
 )
 
 func open(t *testing.T) (*Library, *secrets.Memory, string) {

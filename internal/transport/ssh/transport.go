@@ -12,7 +12,7 @@ import (
 
 	gossh "golang.org/x/crypto/ssh"
 
-	"github.com/wei-dong/tako/internal/transport"
+	"github.com/zdva/tako/internal/transport"
 )
 
 // keepaliveTimeout is how long a keepalive may go unanswered before the

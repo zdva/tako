@@ -9,7 +9,7 @@ import (
 	"github.com/egoist/mygo/plugins/terminal"
 	"github.com/egoist/mygo/ui"
 
-	"github.com/wei-dong/tako/internal/scheme"
+	"github.com/zdva/tako/internal/scheme"
 )
 
 // Tokens is one appearance's palette.

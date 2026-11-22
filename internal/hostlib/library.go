@@ -10,9 +10,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/wei-dong/tako/internal/model"
-	"github.com/wei-dong/tako/internal/secrets"
-	"github.com/wei-dong/tako/internal/store"
+	"github.com/zdva/tako/internal/model"
+	"github.com/zdva/tako/internal/secrets"
+	"github.com/zdva/tako/internal/store"
 )
 
 // Version is the schema version of hosts.json.

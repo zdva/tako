@@ -4,7 +4,7 @@ import (
 	"encoding/json/v2"
 	"fmt"
 
-	"github.com/wei-dong/tako/internal/model"
+	"github.com/zdva/tako/internal/model"
 )
 
 // export is the document hostlib.Library.Export writes: hosts.json without

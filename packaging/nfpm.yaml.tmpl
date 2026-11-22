@@ -9,10 +9,10 @@ arch: ${RPM_ARCH}
 platform: linux
 version: ${VERSION}
 section: utils
-maintainer: Tako contributors <tako@example.invalid>
+maintainer: zdva <tako@example.invalid>
 description: "Octopus terminal, every one of your SSH servers in view."
-homepage: https://example.invalid/tako
-license: MIT
+homepage: https://github.com/zdva/tako
+license: GPL-3.0-or-later
 contents:
   - src: build/linux-${ARCH}/tako
     dst: /opt/tako/tako
@@ -22,6 +22,8 @@ contents:
     file_info: { mode: 0755 }
   - src: build/linux-${ARCH}/icon.png
     dst: /opt/tako/icon.png
+  - src: LICENSE
+    dst: /usr/share/licenses/tako/LICENSE
   - src: /opt/tako/tako
     dst: /usr/bin/tako
     type: symlink

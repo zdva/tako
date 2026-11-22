@@ -2,6 +2,10 @@
 
 [English](README.md) · [简体中文](README.zh-CN.md)
 
+[![License: GPL-3.0-or-later](https://img.shields.io/badge/license-GPL--3.0--or--later-blue.svg)](LICENSE)
+[![CI](https://github.com/zdva/tako/actions/workflows/ci.yml/badge.svg)](https://github.com/zdva/tako/actions/workflows/ci.yml)
+[![Go 1.27](https://img.shields.io/badge/go-1.27-00ADD8.svg)](go.mod)
+
 Tako 是管理一群服务器的桌面终端。它把许多 SSH（和本地）终端放在同一屏的网格里（每个叫一个“块”），网络断了的块会自动重连，下次打开还记得你开过什么。用 Go 和 [MyGo](https://github.com/egoist/mygo) 原生 UI 工具包写成，支持 macOS、Windows、Linux。
 
 > **状态：v0.4.0，第一个发布候选。** 计划内的功能都已完成，并在 Linux 上测过；**还没有**在真实的 macOS 和 Windows 上跑过，没有发布任何东西，安装包也没有签名。需要人来做的检查清单见 [docs/RELEASE.md](docs/RELEASE.md)，规划见 [docs/SPEC.md](docs/SPEC.md)、[docs/TECH-PLAN.md](docs/TECH-PLAN.md)。
@@ -116,9 +120,11 @@ make build-all      # 交叉编译所有平台
 
 ## 给维护者的说明
 
-- Go 模块路径 `github.com/wei-dong/tako` 是**占位**，仓库确定后会用一个提交统一改掉。
-- [MIT 许可证](LICENSE)是**占位，等所有者确认**。
+- 公开仓库和 Go 模块路径为 <https://github.com/zdva/tako>。
+- `mygo.json` 与 `packaging/nfpm.yaml.tmpl` 里的维护者邮箱（`tako@example.invalid`）是**占位**，首次公开发布前请换成真实地址。
 
 ## 许可证
 
-MIT，见 [LICENSE](LICENSE)（待确认，见上）。
+Tako 是自由软件：你可以依据自由软件基金会发布的 [GNU 通用公共许可证](LICENSE)第 3 版，或（由你选择）任何更新的版本，重新分发和/或修改它（**GPL-3.0-or-later**）。发布本程序是希望它有用，但**不提供任何担保**，详见许可证。
+
+第三方组件保留各自的许可证，均与 GPL 兼容，清单与许可声明见 [THIRD_PARTY_LICENSES.md](THIRD_PARTY_LICENSES.md)，分析见 [ADR 0022](docs/adr/0022-license-gpl-3-or-later.md)。贡献按同一许可证接受（见 [CONTRIBUTING.md](CONTRIBUTING.md)）。

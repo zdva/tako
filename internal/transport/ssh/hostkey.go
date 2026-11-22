@@ -15,9 +15,9 @@ import (
 	gossh "golang.org/x/crypto/ssh"
 	"golang.org/x/crypto/ssh/knownhosts"
 
-	"github.com/wei-dong/tako/internal/model"
-	"github.com/wei-dong/tako/internal/store"
-	"github.com/wei-dong/tako/internal/transport"
+	"github.com/zdva/tako/internal/model"
+	"github.com/zdva/tako/internal/store"
+	"github.com/zdva/tako/internal/transport"
 )
 
 // KnownHosts is Tako's own OpenSSH-format known_hosts file.

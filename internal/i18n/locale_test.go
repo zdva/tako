@@ -4,7 +4,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/wei-dong/tako/internal/i18n"
+	"github.com/zdva/tako/internal/i18n"
 )
 
 func TestLocale_NumbersAndDates(t *testing.T) {

@@ -15,8 +15,8 @@ import (
 
 	"go.uber.org/goleak"
 
-	"github.com/wei-dong/tako/internal/model"
-	"github.com/wei-dong/tako/internal/monitor"
+	"github.com/zdva/tako/internal/model"
+	"github.com/zdva/tako/internal/monitor"
 )
 
 func TestMain(m *testing.M) { goleak.VerifyTestMain(m) }

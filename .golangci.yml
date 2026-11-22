@@ -132,9 +132,9 @@ linters:
             - "**/internal/layout/**"
             - "**/internal/inputbus/**"
           deny:
-            - pkg: github.com/wei-dong/tako/internal/ui
+            - pkg: github.com/zdva/tako/internal/ui
               desc: the core must not depend on the UI
-            - pkg: github.com/wei-dong/tako/internal/app
+            - pkg: github.com/zdva/tako/internal/app
               desc: the core must not depend on the wiring
             - pkg: github.com/egoist/mygo
               desc: only the UI, the terminal glue and cmd may use MyGo

@@ -9,7 +9,7 @@ import (
 	"net"
 	"time"
 
-	"github.com/wei-dong/tako/internal/model"
+	"github.com/zdva/tako/internal/model"
 )
 
 // Size is a terminal size in character cells.

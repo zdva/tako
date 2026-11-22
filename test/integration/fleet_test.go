@@ -9,10 +9,10 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/wei-dong/tako/internal/model"
-	"github.com/wei-dong/tako/internal/testutil/realsshd"
-	"github.com/wei-dong/tako/internal/transfer"
-	"github.com/wei-dong/tako/internal/transport"
+	"github.com/zdva/tako/internal/model"
+	"github.com/zdva/tako/internal/testutil/realsshd"
+	"github.com/zdva/tako/internal/transfer"
+	"github.com/zdva/tako/internal/transport"
 )
 
 // fleet is a set of live hosts as the transfer queue sees them: it connects

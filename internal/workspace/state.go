@@ -6,9 +6,9 @@ import (
 	"slices"
 	"strconv"
 
-	"github.com/wei-dong/tako/internal/inputbus"
-	"github.com/wei-dong/tako/internal/layout"
-	"github.com/wei-dong/tako/internal/model"
+	"github.com/zdva/tako/internal/inputbus"
+	"github.com/zdva/tako/internal/layout"
+	"github.com/zdva/tako/internal/model"
 )
 
 // StateVersion is the version of the persisted workspace.

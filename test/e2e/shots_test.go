@@ -12,11 +12,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/wei-dong/tako/internal/hostlib"
-	"github.com/wei-dong/tako/internal/model"
-	"github.com/wei-dong/tako/internal/secrets"
-	"github.com/wei-dong/tako/internal/store"
-	"github.com/wei-dong/tako/internal/workspace"
+	"github.com/zdva/tako/internal/hostlib"
+	"github.com/zdva/tako/internal/model"
+	"github.com/zdva/tako/internal/secrets"
+	"github.com/zdva/tako/internal/store"
+	"github.com/zdva/tako/internal/workspace"
 )
 
 // Screenshots of the real window, for docs/screenshots. Run with

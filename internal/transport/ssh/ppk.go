@@ -25,8 +25,8 @@ import (
 	"golang.org/x/crypto/argon2"
 	gossh "golang.org/x/crypto/ssh"
 
-	"github.com/wei-dong/tako/internal/model"
-	"github.com/wei-dong/tako/internal/transport"
+	"github.com/zdva/tako/internal/model"
+	"github.com/zdva/tako/internal/transport"
 )
 
 // ErrBadPPK means a PuTTY key file is malformed or uses something unsupported.

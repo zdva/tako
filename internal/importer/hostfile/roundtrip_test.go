@@ -6,11 +6,11 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/wei-dong/tako/internal/hostlib"
-	"github.com/wei-dong/tako/internal/importer/hostfile"
-	"github.com/wei-dong/tako/internal/model"
-	"github.com/wei-dong/tako/internal/secrets"
-	"github.com/wei-dong/tako/internal/store"
+	"github.com/zdva/tako/internal/hostlib"
+	"github.com/zdva/tako/internal/importer/hostfile"
+	"github.com/zdva/tako/internal/model"
+	"github.com/zdva/tako/internal/secrets"
+	"github.com/zdva/tako/internal/store"
 )
 
 func openLibrary(t *testing.T) (*hostlib.Library, secrets.Store) {

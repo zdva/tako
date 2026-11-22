@@ -8,10 +8,10 @@ import (
 	"github.com/egoist/mygo/plugins/terminal"
 	"github.com/egoist/mygo/ui"
 
-	"github.com/wei-dong/tako/internal/layout"
-	"github.com/wei-dong/tako/internal/session"
-	"github.com/wei-dong/tako/internal/transport"
-	"github.com/wei-dong/tako/internal/workspace"
+	"github.com/zdva/tako/internal/layout"
+	"github.com/zdva/tako/internal/session"
+	"github.com/zdva/tako/internal/transport"
+	"github.com/zdva/tako/internal/workspace"
 )
 
 func (a *App) toast(msg string) { a.pendingToast = msg }

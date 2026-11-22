@@ -7,8 +7,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/wei-dong/tako/internal/importer/hostfile"
-	"github.com/wei-dong/tako/internal/model"
+	"github.com/zdva/tako/internal/importer/hostfile"
+	"github.com/zdva/tako/internal/model"
 )
 
 func read(t *testing.T, name string) []byte {

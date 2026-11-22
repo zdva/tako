@@ -9,10 +9,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/wei-dong/tako/internal/model"
-	"github.com/wei-dong/tako/internal/secrets"
-	"github.com/wei-dong/tako/internal/transport"
-	tssh "github.com/wei-dong/tako/internal/transport/ssh"
+	"github.com/zdva/tako/internal/model"
+	"github.com/zdva/tako/internal/secrets"
+	"github.com/zdva/tako/internal/transport"
+	tssh "github.com/zdva/tako/internal/transport/ssh"
 )
 
 // scriptPrompter answers prompts from fixed values and records them.

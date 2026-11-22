@@ -5,9 +5,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/wei-dong/tako/internal/layout"
-	"github.com/wei-dong/tako/internal/testutil/memssh"
-	"github.com/wei-dong/tako/internal/workspace"
+	"github.com/zdva/tako/internal/layout"
+	"github.com/zdva/tako/internal/testutil/memssh"
+	"github.com/zdva/tako/internal/workspace"
 )
 
 func (e *env) open(t *testing.T, n int) []*workspace.Block {

@@ -12,10 +12,10 @@ import (
 
 	"github.com/egoist/mygo/ui"
 
-	"github.com/wei-dong/tako/internal/model"
-	"github.com/wei-dong/tako/internal/settings"
-	"github.com/wei-dong/tako/internal/transfer"
-	"github.com/wei-dong/tako/internal/workspace"
+	"github.com/zdva/tako/internal/model"
+	"github.com/zdva/tako/internal/settings"
+	"github.com/zdva/tako/internal/transfer"
+	"github.com/zdva/tako/internal/workspace"
 )
 
 // xferPane is one side of the transfer sheet: a host and a folder on it.

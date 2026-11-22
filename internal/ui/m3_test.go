@@ -14,11 +14,11 @@ import (
 
 	"github.com/egoist/mygo/ui"
 
-	"github.com/wei-dong/tako/internal/model"
-	"github.com/wei-dong/tako/internal/monitor"
-	"github.com/wei-dong/tako/internal/settings"
-	"github.com/wei-dong/tako/internal/transfer"
-	"github.com/wei-dong/tako/internal/transport"
+	"github.com/zdva/tako/internal/model"
+	"github.com/zdva/tako/internal/monitor"
+	"github.com/zdva/tako/internal/settings"
+	"github.com/zdva/tako/internal/transfer"
+	"github.com/zdva/tako/internal/transport"
 )
 
 // monitorFixture answers the collector's commands with recorded Linux output

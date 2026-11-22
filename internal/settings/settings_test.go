@@ -4,9 +4,9 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/wei-dong/tako/internal/i18n"
-	"github.com/wei-dong/tako/internal/scheme"
-	"github.com/wei-dong/tako/internal/settings"
+	"github.com/zdva/tako/internal/i18n"
+	"github.com/zdva/tako/internal/scheme"
+	"github.com/zdva/tako/internal/settings"
 )
 
 func TestSettings_DefaultsSaveAndReload(t *testing.T) {
