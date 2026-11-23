@@ -85,8 +85,17 @@ func (a *App) blockHeader(c *ui.Context, b *workspace.Block, link session.StateC
 			dot(c, col, 7)
 		}
 		ui.Row(c).Gap(4).Grow(1).MinWidth(0).Children(func() {
+			// Closing a tab edits b.Tabs, so it waits until every chip of
+			// this frame is built: removing one in the middle of the loop
+			// shifted the slice under it and left a nil tab to draw.
+			closeAt := -1
 			for i, t := range b.Tabs {
-				a.tabChip(c, b, i, t, titleMax)
+				if a.tabChip(c, b, i, t, titleMax) {
+					closeAt = i
+				}
+			}
+			if closeAt >= 0 {
+				a.d.Model.CloseTab(b, closeAt)
 			}
 			if a.iconButton(c, iconPlus, a.T(kNewTab), 22).Clicked() {
 				if err := a.d.Model.AddTab(b); err != nil {
@@ -114,7 +123,9 @@ func (a *App) blockDot(link session.StateChange) (col ui.Color, show bool) {
 	return ui.Color{}, false
 }
 
-func (a *App) tabChip(c *ui.Context, b *workspace.Block, i int, t *workspace.Tab, titleMax float32) {
+// tabChip draws one tab and reports whether its × was clicked; the caller
+// closes it once the header is built.
+func (a *App) tabChip(c *ui.Context, b *workspace.Block, i int, t *workspace.Tab, titleMax float32) (closeIt bool) {
 	active := i == b.Active
 	chip := ui.Row(c).Key(t.ID).Height(24).Padding(0, 4, 0, 10).Gap(4).Radius(12).Cursor(ui.CursorPointer).
 		Focusable().Role(ui.RoleTab).AccessSelected(active).Label(t.Title())
@@ -128,14 +139,19 @@ func (a *App) tabChip(c *ui.Context, b *workspace.Block, i int, t *workspace.Tab
 		}
 		ui.Text(c, t.Title()).FontSize(11.5).Bold().TextColor(col).SingleLine().MaxWidth(titleMax).Ellipsis("…")
 		if a.iconButton(c, iconClose, a.T(kCloseTab), 16).Clicked() {
-			a.d.Model.CloseTab(b, i)
+			closeIt = true
 		}
 	})
-	if chip.Clicked() {
+	if !closeIt && chip.Clicked() {
 		a.d.Model.SetActive(b, i)
 		a.focusBlock(b)
 	}
-	chip.ContextMenu(func(m *ui.Menu) { a.tabMenu(m, b, i) })
+	chip.ContextMenu(func(m *ui.Menu) {
+		if a.tabMenu(m, b, i) {
+			closeIt = true
+		}
+	})
+	return closeIt
 }
 
 // syncChip is the one small control that shows and toggles a block's sync:
