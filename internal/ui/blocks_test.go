@@ -10,10 +10,6 @@ import (
 	"github.com/zdva/tako/internal/layout"
 )
 
-const (
-	primary = ui.Ctrl | ui.Shift // the shortcut modifier off macOS
-)
-
 func (h *harness) openAll(n int) {
 	h.t.Helper()
 	for i := range n {
@@ -142,7 +138,7 @@ func TestPalette_OpensHostWithEnter(t *testing.T) {
 	h := newHarness(t, harnessOpts{})
 	h.addHost("web-01")
 	h.addHost("db-01")
-	h.tt.Key(primary, ui.KeyP)
+	h.press("palette")
 	h.tt.Frame()
 	h.typeInto("Search hosts, commands, tags…", "")
 	h.tt.Type("db")
@@ -157,12 +153,12 @@ func TestPalette_OpensHostWithEnter(t *testing.T) {
 
 func TestPalette_EscapeClosesAndCommandsRun(t *testing.T) {
 	h := newHarness(t, harnessOpts{})
-	h.tt.Key(primary, ui.KeyP)
+	h.press("palette")
 	h.waitText("Commands")
 	h.tt.Key(0, ui.KeyEscape)
 	h.waitGone("Commands")
 
-	h.tt.Key(primary, ui.KeyP)
+	h.press("palette")
 	h.waitText("Commands")
 	h.tt.Type("local")
 	h.tt.Key(0, ui.KeyEnter)
@@ -171,18 +167,18 @@ func TestPalette_EscapeClosesAndCommandsRun(t *testing.T) {
 
 func TestShortcuts_NewHostAndLocalTerminal(t *testing.T) {
 	h := newHarness(t, harnessOpts{})
-	h.tt.Key(primary, ui.KeyN)
+	h.press("add-host")
 	h.waitText("Test connection")
 	h.tt.Key(0, ui.KeyEscape)
 	h.waitGone("Test connection")
-	h.tt.Key(primary, ui.KeyT)
+	h.press("new-tab")
 	h.waitFor("a local block", func() bool { return len(h.app.Model.Blocks()) == 1 })
 	h.shot("local-terminal")
 }
 
 func TestSettings_SwitchLanguage(t *testing.T) {
 	h := newHarness(t, harnessOpts{})
-	h.tt.Key(primary, ui.KeyComma)
+	h.press("settings")
 	h.waitText("Appearance")
 	h.click("简体中文")
 	h.waitText("语言")

@@ -109,8 +109,8 @@ func TestTabs_CloseWithTheMouse(t *testing.T) {
 	}
 }
 
-// TestTabs_CloseWithTheShortcut closes tabs with Ctrl+Shift+W until the block
-// is gone.
+// TestTabs_CloseWithTheShortcut closes tabs with the close-tab shortcut
+// (⌘W on macOS, Ctrl+Shift+W elsewhere) until the block is gone.
 func TestTabs_CloseWithTheShortcut(t *testing.T) {
 	h := newHarness(t, harnessOpts{})
 	h.openAll(1)
@@ -123,7 +123,7 @@ func TestTabs_CloseWithTheShortcut(t *testing.T) {
 	h.app.Model.SetActive(b, 1) // the middle one
 	h.tt.Frame()
 	for want := 2; want >= 0; want-- {
-		h.tt.Key(ui.Ctrl|ui.Shift, ui.KeyW)
+		h.press("close-tab")
 		h.tt.Frame()
 		h.tt.Frame()
 		if want == 0 {

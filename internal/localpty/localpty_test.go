@@ -5,6 +5,7 @@ package localpty_test
 import (
 	"bytes"
 	"os"
+	"regexp"
 	"strings"
 	"sync"
 	"testing"
@@ -14,6 +15,11 @@ import (
 
 	"github.com/zdva/tako/internal/localpty"
 )
+
+// termSeq matches a control sequence a shell prints while starting: CSI
+// (bash on macOS sends "\x1b[?1034h" before the first prompt), OSC, or one
+// other escape.
+var termSeq = regexp.MustCompile(`\x1b(?:\[[0-9;?]*[ -/]*[@-~]|\][^\x07\x1b]*(?:\x07|\x1b\\)|[^[\]])`)
 
 func TestMain(m *testing.M) { goleak.VerifyTestMain(m) }
 
@@ -65,6 +71,46 @@ func (o *output) ended(t *testing.T) {
 	case <-o.done:
 	case <-time.After(5 * time.Second):
 		t.Fatalf("the program did not end: %q", o.String())
+	}
+}
+
+// waitPrompt waits until the shell has printed a prompt and stopped writing,
+// so a later keystroke is not echoed by the line discipline and then again
+// by the shell.
+func (o *output) waitPrompt(t *testing.T) {
+	t.Helper()
+	deadline := time.Now().Add(5 * time.Second)
+	var since time.Time
+	var last string
+	for {
+		s := o.String()
+		if s != last {
+			last = s
+			since = time.Now()
+		}
+		if promptReady(s) && !since.IsZero() && time.Since(since) >= 80*time.Millisecond {
+			return
+		}
+		if time.Now().After(deadline) {
+			t.Fatalf("no shell prompt: %q", s)
+		}
+		time.Sleep(10 * time.Millisecond)
+	}
+}
+
+// promptReady reports whether s ends in a shell prompt once control
+// sequences are removed. A prompt ends in $, %, # or >.
+func promptReady(s string) bool {
+	s = termSeq.ReplaceAllString(s, "")
+	s = strings.TrimRight(s, " \t\r\n")
+	if s == "" {
+		return false
+	}
+	switch s[len(s)-1] {
+	case '$', '%', '#', '>':
+		return true
+	default:
+		return false
 	}
 }
 
@@ -123,21 +169,42 @@ func TestConn_TypingReachesTheShellOnceWithUTF8(t *testing.T) {
 	defer c.Close()
 	o := read(c)
 	_ = c.ResizePixels(80, 24, 8, 16)
+	// Typing before the prompt is ready is echoed by the kernel and then
+	// again by the shell (macOS bash also prints "\x1b[?1034h" as it
+	// starts). The command still runs once; wait, then count only what
+	// the ready shell echoes.
+	o.waitPrompt(t)
+	before := o.String()
 	if _, err := c.Write([]byte("echo 中文-$((40+2))\r")); err != nil {
 		t.Fatal(err)
 	}
 	o.wait(t, "中文-42")
 	time.Sleep(100 * time.Millisecond)
-	if n := strings.Count(o.String(), "中文-42"); n != 1 {
-		t.Errorf("ran %d times: %q", n, o.String())
+	got := o.String()
+	if n := strings.Count(got, "中文-42"); n != 1 {
+		t.Errorf("ran %d times: %q", n, got)
 	}
-	if n := strings.Count(o.String(), "echo 中文-$((40+2))"); n != 1 {
-		t.Errorf("the typed line echoed %d times: %q", n, o.String())
+	after := strings.TrimPrefix(got, before)
+	if n := strings.Count(after, "echo 中文-$((40+2))"); n != 1 {
+		t.Errorf("the typed line echoed %d times after the prompt: %q", n, got)
 	}
 	if _, err := c.Write([]byte("exit\r")); err != nil {
 		t.Fatal(err)
 	}
 	o.ended(t)
+}
+
+func TestPromptReady_SeesThePromptAfterBashStartup(t *testing.T) {
+	const startup = "echo 中文-$((40+2))\r\n\x1b[?1034hmm6:~ v$ "
+	if !promptReady(startup) {
+		t.Fatal("the prompt after bash's meta-mode sequence was missed")
+	}
+	if promptReady("\x1b[?1034h") {
+		t.Fatal("the meta-mode sequence counted as a prompt")
+	}
+	if promptReady("") || promptReady("starting") {
+		t.Fatal("output with no prompt counted as ready")
+	}
 }
 
 func TestConn_CloseHangsUpTheShell(t *testing.T) {

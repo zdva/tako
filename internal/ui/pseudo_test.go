@@ -64,13 +64,13 @@ func TestPseudoLocale_EverySurfaceComesFromTheTables(t *testing.T) {
 	h.pseudoSurface("main")
 	h.shot("pseudo-main")
 
-	h.tt.Key(ui.Ctrl|ui.Shift, ui.KeyN)
+	h.press("add-host")
 	h.tt.Frame()
 	h.pseudoSurface("host-sheet")
 	h.shot("pseudo-host-sheet")
 	h.tt.Key(0, ui.KeyEscape)
 
-	h.tt.Key(ui.Ctrl|ui.Shift, ui.KeyP)
+	h.press("palette")
 	h.tt.Frame()
 	h.pseudoSurface("palette")
 	h.tt.Key(0, ui.KeyEscape)

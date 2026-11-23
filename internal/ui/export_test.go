@@ -65,6 +65,66 @@ func ShortcutHint(name string) string {
 	return hint(acts[name])
 }
 
+// ShortcutBinding is the key combination an action uses on this operating system.
+type ShortcutBinding struct {
+	Mods ui.Modifiers
+	Key  ui.Key
+}
+
+// ShortcutBindingOf returns the keys of a named action on this operating
+// system. Tests press these instead of a fixed Ctrl+Shift chord: on macOS
+// the same action is ⌘, and a few keys differ (sync-all is S, not A).
+func ShortcutBindingOf(name string) (ShortcutBinding, bool) {
+	act, arg, ok := namedAction(name)
+	if !ok {
+		return ShortcutBinding{}, false
+	}
+	for _, s := range shortcutTable {
+		if s.act == act && s.arg == arg {
+			k, _ := s.keyOf()
+			return ShortcutBinding{Mods: s.mods(), Key: k}, true
+		}
+	}
+	return ShortcutBinding{}, false
+}
+
+func namedAction(name string) (actID, int, bool) {
+	switch name {
+	case "palette":
+		return actPalette, 0, true
+	case "add-host":
+		return actAddHost, 0, true
+	case "new-tab":
+		return actNewTab, 0, true
+	case "close-tab":
+		return actCloseTab, 0, true
+	case "close-block":
+		return actCloseBlock, 0, true
+	case "settings":
+		return actSettings, 0, true
+	case "zoom":
+		return actZoom, 0, true
+	case "sync-block":
+		return actSyncBlock, 0, true
+	case "sync-all":
+		return actSyncAll, 0, true
+	case "minimap":
+		return actMinimap, 0, true
+	case "monitor":
+		return actMonitor, 0, true
+	case "focus-left":
+		return actFocus, dirLeft, true
+	case "focus-right":
+		return actFocus, dirRight, true
+	case "focus-up":
+		return actFocus, dirUp, true
+	case "focus-down":
+		return actFocus, dirDown, true
+	default:
+		return 0, 0, false
+	}
+}
+
 // HoldModifiers makes pointer events count as made with mods held.
 func (a *App) HoldModifiers(mods ui.Modifiers) { a.heldMods = mods }
 

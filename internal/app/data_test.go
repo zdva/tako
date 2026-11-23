@@ -1,6 +1,7 @@
 package app
 
 import (
+	"path/filepath"
 	"testing"
 
 	"github.com/zdva/tako/internal/model"
@@ -41,5 +42,30 @@ func TestLookup_AppliesTheKeepaliveSetting(t *testing.T) {
 	}
 	if got, _ := a.Library.Get(plain.ID); got.KeepAlive != 0 {
 		t.Errorf("the default leaked into the saved host: %d", got.KeepAlive)
+	}
+}
+
+func TestExpandHome_AbsolutePathIsNotJoined(t *testing.T) {
+	t.Parallel()
+	home := t.TempDir()
+	abs := filepath.Join(home, "tako-hosts.json")
+	if got := expandHome(abs, home); got != abs {
+		t.Fatalf("expandHome(%q) = %q, want the absolute path unchanged", abs, got)
+	}
+	// Two absolute paths glued together are the caller's text. Export must
+	// not join them onto the home directory as well.
+	other := filepath.Join(t.TempDir(), "tako-hosts.json")
+	glued := abs + other
+	if got := expandHome(glued, home); got != glued {
+		t.Fatalf("expandHome rewrote a path: %q", got)
+	}
+	if got := expandHome("~/tako-hosts.json", home); got != abs {
+		t.Fatalf("~/tako-hosts.json = %q, want %q", got, abs)
+	}
+	if got := expandHome("~", home); got != home {
+		t.Fatalf("~ = %q, want %q", got, home)
+	}
+	if got := expandHome("  ~/tako-hosts.json  ", home); got != abs {
+		t.Fatalf("trimmed ~/ = %q, want %q", got, abs)
 	}
 }
