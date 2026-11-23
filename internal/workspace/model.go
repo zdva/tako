@@ -17,6 +17,7 @@ import (
 
 	"github.com/zdva/tako/internal/inputbus"
 	"github.com/zdva/tako/internal/layout"
+	"github.com/zdva/tako/internal/localpty"
 	"github.com/zdva/tako/internal/model"
 	"github.com/zdva/tako/internal/session"
 	"github.com/zdva/tako/internal/transport"
@@ -123,6 +124,8 @@ type Tab struct {
 	Term *terminal.Terminal
 	// Pane is the SSH channel under the terminal; nil for local shells.
 	Pane *session.Pane
+	// local is the pseudo-terminal of a local shell; nil for SSH tabs.
+	local *localpty.Conn
 
 	fallback string
 	// DropAt is when input last went nowhere because the connection was
@@ -152,10 +155,14 @@ func (t *Tab) Dir() string {
 
 // write sends bytes to the tab's shell as input; it is the bus destination.
 func (t *Tab) write(p []byte) (int, error) {
+	// Straight to the shell, not through the terminal's SyncConn, which
+	// would publish it again.
 	if t.Pane != nil {
 		return t.Pane.Write(p)
 	}
-	t.Term.Send(p)
+	if t.local != nil {
+		return t.local.Write(p)
+	}
 	return len(p), nil
 }
 
@@ -434,7 +441,23 @@ func (m *Model) addTab(b *Block, dir, cmd string) error {
 		OnTitle: func(string) { m.deps.Post(func() { m.changed(false) }) },
 	}
 	if b.Kind == KindLocal {
-		opts.Dir = dir
+		// Tako runs the shell itself, rather than MyGo's terminal, so that
+		// what is typed passes through SyncConn as on SSH tabs.
+		conn, err := localpty.Start(localpty.Options{Dir: dir})
+		if err != nil {
+			return fmt.Errorf("starting a local shell: %w", err)
+		}
+		tab.local = conn
+		opts.Conn = &inputbus.SyncConn{Raw: conn, Bus: m.deps.Bus, ID: b.ID}
+		opts.NoExitMessage = true // the tab closes with its shell
+		opts.OnClear = func(terminal.Clear) bool {
+			// As MyGo's terminal does for its own programs: clear, then
+			// tell a Windows console so.
+			if tab.Term != nil && tab.Term.ClearScreen() {
+				conn.ClearScreen()
+			}
+			return true
+		}
 	} else {
 		pane, err := b.sess.OpenPaneAt(initialSize, dir, cmd)
 		if err != nil {
@@ -458,6 +481,9 @@ func (m *Model) addTab(b *Block, dir, cmd string) error {
 	if err != nil {
 		if tab.Pane != nil {
 			_ = tab.Pane.Close()
+		}
+		if tab.local != nil {
+			_ = tab.local.Close()
 		}
 		return fmt.Errorf("creating the terminal for %s: %w", b.Name, err)
 	}
