@@ -23,7 +23,7 @@ const DefaultDialTimeout = 15 * time.Second
 type Dialer struct {
 	// KnownHosts verifies server keys. Required.
 	KnownHosts *KnownHosts
-	// Secrets resolves keychain references. May be nil: every secret is then
+	// Secrets resolves secret references. May be nil: every secret is then
 	// asked for.
 	Secrets secrets.Store
 	// Prompter asks the user. nil means [transport.DenyPrompter].
@@ -31,7 +31,7 @@ type Dialer struct {
 	// Lookup finds jump hosts by ID. Required for hosts that have a jump chain.
 	Lookup func(model.ID) (model.Host, bool)
 	// Remembered is told when the user chose to remember a secret, with the
-	// host, the index of the Auth entry and the keychain reference now in use,
+	// host, the index of the Auth entry and the secret reference now in use,
 	// so the caller can store the reference in the host.
 	Remembered func(h model.Host, authIndex int, ref string)
 	// DialTimeout bounds one connect plus handshake; zero means

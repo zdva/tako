@@ -216,8 +216,8 @@ func (a *App) secretPrompt(c *ui.Context, q *prompt) {
 	}
 	in := ui.TextInput(c, &q.value).Password().AutoFocus().Label(title)
 	ui.Row(c).Gap(8).Children(func() {
-		ui.Switch(c, &q.remember).Label(a.T(kRememberKeychain))
-		ui.Text(c, a.T(kRememberKeychain)).FontSize(12)
+		ui.Switch(c, &q.remember).Label(a.T(kRemember))
+		ui.Text(c, a.T(kRemember)).FontSize(12)
 	})
 	submit := func() { a.d.Prompts.answer(q, promptAnswer{ok: true, value: q.value, remember: q.remember}) }
 	ui.Row(c).Gap(8).Justify(ui.End).Children(func() {

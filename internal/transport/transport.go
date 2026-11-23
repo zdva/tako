@@ -173,7 +173,7 @@ type SecretRequest struct {
 // SecretReply is the answer to a [SecretRequest].
 type SecretReply struct {
 	Value []byte
-	// Remember asks to keep the value in the keychain.
+	// Remember asks to keep the value in Tako's encrypted store.
 	Remember bool
 }
 

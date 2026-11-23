@@ -38,15 +38,29 @@ const (
 func main() {
 	showVersion := flag.Bool("version", false, "print the version and exit")
 	exitAfter := flag.Duration("exit-after", 0, "quit after this long (for measurements); 0 keeps running")
+	doMigrate := flag.Bool("migrate-keychain", false, "copy passwords out of the system credential store into Tako's encrypted file, then delete them there; may ask the system to allow access")
 	flag.Parse()
 	if *showVersion {
 		fmt.Println("tako", version)
+		return
+	}
+	if *doMigrate {
+		if err := runMigrateCommand(); err != nil {
+			fmt.Fprintln(os.Stderr, "tako:", err)
+			os.Exit(1)
+		}
 		return
 	}
 	if err := run(*exitAfter); err != nil {
 		fmt.Fprintln(os.Stderr, "tako:", err)
 		os.Exit(1)
 	}
+}
+
+func runMigrateCommand() error {
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt)
+	defer stop()
+	return migrateFromSystem(ctx)
 }
 
 func run(exitAfter time.Duration) error {

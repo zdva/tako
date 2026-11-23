@@ -454,7 +454,7 @@ func normalize(h model.Host) model.Host {
 }
 
 // Export returns the library as JSON for sharing: the same document as
-// hosts.json but with every keychain reference removed, so it never contains
+// hosts.json but with every secret reference removed, so it never contains
 // or points at a secret.
 func (l *Library) Export() ([]byte, error) {
 	l.mu.RLock()

@@ -31,7 +31,7 @@ func startServer(t *testing.T, opts memssh.Options) *memssh.Server {
 	return s
 }
 
-func TestDial_PasswordFromKeychain(t *testing.T) {
+func TestDial_PasswordFromStore(t *testing.T) {
 	t.Parallel()
 	srv := startServer(t, memssh.Options{Password: "pw1"})
 	store := secrets.NewMemory()
@@ -45,7 +45,7 @@ func TestDial_PasswordFromKeychain(t *testing.T) {
 	}
 	defer func() { _ = tr.Close() }()
 	if pr.secretPrompts() != 0 {
-		t.Error("asked for a password that was in the keychain")
+		t.Error("asked for a password that was in the store")
 	}
 	out, err := tr.Exec(t.Context(), "echo hi")
 	if err != nil || !strings.Contains(string(out), "hi") {

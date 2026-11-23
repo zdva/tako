@@ -41,8 +41,9 @@ const maxParallelDials = 4
 // Options configure [New]. Only Dirs is required.
 type Options struct {
 	Dirs store.Dirs
-	// Keychain stores secrets; nil uses the system keychain.
-	Keychain secrets.Store
+	// Secrets stores passwords and passphrases. Nil opens the encrypted
+	// file in Dirs. Tests pass an in-memory store.
+	Secrets secrets.Store
 	// Locale is the system locale for the default language.
 	Locale  string
 	Version string
@@ -134,11 +135,11 @@ func New(parent context.Context, o Options) (*App, error) {
 		}
 	}
 
-	keychain := o.Keychain
-	if keychain == nil {
-		keychain = secrets.NewKeychain()
+	persistent, err := openSecretStore(o.Dirs, o.Secrets)
+	if err != nil {
+		return nil, err
 	}
-	a.Secrets = secrets.NewLayered(keychain)
+	a.Secrets = secrets.NewLayered(persistent)
 	if a.Library, err = hostlib.Open(
 		store.Doc{Path: o.Dirs.Hosts(), Version: hostlib.Version}, a.Secrets,
 		func(err error) { slog.Error("saving hosts failed", "err", err) },
@@ -272,7 +273,7 @@ func (a *App) writeSession() error {
 	return nil
 }
 
-// remembered stores the keychain reference the user just chose in the host.
+// remembered stores the secret reference the user just chose in the host.
 func (a *App) remembered(h model.Host, idx int, ref string) {
 	cur, ok := a.Library.Get(h.ID)
 	if !ok || idx >= len(cur.Auth) || cur.Auth[idx].SecretRef == ref {
@@ -338,6 +339,11 @@ func (a *App) Close() {
 	}
 	if a.Library != nil {
 		a.Library.Close()
+	}
+	if a.Secrets != nil {
+		if err := a.Secrets.Close(); err != nil {
+			slog.Warn("closing the secret store failed", "err", err)
+		}
 	}
 	if a.closeFn != nil {
 		a.closeFn()

@@ -4,5 +4,5 @@
 //
 // A Library is safe for concurrent use. It persists itself through a
 // store.Saver (debounced, atomic) and keeps secrets out of its file: hosts
-// only carry keychain references, and deleting a host deletes its secrets.
+// only carry secret references, and deleting a host deletes its secrets.
 package hostlib

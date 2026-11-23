@@ -114,8 +114,9 @@ history; the real-window shots are in [docs/screenshots/m3](docs/screenshots/m3)
   replays what you typed during the outage. See [ADR 0006](docs/adr/0006-session-pane-contract.md).
 - **Host keys**: Tako's own `known_hosts`; a changed key is always refused
   with both fingerprints shown. See [ADR 0004](docs/adr/0004-host-key-policy.md).
-- **Secrets** only in the system keychain, never in files or logs.
-  See [ADR 0003](docs/adr/0003-secrets-in-keychain.md).
+- **Secrets** in Tako's own encrypted file (`secrets.enc`, mode 0600), never in
+  `hosts.json`, logs or exports, and not in the system keychain.
+  See [ADR 0023](docs/adr/0023-encrypted-secret-store.md).
 - **Grid of blocks**: 1 / 2 / 2×2 / 3×2 / scrolling, tabs per block, local
   shells, right-click menus, command palette, English and 简体中文, light and dark.
 - **Import** hosts from `~/.ssh/config` (`Include`, `ProxyJump`, `IdentityFile`).
@@ -172,12 +173,34 @@ still reaches the shell) and `⌘` on macOS.
 
 | | Linux | macOS | Windows |
 |---|---|---|---|
-| Config (`hosts.json`, `known_hosts`, `settings.json`) | `~/.config/tako` | `~/Library/Application Support/Tako` | `%AppData%\Tako` |
+| Config (`hosts.json`, `secrets.enc`, `known_hosts`, `settings.json`) | `~/.config/tako` | `~/Library/Application Support/Tako` | `%AppData%\Tako` |
 | State (`session.json`, logs, lock) | `~/.local/state/tako` | same as config | `%LocalAppData%\Tako` |
 
-Override with `TAKO_CONFIG_DIR` and `TAKO_STATE_DIR`. On a machine without a
-credential store (a headless Linux box without Secret Service), "remember
-password" lasts for the running session only, and Tako says so.
+Override with `TAKO_CONFIG_DIR` and `TAKO_STATE_DIR`.
+
+Passwords, key passphrases and proxy credentials are encrypted in `secrets.enc`
+(mode 0600). The key is bound to this machine, so the file does not decrypt on
+another one. If the machine id cannot be read, the key is the sibling file
+`secrets.key` (also mode 0600) and copying both files decrypts them. `hosts.json`,
+`session.json`, logs and exports never contain the secret. Tako does not use
+the macOS Keychain, Windows Credential Manager or Linux Secret Service, so
+launching it does not ask you to sign in to those.
+
+There is no master password. The threat model is honest: this stops a casual
+copy, sync or commit of the config directory, and other users on the machine,
+from reading the password. It does not stop a program already running as you.
+Details are in [ADR 0023](docs/adr/0023-encrypted-secret-store.md) and
+[SECURITY.md](SECURITY.md).
+
+Passwords saved by an older Tako live in the system credential store under the
+service `dev.tako.app`. This version does not read them at startup, because
+that read is what shows the keychain dialog (worse for an unsigned `go run`
+binary, whose path changes every launch). Type the password the next time you
+connect and choose *Remember in Tako*. To copy the old values instead, quit
+Tako and run `tako --migrate-keychain` once. The system may ask you to allow
+it, once per saved password, and a successful copy deletes those items. Anything
+`hosts.json` no longer names has to be deleted by hand in Keychain Access,
+Credential Manager, or the Secret Service.
 
 ## Develop
 

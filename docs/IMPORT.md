@@ -18,7 +18,7 @@ port and user is skipped and counted).
 - **Passwords and passphrases.** They are encrypted with the other program's
   keys. The summary says how many saved passwords were left out ("N saved
   passwords were not imported; enter them when you connect"); Tako asks on first
-  connect and offers to keep the password in the system keychain.
+  connect and offers to keep the password in Tako's encrypted store.
 - **Keys kept in the other program's own store.** The host is imported with a
   warning; choose the key file in *Edit host*.
 - **Telnet, serial, RDP, Mosh and local-shell sessions.** Skipped with a
@@ -31,7 +31,7 @@ the rest are counted) instead of a silent change.
 
 *Export hosts* writes `tako-hosts.json` with mode 0600: hosts, groups, tags,
 jump chains and per-host settings. It contains **no password, no passphrase and
-no keychain reference** (an automated test greps the file for the secrets and
+no secret reference** (an automated test greps the file for the secrets and
 the references it just stored). On the other computer, import the file; IDs and
 jump chains are remapped, and each host asks for its password the first time.
 Key *paths* are kept as written, so a path that exists only on the old

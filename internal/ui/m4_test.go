@@ -248,7 +248,7 @@ func TestSettings_ExportHasNoSecretsAndImportsOnAnotherComputer(t *testing.T) {
 	if st, err := os.Stat(out); err != nil || st.Mode().Perm() != 0o600 {
 		t.Errorf("export mode %v %v", st, err)
 	}
-	// Another computer: a fresh harness with its own data and keychain.
+	// Another computer: a fresh harness with its own data and secret store.
 	other := newHarness(t, harnessOpts{})
 	other.openSettings("data")
 	other.typeInto("Xshell, SecureCRT, Termius or Tako file or folder", out)

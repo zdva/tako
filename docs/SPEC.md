@@ -20,7 +20,9 @@ machines at once, survives flaky networks and is honest about credentials.
    with the same colour in block header, sidebar, minimap and status bar.
 4. The terminal theme follows the app (white terminal in light mode).
 5. No hidden surprises: no replay of keystrokes typed during an outage, no
-   silent acceptance of changed host keys, no secrets on disk.
+   silent acceptance of changed host keys, no plaintext secrets in hosts,
+   session, logs or exports. Passwords live in Tako's encrypted file
+   ([ADR 0023](adr/0023-encrypted-secret-store.md)).
 
 ## Concepts
 

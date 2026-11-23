@@ -21,7 +21,7 @@ internal/layout     pure geometry: grid, minimap
 internal/hostlib    host library (hosts.json), tags, import/export
 internal/importer   ~/.ssh/config importer
 internal/transport  ports (Transport, Shell, Prompter) + transport/ssh adapter
-internal/secrets    Store port, system keychain adapter, in-memory fallback
+internal/secrets    Store port, encrypted file, in-memory session fallback
 internal/store      atomic JSON documents, directory lock, backups, Dirs
 internal/settings   settings.json
 internal/model      Host, Auth, IDs, validation

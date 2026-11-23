@@ -61,7 +61,7 @@ func TestAddHost_PasswordTestConnectionAndSave(t *testing.T) {
 		t.Fatalf("saved host = %+v", saved)
 	}
 	if got, err := h.app.Secrets.Get(t.Context(), saved.Auth[0].SecretRef); err != nil || string(got) != "pw" {
-		t.Fatalf("the password was not kept in the keychain: %q, %v", got, err)
+		t.Fatalf("the password was not kept: %q, %v", got, err)
 	}
 	h.app.Library.Flush()
 	data, err := os.ReadFile(h.dirs.Hosts())
@@ -135,8 +135,8 @@ func TestEditHost_KeepsSecretWhenLeftEmpty(t *testing.T) {
 	}
 }
 
-// Acceptance: secrets are in the keychain only, never in hosts.json,
-// session.json, the logs or an export.
+// Acceptance: a known password is stored, and it appears in none of
+// hosts.json, session.json, the logs, the export or the encrypted file.
 func TestSecrets_NeverReachFilesLogsOrExport(t *testing.T) {
 	const pass, proxyPass = "S3cr3t-Pa55-xyz", "Pr0xy-S3cret-xyz"
 	h := newHarness(t, harnessOpts{})
@@ -155,14 +155,14 @@ func TestSecrets_NeverReachFilesLogsOrExport(t *testing.T) {
 	saved := h.app.Library.Hosts()[0]
 	for _, ref := range []string{saved.Auth[0].SecretRef, saved.Proxy.SecretRef} {
 		if ref == "" {
-			t.Fatalf("a secret has no keychain reference: %+v", saved)
+			t.Fatalf("a secret has no reference: %+v", saved)
 		}
 	}
 	if got, err := h.app.Secrets.Get(t.Context(), saved.Auth[0].SecretRef); err != nil || string(got) != pass {
-		t.Fatalf("password not in the keychain: %q %v", got, err)
+		t.Fatalf("password not in the store: %q %v", got, err)
 	}
 	if got, err := h.app.Secrets.Get(t.Context(), saved.Proxy.SecretRef); err != nil || string(got) != proxyPass {
-		t.Fatalf("proxy password not in the keychain: %q %v", got, err)
+		t.Fatalf("proxy password not in the store: %q %v", got, err)
 	}
 
 	export, err := h.app.Library.Export()

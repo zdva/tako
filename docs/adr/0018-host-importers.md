@@ -11,7 +11,7 @@ untrusted input, and we could not obtain real exports while building.
 ## Decision
 
 - `internal/importer/hostfile` is a set of pure functions from bytes to
-  `Result{Hosts, Passwords, Warnings}`; it has no access to the keychain, the
+  `Result{Hosts, Passwords, Warnings}`; it has no access to the secret store, the
   network or the file system (the caller passes a `fs.FS`). It never decodes the
   other program's passwords; it only counts them.
 - Limits: 32 MB per file, 128 MB in total, 20 000 files, 100 000 hosts; zip
@@ -27,7 +27,7 @@ untrusted input, and we could not obtain real exports while building.
 
 ## Consequences
 
-- An import never changes the keychain; the user types each password once.
+- An import never changes the secret store; the user types each password once.
 - A new format is one file with a `Detect` rule and a fixture.
 - We cannot claim compatibility with every version of those programs; the
   warnings and the README say so.

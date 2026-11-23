@@ -14,7 +14,6 @@ import (
 
 	"github.com/zdva/tako/internal/app"
 	"github.com/zdva/tako/internal/model"
-	"github.com/zdva/tako/internal/secrets"
 	"github.com/zdva/tako/internal/store"
 	"github.com/zdva/tako/internal/testutil/memssh"
 	"github.com/zdva/tako/internal/transfer"
@@ -35,7 +34,6 @@ type harness struct {
 	tt   *ui.Tester
 	srv  *memssh.Server
 	dirs store.Dirs
-	kc   *secrets.Memory
 
 	resizeDelay time.Duration
 	files       transfer.Provider
@@ -71,7 +69,7 @@ func newHarness(t *testing.T, o harnessOpts) *harness {
 	if locale == "" {
 		locale = "en_US.UTF-8"
 	}
-	h := &harness{t: t, srv: srv, dirs: dirs, kc: secrets.NewMemory(), resizeDelay: o.resizeDelay, files: o.files}
+	h := &harness{t: t, srv: srv, dirs: dirs, resizeDelay: o.resizeDelay, files: o.files}
 	h.start(locale, o.sshConfig)
 	t.Cleanup(h.stop)
 	return h
@@ -80,7 +78,7 @@ func newHarness(t *testing.T, o harnessOpts) *harness {
 func (h *harness) start(locale, sshConfig string) {
 	h.t.Helper()
 	a, err := app.New(h.t.Context(), app.Options{
-		Dirs: h.dirs, Keychain: h.kc, Locale: locale, Version: "test",
+		Dirs: h.dirs, Locale: locale, Version: "test",
 		SSHConfig: sshConfig, Home: h.t.TempDir(),
 		SaveDelay: 20 * time.Millisecond, Backoff: []time.Duration{100 * time.Millisecond},
 		ResizeDelay: h.resizeDelay, Files: h.files,
@@ -203,7 +201,8 @@ func (h *harness) typeInto(label, text string) {
 }
 
 // restart quits the app as the user would and starts a new one on the same
-// data, with the same server and keychain; the new one restores the session.
+// data and the same server; the new one restores the session. Saved
+// passwords come back from the encrypted file.
 func (h *harness) restart() {
 	h.t.Helper()
 	h.stop()

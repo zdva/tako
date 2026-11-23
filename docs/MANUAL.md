@@ -6,9 +6,10 @@ in a grid; a block can hold several **tabs**.
 ## First start
 
 The welcome screen offers *Add host*, *New local terminal* and, when
-`~/.ssh/config` exists, an import of it. Passwords and key passphrases are kept
-in the system keychain only. The first connection to a host asks you to trust its
-fingerprint; a **changed** key is always refused.
+`~/.ssh/config` exists, an import of it. Passwords and key passphrases are
+encrypted in Tako's own file (`secrets.enc` in the config directory). Tako does
+not ask the system keychain to unlock. The first connection to a host asks you
+to trust its fingerprint; a **changed** key is always refused.
 
 ## Hosts
 

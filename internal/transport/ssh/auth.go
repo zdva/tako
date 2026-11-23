@@ -96,8 +96,8 @@ func (a *authSet) ask(idx int, auth model.Auth, kind, detail string) ([]byte, er
 		if ref == "" {
 			ref = model.SecretRef(a.host.ID, kindOf(auth)+suffix(idx))
 		}
-		// The user's choice to remember is best effort: a keychain that is
-		// unavailable must not fail the connection. The secrets.Layered store
+		// The user's choice to remember is best effort: a store that cannot
+		// persist must not fail the connection. The secrets.Layered store
 		// keeps the value for the session in that case.
 		if err := a.secrets.Set(a.ctx, ref, reply.Value); err == nil || errors.Is(err, secrets.ErrNotPersisted) {
 			if a.remember != nil {

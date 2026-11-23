@@ -81,7 +81,7 @@ type Auth struct {
 	// KeyPath is the private key file when Kind is AuthKey. A leading "~/" is
 	// expanded when the key is read.
 	KeyPath string `json:"keyPath,omitempty"`
-	// SecretRef names the keychain entry holding the password or key
+	// SecretRef names the encrypted-store entry holding the password or key
 	// passphrase. Empty means "ask every time". It is never a secret itself.
 	SecretRef string `json:"secretRef,omitempty"`
 }
@@ -98,7 +98,7 @@ type Proxy struct {
 	// Addr is host:port of the proxy.
 	Addr string `json:"addr"`
 	// User is the proxy login, if it needs one. Its password is in the
-	// keychain under SecretRef.
+	// encrypted store under SecretRef.
 	User      string `json:"user,omitempty"`
 	SecretRef string `json:"secretRef,omitempty"`
 }
@@ -239,7 +239,7 @@ func (p Proxy) validate() error {
 	return nil
 }
 
-// SecretRefs returns every keychain reference the host uses, so deleting the
+// SecretRefs returns every secret reference the host uses, so deleting the
 // host can delete its secrets too.
 func (h Host) SecretRefs() []string {
 	var refs []string
@@ -254,7 +254,7 @@ func (h Host) SecretRefs() []string {
 	return refs
 }
 
-// SecretRef builds the canonical keychain key for a host's secret of the
+// SecretRef builds the canonical reference for a host's secret of the
 // given kind, such as "host/h_3f9a/password".
 func SecretRef(id ID, kind string) string {
 	return "host/" + string(id) + "/" + kind
