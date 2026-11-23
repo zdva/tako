@@ -39,15 +39,18 @@ func (a *App) block(c *ui.Context, b *workspace.Block, cell layout.Rect, instant
 		border, bw = a.tk.Amber, 1.5
 	}
 	frame := ui.Column(c).Key(string(b.ID)).Absolute()
-	anim := ui.Animation{Spring: ui.SpringOptions{Duration: layoutSpring}}
+	anim := ui.Animation{Duration: layoutSpring, Ease: motionEase}
 	if instant {
 		anim = ui.Animation{Duration: time.Millisecond}
 	}
 	x, y := frame.AnimateTo("x", cell.X, anim), frame.AnimateTo("y", cell.Y, anim)
 	w, h := frame.AnimateTo("w", cell.W, anim), frame.AnimateTo("h", cell.H, anim)
 	frame.Left(x).Top(y).Size(w, h)
-	frame.Radius(12).Background(a.tk.Surface).Border(bw, border).Clip()
-	frame.Shadow(0, 1, 2, 0, ui.RGBA(24, 24, 32, 0.06))
+	frame.Radius(16).Background(a.tk.Surface).Border(bw, border).Clip()
+	a.tk.ShadowSm(frame)
+	if b.Synced {
+		frame.Shadow(0, 0, 0, 3, a.tk.AccentSoft)
+	}
 	frame.Children(func() {
 		a.blockHeader(c, b, link, cell.W)
 		a.banner(c, b, link)
@@ -59,8 +62,10 @@ func (a *App) block(c *ui.Context, b *workspace.Block, cell layout.Rect, instant
 	}
 }
 
-// layoutSpring is how long blocks take to glide to a new layout.
+// layoutSpring is how long blocks take to glide to a new layout (DESIGN.md §2.5).
 const layoutSpring = 150 * time.Millisecond
+
+var motionEase = ui.CubicBezier(0.2, 0.8, 0.2, 1)
 
 // headerChrome is the width the header keeps for the icon, name, status dot,
 // new-tab, sync and more buttons; tab titles share what is left.
@@ -151,7 +156,7 @@ func (a *App) syncChip(c *ui.Context, b *workspace.Block) {
 		chip.BorderStyle(ui.BorderDashed)
 	}
 	chip.Children(func() {
-		ui.Icon(c, iconLink).FontSize(12).TextColor(fg)
+		ui.Icon(c, iconSync).FontSize(12).TextColor(fg)
 		ui.Text(c, label).FontSize(11).Bold().TextColor(fg).NoWrap()
 	})
 	if chip.Clicked() {
@@ -250,7 +255,8 @@ func (a *App) terminalArea(c *ui.Context, b *workspace.Block, link session.State
 
 func (a *App) dropCard(c *ui.Context, b *workspace.Block) {
 	card := ui.Row(c).Key("dropcard").Absolute().Left(16).Right(16).Bottom(16).Padding(12, 14).Gap(10)
-	card.Radius(12).Background(a.tk.Surface).Border(1, a.tk.BorderStrong).Shadow(0, 8, 24, 0, ui.RGBA(0, 0, 0, 0.18))
+	card.Radius(16).Background(a.tk.Surface).Border(1, a.tk.BorderStrong)
+	a.tk.ShadowMd(card)
 	card.Children(func() {
 		ui.Icon(c, iconAlert).FontSize(16).TextColor(a.tk.Amber)
 		ui.Column(c).Gap(2).Grow(1).Children(func() {

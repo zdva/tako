@@ -41,7 +41,7 @@ func (a *App) brandRow(c *ui.Context) {
 	row := ui.Row(c).Key("brand").Height(max(54, bar.Height)).Padding(10, 16, 0, 16+bar.Left).Gap(9)
 	row.DragWindow().Children(func() {
 		if img := brand(); img != nil {
-			ui.Image(c, img).Size(28, 28)
+			ui.Image(c, img).Size(34, 34).Radius(11)
 		}
 		ui.Text(c, "Tako").Bold().FontSize(15)
 		ui.Text(c, a.T(kBrandSub)).FontSize(11).TextColor(a.tk.Text3).MinWidth(0).NoWrap().Ellipsis("…")

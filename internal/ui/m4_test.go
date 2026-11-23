@@ -146,7 +146,7 @@ func TestSettings_DarkAppearanceChangesTerminalToo(t *testing.T) {
 	if err := h.app.Settings.Update(func(v *settings.Values) { v.Appearance = settings.AppearanceDark }); err != nil {
 		t.Fatal(err)
 	}
-	h.waitFor("dark terminal", func() bool { return countPixels(h, "#151517", 1) > 2000 })
+	h.waitFor("dark terminal", func() bool { return countPixels(h, "#0C0C10", 1) > 2000 })
 	h.shot("dark-main")
 }
 

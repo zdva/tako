@@ -10,6 +10,7 @@ import (
 	"github.com/egoist/mygo/ui"
 
 	"github.com/zdva/tako/internal/layout"
+	"github.com/zdva/tako/internal/theme"
 	tui "github.com/zdva/tako/internal/ui"
 	"github.com/zdva/tako/internal/workspace"
 )
@@ -253,7 +254,8 @@ func TestMinimap_TranslucentAtRestOpaqueOnHover(t *testing.T) {
 	hover := h.pixel(px, py)
 	h.shot("minimap-hover")
 
-	glass := [3]int{33, 33, 36} // the dark glass surface
+	g := theme.Dark().Glass3
+	glass := [3]int{int(g.R), int(g.G), int(g.B)} // the dark glass surface (DESIGN.md §2.1)
 	if dist(hover, glass) > 24 {
 		t.Errorf("hovered panel pixel %v should be the opaque surface %v", hover, glass)
 	}

@@ -196,9 +196,11 @@ func (a *App) renameView(c *ui.Context) {
 	}
 	open := true
 	a.dialog(c, &open, func() {
-		ui.Column(c).Key("rename").Width(360).Padding(20).Gap(12).Background(a.tk.Surface).Radius(16).
-			Border(1, a.tk.BorderStrong).Shadow(0, 18, 48, 0, ui.RGBA(0, 0, 0, 0.2)).Children(func() {
-			ui.Text(c, a.T(kRenameTitle)).Bold().FontSize(15)
+		rename := ui.Column(c).Key("rename").Width(360).Padding(20).Gap(12).Background(a.tk.Surface).Radius(22).
+			Border(1, a.tk.BorderStrong)
+		a.tk.ShadowLg(rename)
+		rename.Children(func() {
+			ui.Text(c, a.T(kRenameTitle)).Bold().FontSize(18)
 			in := ui.TextInput(c, &r.text).Placeholder(a.T(kRenameHint)).Label(a.T(kRenameHint)).AutoFocus()
 			done := func() {
 				a.d.Model.Rename(r.b, r.text)
@@ -259,7 +261,8 @@ func (a *App) findBar(c *ui.Context, b *workspace.Block) {
 		return
 	}
 	bar := ui.Row(c).Key("find").Absolute().Top(10).Right(14).Padding(5, 8).Gap(6).AlignItems(ui.Center)
-	bar.Radius(10).Background(a.tk.Surface).Border(1, a.tk.BorderStrong).Shadow(0, 6, 18, 0, ui.RGBA(0, 0, 0, 0.18))
+	bar.Radius(12).Background(a.tk.Surface).Border(1, a.tk.BorderStrong)
+	a.tk.ShadowMd(bar)
 	bar.Children(func() {
 		in := ui.TextInput(c, &f.query).Placeholder(a.T(kFindPlaceholder)).Label(a.T(kFindPlaceholder)).AutoFocus().Width(180)
 		if in.Changed() {

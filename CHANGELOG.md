@@ -8,6 +8,11 @@ All notable changes are recorded here. The format follows
 
 ### Changed
 
+- Visual v2: design tokens (colors, radii, shadows, type), chrome spacing, and
+  a full redraw of UI glyphs plus OS marks (`iconSync`, faceless Linux Tux,
+  four-pane Windows, Apple silhouette). App icon is a geometric coral octopus
+  with platform exports (`icns` / `ico` / PNG / SVG). Features, IA, and
+  shortcuts are unchanged; light terminals stay white.
 - License is now GPL-3.0-or-later (ADR 0022). The Go module path and public
   repository are `github.com/zdva/tako`. Third-party notices are in
   [`THIRD_PARTY_LICENSES.md`](THIRD_PARTY_LICENSES.md).

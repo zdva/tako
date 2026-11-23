@@ -35,7 +35,7 @@ func brand() ui.ImageSource {
 const (
 	sidebarW  = 248
 	toolbarH  = 44
-	blockHead = 38
+	blockHead = 40
 	blockFoot = 32
 	statusH   = 28
 	hostRowH  = 44
@@ -52,28 +52,50 @@ func (a *App) caption(c *ui.Context, s string) ui.Element {
 	return ui.Text(c, s).FontSize(11).TextColor(a.tk.Text3)
 }
 
-// osTile draws a host's system icon on its gradient-ish colored tile.
+// osTile draws a host's system mark in the shared 26-tile (radius 8, glyph
+// 18) scaled to size. Linux, Windows, macOS and the local prompt share one
+// weight; anything else is the plain server.
 func (a *App) osTile(c *ui.Context, os model.OSKind, local bool, size float32) {
-	col, ic := theme.Hex("#4B5565"), iconServer
+	bg, fg, ic := a.osMark(os, local)
+	ui.Box(c).Size(size, size).Radius(size * 8 / 26).Background(bg).Center().Children(func() {
+		ui.Icon(c, ic).FontSize(size * 18 / 26).TextColor(fg)
+	})
+}
+
+// osMark is the tile fill, the glyph color and the drawing for one system.
+func (a *App) osMark(os model.OSKind, local bool) (bg, fg ui.Color, ic *ui.SVG) {
+	dark := a.tk.Dark
 	switch {
 	case local:
-		col, ic = theme.Hex("#EF6F61"), iconTerminal
+		return markColor(dark, "#2A2A30", "#D0D0D6", "#E8E8EC", "#3A3A40", iconTerminal)
 	case os == model.OSWindows:
-		col, ic = theme.Hex("#3F7BEA"), iconWindows
+		return markColor(dark, "#1C2740", "#8BB4FF", "#E8EEF8", "#2C5BB0", iconWindows)
 	case os == model.OSMacOS:
-		col, ic = theme.Hex("#7E7E88"), iconApple
+		return markColor(dark, "#2C2C33", "#E6E6EA", "#E8E8EC", "#3A3A40", iconApple)
+	case os == model.OSLinux:
+		return markColor(dark, "#2A2D34", "#D0D4DC", "#E8EAEE", "#3A3E46", iconLinux)
+	default:
+		return markColor(dark, "#2A2A30", "#C8C8D0", "#E8E8EC", "#3A3A40", iconServer)
 	}
-	ui.Box(c).Size(size, size).Radius(size * 0.28).Background(col).Center().Children(func() {
-		ui.Icon(c, ic).FontSize(size * 0.58).TextColor(ui.RGB(255, 255, 255))
-	})
+}
+
+func markColor(dark bool, dbg, dfg, lbg, lfg string, ic *ui.SVG) (ui.Color, ui.Color, *ui.SVG) {
+	if dark {
+		return theme.Hex(dbg), theme.Hex(dfg), ic
+	}
+	return theme.Hex(lbg), theme.Hex(lfg), ic
 }
 
 // iconButton is a small borderless icon button; label names it for assistive
 // technology and tests.
 func (a *App) iconButton(c *ui.Context, ic *ui.SVG, label string, size float32) ui.Element {
 	b := ui.Button(c, "").Label(label).Tooltip(label)
-	b.Size(size, size).Padding(0).Radius(7).Background(ui.Transparent).Border(0, ui.Transparent)
-	b.Children(func() { ui.Icon(c, ic).FontSize(size * 0.55).TextColor(a.tk.Text2) })
+	b.Size(size, size).Padding(0).Radius(8).Background(ui.Transparent).Border(0, ui.Transparent)
+	glyph := float32(16)
+	if size < 28 {
+		glyph = size * 0.55
+	}
+	b.Children(func() { ui.Icon(c, ic).FontSize(glyph).TextColor(a.tk.Text2) })
 	return b
 }
 

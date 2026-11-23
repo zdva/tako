@@ -125,8 +125,10 @@ func (a *App) paletteView(c *ui.Context) {
 	open := true
 	a.dialog(c, &open, func() {
 		_, winH := c.Size()
-		ui.Column(c).Key("palette").Width(560).MaxHeight(winH*0.7).Background(a.tk.Surface).Radius(16).
-			Border(1, a.tk.BorderStrong).Shadow(0, 20, 60, 0, ui.RGBA(0, 0, 0, 0.28)).Clip().Children(func() {
+		pal := ui.Column(c).Key("palette").Width(560).MaxHeight(winH*0.7).Background(a.tk.Surface).Radius(22).
+			Border(1, a.tk.BorderStrong).Clip()
+		a.tk.ShadowLg(pal)
+		pal.Children(func() {
 			ui.Row(c).Padding(12, 16).Gap(10).AlignItems(ui.Center).Shrink(0).Children(func() {
 				ui.Icon(c, iconSearch).FontSize(16).TextColor(a.tk.Accent)
 				in := ui.TextInput(c, &p.query).Placeholder(a.T(kSearchPlaceholder)).Label(a.T(kSearchPlaceholder)).AutoFocus().Grow(1)
