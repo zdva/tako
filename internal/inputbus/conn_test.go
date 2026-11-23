@@ -3,6 +3,7 @@ package inputbus
 import (
 	"bytes"
 	"io"
+	"slices"
 	"testing"
 )
 
@@ -81,5 +82,33 @@ func TestSyncConn_ReadCloseResize(t *testing.T) {
 	}
 	if err := c.Close(); err != nil || !raw.closed {
 		t.Errorf("Close: %v closed=%v", err, raw.closed)
+	}
+}
+
+type sizer struct {
+	io.ReadWriteCloser
+	got []int
+}
+
+func (s *sizer) ResizePixels(cols, rows, cw, ch int) error {
+	s.got = []int{cols, rows, cw, ch}
+	return nil
+}
+
+type colsOnly struct {
+	io.ReadWriteCloser
+	got []int
+}
+
+func (s *colsOnly) Resize(cols, rows int) error { s.got = []int{cols, rows}; return nil }
+
+func TestSyncConn_ForwardsPixelSizes(t *testing.T) {
+	px := &sizer{}
+	if err := (&SyncConn{Raw: px}).ResizePixels(100, 30, 8, 16); err != nil || !slices.Equal(px.got, []int{100, 30, 8, 16}) {
+		t.Errorf("a local pty gets %v (%v), want the size with the cells' pixels", px.got, err)
+	}
+	cells := &colsOnly{}
+	if err := (&SyncConn{Raw: cells}).ResizePixels(100, 30, 8, 16); err != nil || !slices.Equal(cells.got, []int{100, 30}) {
+		t.Errorf("an SSH pane gets %v (%v), want the size in cells", cells.got, err)
 	}
 }

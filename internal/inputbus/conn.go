@@ -41,3 +41,15 @@ func (c *SyncConn) Resize(cols, rows int) error {
 	}
 	return nil
 }
+
+// ResizePixels forwards the size with the cells' size in pixels to the
+// session when it takes one, as a local pseudo-terminal does, else the size
+// alone to Resize.
+func (c *SyncConn) ResizePixels(cols, rows, cellWidth, cellHeight int) error {
+	if r, ok := c.Raw.(interface {
+		ResizePixels(cols, rows, cellWidth, cellHeight int) error
+	}); ok {
+		return r.ResizePixels(cols, rows, cellWidth, cellHeight)
+	}
+	return c.Resize(cols, rows)
+}
