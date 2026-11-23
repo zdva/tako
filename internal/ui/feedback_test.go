@@ -1,6 +1,8 @@
 package ui_test
 
 import (
+	"os"
+	"path/filepath"
 	"slices"
 	"strings"
 	"testing"
@@ -315,5 +317,42 @@ func TestMinimap_OpacitySliderPreviewsWhileUsed(t *testing.T) {
 	h.tt.Frame()
 	if got := h.pixel(px, py); dist(got, opaque) > 3 {
 		t.Errorf("hovering the panel should make it opaque again: %v vs %v", got, opaque)
+	}
+}
+
+// TestImport_HostsAreTakosOwnCopy is feedback item 1: ~/.ssh/config is only
+// previewed until the user imports it, and imported hosts live in Tako's
+// own library, so later changes to the system file do not touch them.
+func TestImport_HostsAreTakosOwnCopy(t *testing.T) {
+	src, err := os.ReadFile(filepath.Join("..", "importer", "sshconfig", "testdata", "config"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	cfg := filepath.Join(t.TempDir(), "config")
+	if err := os.WriteFile(cfg, src, 0o600); err != nil {
+		t.Fatal(err)
+	}
+	h := newHarness(t, harnessOpts{sshConfig: cfg})
+	h.tt.Frame()
+	if n := h.app.Library.Len(); n != 0 {
+		t.Fatalf("the library has %d hosts before any import; the system config must not be used implicitly", n)
+	}
+	if h.tt.HasText("web-01") {
+		t.Fatal("a host of the system config is listed before it was imported")
+	}
+	h.click("OpenSSH config")
+	n := h.app.Library.Len()
+	if n == 0 {
+		t.Fatal("the import added nothing")
+	}
+	if err := os.WriteFile(cfg, []byte("Host only-in-system\n  HostName 10.0.0.9\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	h.tt.Frame()
+	if got := h.app.Library.Len(); got != n {
+		t.Fatalf("changing the system config changed the library from %d to %d hosts", n, got)
+	}
+	if !h.tt.HasText("web-01") || h.tt.HasText("only-in-system") {
+		t.Fatalf("the sidebar should list the imported copy only: %q", h.tt.Texts())
 	}
 }
