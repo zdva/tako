@@ -365,13 +365,15 @@ func (a *App) sheetTitle() string {
 func (a *App) sheetBody(c *ui.Context) {
 	s := &a.sheet
 	_, winH := c.Size()
-	ui.Column(c).Width(620).MaxHeight(winH-48).Background(a.tk.Surface).Radius(18).
-		Border(1, a.tk.BorderStrong).Shadow(0, 18, 48, 0, ui.RGBA(0, 0, 0, 0.18)).Clip().Children(func() {
+	sheet := ui.Column(c).Width(620).MaxHeight(winH-48).Background(a.tk.Surface).Radius(22).
+		Border(1, a.tk.BorderStrong).Clip()
+	a.tk.ShadowLg(sheet)
+	sheet.Children(func() {
 		// Header.
 		ui.Row(c).Padding(16, 20).Gap(12).Shrink(0).Children(func() {
 			a.osTile(c, osFromIndex(s.os), false, 36)
 			ui.Column(c).Grow(1).Gap(2).Children(func() {
-				ui.Text(c, a.sheetTitle()).Bold().FontSize(17)
+				ui.Text(c, a.sheetTitle()).Bold().FontSize(18)
 				a.caption(c, a.T(kSheetSub))
 			})
 			if s.editing == "" {

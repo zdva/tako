@@ -274,14 +274,16 @@ func (a *App) transferSheet(c *ui.Context) {
 func (a *App) transferBody(c *ui.Context) {
 	x := &a.xfer
 	winW, winH := c.Size()
-	ui.Column(c).Key("xfer").Width(min(920, winW-48)).MaxHeight(winH-48).Background(a.tk.Surface).Radius(18).
-		Border(1, a.tk.BorderStrong).Shadow(0, 18, 48, 0, ui.RGBA(0, 0, 0, 0.18)).Clip().Children(func() {
+	xfer := ui.Column(c).Key("xfer").Width(min(920, winW-48)).MaxHeight(winH-48).Background(a.tk.Surface).Radius(22).
+		Border(1, a.tk.BorderStrong).Clip()
+	a.tk.ShadowLg(xfer)
+	xfer.Children(func() {
 		ui.Row(c).Padding(16, 20).Gap(12).Shrink(0).AlignItems(ui.Center).Children(func() {
 			ui.Box(c).Size(36, 36).Radius(10).Background(a.tk.Amber).Center().Children(func() {
 				ui.Icon(c, iconTransfer).FontSize(20).TextColor(ui.RGB(255, 255, 255))
 			})
 			ui.Column(c).Grow(1).Gap(2).Children(func() {
-				ui.Text(c, a.T(kXferTitle)).Bold().FontSize(17)
+				ui.Text(c, a.T(kXferTitle)).Bold().FontSize(18)
 				a.caption(c, a.T(kXferSub))
 			})
 			if a.iconButton(c, iconClose, a.T(kPalClose), 28).Clicked() {

@@ -169,8 +169,10 @@ func (a *App) promptView(c *ui.Context) {
 	}
 	open := true
 	a.dialog(c, &open, func() {
-		ui.Column(c).Key(fmt.Sprintf("prompt:%p", q)).Width(440).Padding(20).Gap(12).Background(a.tk.Surface).
-			Radius(16).Border(1, a.tk.BorderStrong).Shadow(0, 18, 48, 0, ui.RGBA(0, 0, 0, 0.2)).Children(func() {
+		prompt := ui.Column(c).Key(fmt.Sprintf("prompt:%p", q)).Width(440).Padding(20).Gap(12).Background(a.tk.Surface).
+			Radius(22).Border(1, a.tk.BorderStrong)
+		a.tk.ShadowLg(prompt)
+		prompt.Children(func() {
 			switch q.kind {
 			case promptHostKey:
 				a.hostKeyPrompt(c, q)
@@ -187,7 +189,7 @@ func (a *App) promptView(c *ui.Context) {
 }
 
 func (a *App) hostKeyPrompt(c *ui.Context, q *prompt) {
-	ui.Text(c, a.T(kHostKeyTitle, q.hk.Name)).Bold().FontSize(15)
+	ui.Text(c, a.T(kHostKeyTitle, q.hk.Name)).Bold().FontSize(18)
 	ui.Text(c, a.T(kHostKeyBody, q.hk.Host)).FontSize(12.5).TextColor(a.tk.Text2)
 	ui.Column(c).Padding(10, 12).Gap(3).Radius(10).Background(a.tk.Surface3).Children(func() {
 		a.caption(c, q.hk.KeyType)
@@ -208,7 +210,7 @@ func (a *App) secretPrompt(c *ui.Context, q *prompt) {
 	if q.sec.Kind == "passphrase" {
 		title = a.T(kPromptPassphrase, q.sec.Host.Name)
 	}
-	ui.Text(c, title).Bold().FontSize(15)
+	ui.Text(c, title).Bold().FontSize(18)
 	if q.sec.Detail != "" {
 		a.caption(c, q.sec.Detail)
 	}
@@ -236,7 +238,7 @@ func (a *App) challengePrompt(c *ui.Context, q *prompt) {
 	if strings.TrimSpace(title) == "" {
 		title = a.T(kPromptChallenge, q.ch.Host.Name)
 	}
-	ui.Text(c, title).Bold().FontSize(15)
+	ui.Text(c, title).Bold().FontSize(18)
 	if q.ch.Instruction != "" {
 		ui.Text(c, q.ch.Instruction).FontSize(12.5).TextColor(a.tk.Text2)
 	}

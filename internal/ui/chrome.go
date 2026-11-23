@@ -59,12 +59,12 @@ func (a *App) toolIcon(c *ui.Context, ic *ui.SVG, label string, on bool) ui.Elem
 
 // searchBox is the field in the toolbar that opens the command palette.
 func (a *App) searchBox(c *ui.Context) {
-	box := ui.Row(c).Key("searchbox").Width(340).Height(30).Padding(0, 10).Gap(8).Radius(9).
+	box := ui.Row(c).Key("searchbox").Width(340).Height(36).Padding(0, 12).Gap(8).Radius(12).
 		Background(a.tk.Surface).Border(1, a.tk.BorderStrong).Cursor(ui.CursorPointer).Focusable().Role(ui.RoleButton).Label(a.T(kSearchPlaceholder))
 	box.Children(func() {
-		ui.Icon(c, iconSearch).FontSize(14).TextColor(a.tk.Text3)
+		ui.Icon(c, iconSearch).FontSize(16).TextColor(a.tk.Text3)
 		ui.Text(c, a.T(kSearchPlaceholder)).FontSize(12).TextColor(a.tk.Text3).Grow(1).MinWidth(0).NoWrap().Ellipsis("…")
-		ui.Box(c).Padding(1, 6).Radius(5).Background(a.tk.Surface3).Children(func() {
+		ui.Box(c).Padding(1, 6).Radius(8).Background(a.tk.Surface3).Children(func() {
 			ui.Text(c, hint(actPalette)).FontSize(10.5).TextColor(a.tk.Text2)
 		})
 	})
@@ -107,7 +107,7 @@ func (a *App) emptyState(c *ui.Context) {
 		if img := brand(); img != nil {
 			ui.Image(c, img).Size(94, 94)
 		}
-		ui.Text(c, a.T(kWelcome)).Bold().FontSize(24)
+		ui.Text(c, a.T(kWelcome)).Bold().FontSize(28)
 		ui.Column(c).Gap(2).Center().Children(func() {
 			ui.Text(c, a.T(kWelcomeLine1)).FontSize(12.5).TextColor(a.tk.Text2)
 			ui.Text(c, a.T(kWelcomeLine2)).FontSize(12.5).TextColor(a.tk.Text2)

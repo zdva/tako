@@ -62,7 +62,10 @@ type TermPrefs struct {
 }
 
 func (p TermPrefs) font() terminal.Font {
-	return terminal.Font{Size: cmp.Or(p.FontSize, 12)}
+	return terminal.Font{
+		Family: "JetBrains Mono, SF Mono, Cascadia Mono, Noto Sans Mono CJK SC, monospace",
+		Size:   cmp.Or(p.FontSize, 12),
+	}
 }
 
 func (p TermPrefs) copyOnSelect() terminal.CopyOnSelect {

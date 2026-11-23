@@ -188,7 +188,7 @@ func (a *App) statCards(c *ui.Context, p monitor.Sample, info monitor.Info, gpus
 // card is one stat card: a tinted tile, its title, the number and a note.
 func (a *App) card(c *ui.Context, key string, tint ui.Color, title, value, unit, note string) {
 	ui.Column(c).Key("card-"+key).Grow(1).Basis(0).MinWidth(0).Padding(12, 14).Gap(6).
-		Background(a.tk.Surface).Radius(12).Border(1, a.tk.Border).Children(func() {
+		Background(a.tk.Surface).Radius(16).Border(1, a.tk.Border).Children(func() {
 		ui.Row(c).Gap(7).AlignItems(ui.Center).Children(func() {
 			ui.Box(c).Size(18, 18).Radius(5).Background(tint.Alpha(0.18)).Center().Children(func() {
 				ui.Icon(c, iconChip).FontSize(11).TextColor(tint)
@@ -196,7 +196,7 @@ func (a *App) card(c *ui.Context, key string, tint ui.Color, title, value, unit,
 			ui.Text(c, title).FontSize(11.5).Bold().TextColor(a.tk.Text2).NoWrap()
 		})
 		ui.Row(c).Gap(4).AlignItems(ui.Baseline).Children(func() {
-			ui.Text(c, value).Bold().FontSize(26).NoWrap()
+			ui.Text(c, value).Bold().FontSize(28).LetterSpacing(-0.56).NoWrap()
 			ui.Text(c, unit).FontSize(12).TextColor(a.tk.Text2).NoWrap()
 		})
 		a.caption(c, note).NoWrap()
@@ -207,7 +207,7 @@ func (a *App) card(c *ui.Context, key string, tint ui.Color, title, value, unit,
 // the row.
 func (a *App) panel(c *ui.Context, key string, ic *ui.SVG, title string, right func(), weight float32, body func()) {
 	ui.Column(c).Key("panel-"+key).Grow(weight).Basis(0).MinWidth(0).Padding(12, 14).Gap(8).
-		Background(a.tk.Surface).Radius(12).Border(1, a.tk.Border).Children(func() {
+		Background(a.tk.Surface).Radius(16).Border(1, a.tk.Border).Children(func() {
 		ui.Row(c).Gap(8).AlignItems(ui.Center).Shrink(0).Children(func() {
 			ui.Icon(c, ic).FontSize(14).TextColor(a.tk.Text2)
 			ui.Text(c, title).Bold().FontSize(12.5).NoWrap()

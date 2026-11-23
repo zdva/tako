@@ -7,7 +7,8 @@
   "license": "GPL-3.0-or-later",
   "publisher": "zdva and Tako contributors",
   "macos": {
-    "minimumSystemVersion": "13.0"
+    "minimumSystemVersion": "13.0",
+    "icon": "resources/icons/tako.icns"
   },
   "linux": {
     "maintainer": "zdva <tako@example.invalid>",

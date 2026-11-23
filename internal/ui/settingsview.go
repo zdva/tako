@@ -127,12 +127,14 @@ func (a *App) settingsView(c *ui.Context) {
 	open := true
 	a.dialog(c, &open, func() {
 		_, winH := c.Size()
-		ui.Column(c).Key("settings").Width(760).Height(min(winH-48, 560)).Background(a.tk.Surface).Radius(16).
-			Border(1, a.tk.BorderStrong).Shadow(0, 18, 48, 0, ui.RGBA(0, 0, 0, 0.2)).Clip().Children(func() {
+		settings := ui.Column(c).Key("settings").Width(760).Height(min(winH-48, 560)).Background(a.tk.Surface).Radius(22).
+			Border(1, a.tk.BorderStrong).Clip()
+		a.tk.ShadowLg(settings)
+		settings.Children(func() {
 			ui.Row(c).Grow(1).MinHeight(0).AlignItems(ui.Stretch).Children(func() {
 				a.settingsNav(c)
 				ui.Column(c).Key("settings-page").Grow(1).MinWidth(0).Padding(20, 22, 12).Gap(14).Children(func() {
-					ui.Text(c, a.pageTitle(st.page)).Bold().FontSize(17).Role(ui.RoleHeading).Level(1)
+					ui.Text(c, a.pageTitle(st.page)).Bold().FontSize(18).Role(ui.RoleHeading).Level(1)
 					ui.Scroll(c).Key("settings-scroll-" + st.page).Grow(1).MinHeight(0).Children(func() {
 						ui.Column(c).Gap(16).Padding(0, 6, 0, 0).Children(func() { a.settingsPage(c, st.page) })
 					})

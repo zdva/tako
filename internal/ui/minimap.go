@@ -86,9 +86,10 @@ func (a *App) minimap(c *ui.Context, vp layout.Size) {
 	if hot {
 		target = 1
 	}
-	op := panel.AnimateTo("opacity", target, ui.Animation{Duration: mmFade, NonMotion: true})
-	panel.Radius(12).Background(a.tk.Glass3.Alpha(op)).Border(1, a.tk.BorderStrong.Alpha(max(op, 0.6)))
-	panel.Shadow(0, 6, 22, 0, ui.RGBA(0, 0, 0, 0.22*op)).Padding(mmPad).Gap(6)
+	op := panel.AnimateTo("opacity", target, ui.Animation{Duration: mmFade, Ease: motionEase, NonMotion: true})
+	panel.Radius(22).Background(a.tk.Glass3.Alpha(op)).Border(1, a.tk.BorderStrong.Alpha(max(op, 0.6)))
+	a.tk.ShadowMd(panel)
+	panel.Padding(mmPad).Gap(6)
 	panel.Draggable(&mm.offset, ui.DraggableOptions{Bounds: &bounds, Rigid: true, Snap: ui.Nearest(points...)})
 	panel.ContextMenu(a.minimapMenu)
 	if !panel.Dragging() {

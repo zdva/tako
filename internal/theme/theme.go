@@ -76,18 +76,18 @@ func Hex(s string) ui.Color {
 	return ui.RGB(uint8(v>>16), uint8(v>>8), uint8(v)) //nolint:gosec // v is parsed with 24 bits, each shift leaves at most 8
 }
 
-// Light is the light appearance.
+// Light is the light appearance (DESIGN.md §2.1, visual v2).
 func Light() Tokens {
 	return Tokens{
-		Bg: Hex("#F4F4F6"), Sidebar: Hex("#EDEDF0"),
-		Surface: Hex("#FFFFFF"), Surface2: Hex("#F8F8FA"), Surface3: Hex("#EFEFF2"), Surface4: Hex("#E6E6EA"),
-		Border: ui.RGBA(24, 24, 32, 0.09), BorderStrong: ui.RGBA(24, 24, 32, 0.16),
-		Text: Hex("#1D1D20"), Text2: Hex("#6A6A74"), Text3: Hex("#9C9CA6"),
-		Accent: Hex("#EE6A5B"), AccentSoft: ui.RGBA(238, 106, 91, 0.11), AccentRing: ui.RGBA(238, 106, 91, 0.30),
+		Bg: Hex("#F4F4F6"), Sidebar: Hex("#ECECEF"),
+		Surface: Hex("#FFFFFF"), Surface2: Hex("#F6F6F8"), Surface3: Hex("#ECECF0"), Surface4: Hex("#E2E2E8"),
+		Border: ui.RGBA(24, 24, 32, 0.08), BorderStrong: ui.RGBA(24, 24, 32, 0.16),
+		Text: Hex("#1A1A1E"), Text2: Hex("#6A6A74"), Text3: Hex("#9797A1"),
+		Accent: Hex("#E85D50"), AccentSoft: ui.RGBA(232, 93, 80, 0.11), AccentRing: ui.RGBA(232, 93, 80, 0.30),
 		Green: Hex("#1EA672"), Amber: Hex("#E39A12"), Red: Hex("#E5484D"),
 		Blue: Hex("#3B7BF6"), Purple: Hex("#8A63D2"), Teal: Hex("#0FA3B1"),
 		Scrim:      ui.RGBA(20, 20, 28, 0.28),
-		SyncBorder: ui.RGBA(238, 106, 91, 0.55),
+		SyncBorder: ui.RGBA(232, 93, 80, 0.55),
 		Glass3:     ui.RGBA(255, 255, 255, 0.97),
 		TermBg:     Hex("#FFFFFF"), TermFg: Hex("#2A2A30"), TermDim: Hex("#9A9AA6"),
 		TermRed: Hex("#D3403F"), TermGreen: Hex("#1F8F50"), TermYellow: Hex("#A56A00"),
@@ -95,24 +95,55 @@ func Light() Tokens {
 	}
 }
 
-// Dark is the dark appearance.
+// Dark is the dark appearance (DESIGN.md §2.1, visual v2).
 func Dark() Tokens {
 	return Tokens{
 		Dark: true,
-		Bg:   Hex("#151517"), Sidebar: Hex("#1B1B1E"),
-		Surface: Hex("#212124"), Surface2: Hex("#27272B"), Surface3: Hex("#2E2E33"), Surface4: Hex("#38383E"),
-		Border: ui.RGBA(255, 255, 255, 0.085), BorderStrong: ui.RGBA(255, 255, 255, 0.16),
-		Text: Hex("#EDEDF0"), Text2: Hex("#A2A2AC"), Text3: Hex("#6E6E78"),
-		Accent: Hex("#FF7B6A"), AccentSoft: ui.RGBA(255, 123, 106, 0.15), AccentRing: ui.RGBA(255, 123, 106, 0.38),
+		Bg:   Hex("#0B0B0D"), Sidebar: Hex("#101014"),
+		Surface: Hex("#17171C"), Surface2: Hex("#1E1E24"), Surface3: Hex("#26262D"), Surface4: Hex("#32323A"),
+		Border: ui.RGBA(255, 255, 255, 0.08), BorderStrong: ui.RGBA(255, 255, 255, 0.16),
+		Text: Hex("#F2F2F5"), Text2: Hex("#A1A1AB"), Text3: Hex("#6E6E78"),
+		Accent: Hex("#FF6F61"), AccentSoft: ui.RGBA(255, 111, 97, 0.15), AccentRing: ui.RGBA(255, 111, 97, 0.38),
 		Green: Hex("#3DD68C"), Amber: Hex("#F5B83D"), Red: Hex("#FF6369"),
 		Blue: Hex("#5B9BFF"), Purple: Hex("#B18CFF"), Teal: Hex("#3CC9D6"),
 		Scrim:      ui.RGBA(0, 0, 0, 0.45),
-		SyncBorder: ui.RGBA(255, 123, 106, 0.60),
-		Glass3:     ui.RGBA(33, 33, 36, 0.97),
-		TermBg:     Hex("#151517"), TermFg: Hex("#D8D8DE"), TermDim: Hex("#6E6E78"),
+		SyncBorder: ui.RGBA(255, 111, 97, 0.60),
+		Glass3:     ui.RGBA(23, 23, 28, 0.97),
+		TermBg:     Hex("#0C0C10"), TermFg: Hex("#D8D8DE"), TermDim: Hex("#6E6E78"),
 		TermRed: Hex("#FF6B6B"), TermGreen: Hex("#5FD38D"), TermYellow: Hex("#F0C45A"),
 		TermBlue: Hex("#6AA6FF"), TermMagenta: Hex("#C792EA"), TermCyan: Hex("#56D4DD"),
 	}
+}
+
+// ShadowSm paints the small elevation (DESIGN.md §2.4).
+func (t Tokens) ShadowSm(el ui.Element) {
+	if t.Dark {
+		el.Shadow(0, 1, 2, 0, ui.RGBA(0, 0, 0, 0.35))
+		return
+	}
+	el.Shadow(0, 1, 2, 0, ui.RGBA(24, 24, 32, 0.06))
+}
+
+// ShadowMd paints the card elevation.
+func (t Tokens) ShadowMd(el ui.Element) {
+	if t.Dark {
+		el.Shadow(0, 1, 2, 0, ui.RGBA(0, 0, 0, 0.35))
+		el.Shadow(0, 8, 20, 0, ui.RGBA(0, 0, 0, 0.32))
+		return
+	}
+	el.Shadow(0, 1, 2, 0, ui.RGBA(24, 24, 32, 0.05))
+	el.Shadow(0, 6, 16, 0, ui.RGBA(24, 24, 32, 0.08))
+}
+
+// ShadowLg paints the overlay elevation.
+func (t Tokens) ShadowLg(el ui.Element) {
+	if t.Dark {
+		el.Shadow(0, 2, 4, 0, ui.RGBA(0, 0, 0, 0.40))
+		el.Shadow(0, 24, 60, 0, ui.RGBA(0, 0, 0, 0.55))
+		return
+	}
+	el.Shadow(0, 2, 4, 0, ui.RGBA(24, 24, 32, 0.06))
+	el.Shadow(0, 20, 48, 0, ui.RGBA(24, 24, 32, 0.16))
 }
 
 // TagPalette is the colors a tag can have, in the order DESIGN.md lists them.
@@ -143,6 +174,8 @@ func (t Tokens) UI() *ui.Theme {
 	th.Radius = 8
 	th.FontSize = 13
 	th.Spacing = 4
+	// The first family the machine has wins; system-ui covers the rest.
+	th.Font = "Inter, PingFang SC, Microsoft YaHei UI, Noto Sans CJK SC, system-ui"
 	return th
 }
 
