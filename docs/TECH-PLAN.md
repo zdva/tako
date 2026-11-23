@@ -10,9 +10,9 @@
 
 ## 0. 一页纸摘要
 
-- **结构**：`cmd/tako` 只做装配；核心逻辑放 `internal/` 下按职责拆的小包，**核心包不依赖 MyGo UI**，只有 `internal/ui`、`internal/secrets`（钥匙串）、`internal/platform` 碰 MyGo。UI 与核心之间用小接口隔开，核心可以在没有窗口的情况下做完整测试。
+- **结构**：`cmd/tako` 只做装配；核心逻辑放 `internal/` 下按职责拆的小包，**核心包不依赖 MyGo UI**，只有 `internal/ui`、`internal/platform` 和一次性迁移命令 `cmd/tako/keychain.go` 碰 MyGo。`internal/secrets` 用标准库加密，不调用 `mygo.Secrets`。UI 与核心之间用小接口隔开，核心可以在没有窗口的情况下做完整测试。
 - **关键约定**：终端和 SSH 之间永远隔着一个 `session.Pane`（实现 `io.ReadWriteCloser` + `Resize`）。底层 SSH 重建时 `Pane` 不变，`Read` 阻塞而不返回 EOF（原型已验证）。同步输入走 `InputBus`，每个目标一条队列，不回环（原型已验证）。
-- **存储**：JSON 文件 + 原子写入 + `version` 字段做迁移；密码、口令、私钥口令只放系统钥匙串，配置文件和导出文件里只有“钥匙串引用”。
+- **存储**：JSON 文件 + 原子写入 + `version` 字段做迁移；密码、口令、私钥口令放在 Tako 自己的加密文件 `secrets.enc`（ADR 0023），不进系统钥匙串。`hosts.json` 和导出文件里只有引用，没有明文。
 - **布局**：自动模式 = 按窗口宽度算的网格；手动模式 = 二叉分割树（支持分隔线比例、边缘插入线、吸附）。小地图画的就是同一份矩形。
 - **里程碑**：M1 连接 + 终端 + 网格 + 侧栏（约 3 周）→ M2 同步 + 小地图 + 吸附（约 2.5 周）→ M3 监控 + 传输（约 3.5 周）→ M4 打磨 / 国际化 / 深色 / 打包发布（约 3 周）。合计约 12 周（单人，AI 辅助开发，含测试；不含 Apple / Windows 证书申请等外部等待）。
 - **最大风险**：MyGo 还在 0.x（API 可能变）；Windows / macOS 构建产物从没在真机上跑过；GPU 渲染性能没测；真实 OpenSSH 的兼容性（跳板机、agent、键盘交互）只靠 M1 的 Docker 集成测试来补。
@@ -68,7 +68,7 @@ tako/
 │  ├─ model/                        # 纯数据类型：Host、Tag、Auth、Hop、Proxy、OSKind、ID
 │  ├─ hostlib/                      # 主机库：增删改、标签、搜索、导出（不含秘密）
 │  ├─ importer/                     # sshconfig、xshell、securecrt、termius（纯解析，返回 []model.Host）
-│  ├─ secrets/                      # SecretStore 接口 + 钥匙串实现（mygo.Secrets）+ 内存假实现
+│  ├─ secrets/                      # SecretStore 接口 + 加密文件（标准库 AES-GCM）+ 内存实现
 │  ├─ transport/                    # Transport 接口；ssh/（认证、跳板、代理、known_hosts）；local/（本机 PTY）
 │  ├─ session/                      # Conn 池、Pane（paneConn）、重连状态机、同一主机多通道复用
 │  ├─ inputbus/                     # 同步输入扇出 + StripReplies（沿用原型）
@@ -82,7 +82,7 @@ tako/
 │  ├─ theme/                        # 设计 token（Light / Dark），与 DESIGN.md 同名
 │  ├─ platform/                     # 少量系统相关：外观跟随、快捷键映射 ⌘/Ctrl、打开文件管理器
 │  ├─ ui/                           # MyGo 视图：shell、sidebar、grid、block、minimap、sheet、palette、monitor、transfer
-│  └─ testutil/                     # 内存 SSH 服务器（原型的 testsshd）、假 Collector、假钥匙串
+│  └─ testutil/                     # 内存 SSH 服务器（原型的 testsshd）、假 Collector；秘密用 secrets.Memory
 └─ test/
    └─ integration/                  # docker-compose：真实 OpenSSH 矩阵（见 §11）
 ```
@@ -91,7 +91,7 @@ tako/
 
 - 原型里的 `sshconn` 拆成 `transport/ssh`（建立连接）和 `session`（Pane、重连）两层：原型把“建连、重连、keepalive、SFTP”都放在一个 397 行的包里，产品要加跳板、代理、多通道复用，必须拆。
 - `layout` 保持**零依赖**（原型已如此），所有吸附、命中、框选都用单元测试和模糊测试覆盖，UI 只负责画。
-- `importer/*` 是纯函数：`func Parse(r io.Reader) ([]model.Host, []Warning, error)`，不碰钥匙串、不碰网络，方便模糊测试。
+- `importer/*` 是纯函数：`func Parse(r io.Reader) ([]model.Host, []Warning, error)`，不碰秘密存储、不碰网络，方便模糊测试。
 
 ---
 
@@ -132,7 +132,7 @@ type AuthKind string // "password" | "key" | "agent" | "keyboard-interactive"
 type Auth struct {
 	Kind    AuthKind `json:"kind"`
 	KeyPath string   `json:"keyPath,omitzero"`  // kind=key
-	// 秘密不在这里。口令/密码以“钥匙串引用”形式存在：
+	// 秘密不在这里。口令/密码以加密存储里的引用形式存在：
 	SecretRef string `json:"secretRef,omitzero"` // 如 "host/h_3f9a/password"；空 = 每次询问
 }
 
@@ -277,7 +277,7 @@ func (q *Queue) Watch() iter.Seq[Event]
 | 主机密钥 | config | `known_hosts`（OpenSSH 格式，Tako 自己的一份；设置里可选“同时读取 `~/.ssh/known_hosts`”） | 否 |
 | 会话恢复 | state | `session.json` | 否 |
 | 日志 | state | `logs/tako-YYYYMMDD.log`（`slog` JSON，滚动，保留 7 天） | 否 |
-| 秘密 | **系统钥匙串**（服务名 `dev.tako.app`） | — | **永不** |
+| 秘密 | config | `secrets.enc`（AES-256-GCM，权限 0600；ADR 0023）。不进系统钥匙串 | **永不** |
 
 macOS 实际路径是 `~/Library/Application Support/Tako/`，Windows 是 `%AppData%\Tako\`，Linux 是 `~/.config/tako/`（配置）与 `~/.local/state/tako/`（状态）。
 
@@ -310,8 +310,8 @@ macOS 实际路径是 `~/Library/Application Support/Tako/`，Windows 是 `%AppD
 }
 ```
 
-- `secretRef` 只是钥匙串里的键名，**没有任何口令内容**。导出时 `secretRef` 也被去掉（换电脑后会提示“请重新输入”）。
-- 钥匙串键名固定为 `host/<hostId>/<kind>`、`proxy/<hostId>`；删除主机时一并删除对应条目。
+- `secretRef` 只是加密存储里的键名，**没有任何口令内容**。导出时 `secretRef` 也被去掉（换电脑后会提示“请重新输入”）。
+- 引用固定为 `host/<hostId>/<kind>`；删除主机时一并删除对应条目。旧版系统凭据库的服务名是 `dev.tako.app`，只给 `tako --migrate-keychain` 用。
 
 ### 5.4 会话恢复 `session.json`
 
@@ -410,9 +410,9 @@ Connected ──(Transport.Done)──▶ Reconnecting(attempt=1) ──成功�
 | 主题 | 做法 |
 |---|---|
 | **主机密钥** | 首次连接弹出指纹（SHA256 + 随机艺术图可选）供确认，写入 Tako 的 `known_hosts`；**指纹变化 = 拒绝连接**，需用户在主机详情里“信任新密钥”才能继续（原型已验证重连时不会自动放行）；没有“忽略校验”的开关 |
-| **秘密存储** | 密码、私钥口令、代理密码只进系统钥匙串（`mygo.Secrets`，服务名 `dev.tako.app`）；内存里只在连接握手期间持有，用后清零 `[]byte`；私钥文件**不拷贝**，只记路径 |
+| **秘密存储** | 密码、私钥口令、代理密码只进 Tako 的加密文件 `secrets.enc`（标准库 AES-256-GCM，权限 0600，ADR 0023），不调用 `mygo.Secrets`；明文只留在进程内存里；私钥文件**不拷贝**，只记路径 |
 | **导出与备份** | 导出的 JSON 不含 `secretRef` 与任何秘密；导入后缺失的秘密在首次连接时询问；`session.json`、日志不进导出 |
-| **私钥口令缓存** | 可选“本次运行记住”，仅内存，退出即清；不写盘 |
+| **私钥口令缓存** | 选择“在 Tako 中记住”写入加密文件；不记住则只留在本次运行的内存里，退出即清 |
 | **agent** | 只读使用系统 `SSH_AUTH_SOCK`（含 1Password / Bitwarden 的 agent）；agent 转发（直连传输用）**默认关闭**，只在单次直连传输期间临时开启 |
 | **算法** | 使用 `x/crypto/ssh` 的默认安全算法集，不主动启用已废弃算法；老设备需要时在主机设置里逐台开启并标注风险 |
 | **同步输入的风险** | 同步会把你敲的**每个字符**（包括 `sudo` 的密码）发给所有同步主机。**定稿决定不加危险命令确认**，所以这里只做低成本缓解：检测到终端进入“无回显”状态（密码提示）时，**当次输入暂停同步**并在块头短暂提示。【待确认：要不要做？】 |
@@ -527,9 +527,9 @@ Connected ──(Transport.Done)──▶ Reconnecting(attempt=1) ──成功�
 
 | # | 风险 | 影响 | 应对 | 何时消除 |
 |---|---|---|---|---|
-| 1 | **MyGo 仍是 0.x**（v0.8.3），API 可能变化 | 升级时编译失败、行为变化 | `go.mod` 固定版本；升级单独开 PR 并跑全套测试；把对 MyGo 的依赖集中在 `ui`、`secrets`、`platform`，核心包不碰 | 持续 |
+| 1 | **MyGo 仍是 0.x**（v0.8.3），API 可能变化 | 升级时编译失败、行为变化 | `go.mod` 固定版本；升级单独开 PR 并跑全套测试；对 MyGo 的依赖集中在 `ui`、`platform` 和 `cmd/tako` 的一次性迁移，核心包和 `secrets` 不碰 | 持续 |
 | 2 | **GPU 渲染性能没测**（原型只有 CPU 渲染） | 9 块刷屏时在真机上的帧率未知 | M1 在有显卡的 Mac 和 Windows 机器上测预算表；不达标则降低刷新率或合并重绘 | M1 末 |
-| 3 | **Windows / macOS 产物从没在真机运行过** | 启动、字体、快捷键、钥匙串、外观跟随都可能有平台差异 | M1 起每个里程碑在两台真机上跑冒烟清单；CI 的三平台 `ui.Tester` 先挡住一部分 | M1 末起 |
+| 3 | **Windows / macOS 产物从没在真机运行过** | 启动、字体、快捷键、外观跟随都可能有平台差异。秘密存储不再依赖系统钥匙串 | M1 起每个里程碑在两台真机上跑冒烟清单；CI 的三平台 `ui.Tester` 先挡住一部分 | M1 末起 |
 | 4 | **真实 OpenSSH 兼容性**（跳板机、agent、键盘交互、ssh_config）原型都没做 | 实际服务器上连不上 | M1 的 Docker 集成矩阵（§11） | M1 |
 | 5 | **分隔线吸附没有现成实现**（`ui.Split` 无吸附点） | 工作量与手感 | 用 `Draggable` 自己做，吸附逻辑放进零依赖的 `layout` 包，用属性测试保证；先做“比例吸附到 1/2、1/3、2/3”，再做“与相邻行列对齐” | M2 |
 | 6 | **毛玻璃（`plugins/glass`）没试过** | 小地图静止态半透明的观感与性能 | M2 第一周先验证三平台；备选方案是纯半透明 + 阴影 | M2 |
@@ -557,7 +557,7 @@ Connected ──(Transport.Done)──▶ Reconnecting(attempt=1) ──成功�
 
 **范围**
 
-- 主机库：增删改、标签、搜索；`hosts.json` 原子写入与迁移；钥匙串封装（`secrets`）。
+- 主机库：增删改、标签、搜索；`hosts.json` 原子写入与迁移；加密秘密存储（`secrets`，ADR 0023；最初的钥匙串方案已废弃）。
 - **添加 / 编辑主机**弹层（对照 `add-host.png`）：密码、密钥（OpenSSH / PEM / .ppk，含口令）、SSH Agent、键盘交互 / TOTP；多级 ProxyJump；SOCKS5 / HTTP 代理；“测试连接”并自动识别系统类型。
 - `transport/ssh`：认证链、跳板、代理、`known_hosts`（首次指纹确认、变化拒绝）、keepalive。
 - `session`：`Session` / `Pane`、重连状态机（退避、不可重试错误分类）、同一主机多通道复用与 `MaxSessions` 回退。

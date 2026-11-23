@@ -51,9 +51,9 @@ Also: `make fuzz` (PPK parser, ssh-config parser), `make vuln` (govulncheck),
   on any text outside the window. `TestKeys_MatchLocales` keeps the key
   constants and both locale files in step.
 - **Export without secrets** (`m4_test.go`): stores a distinct password and
-  its keychain reference, exports, greps the file for both (and for "secret"),
-  checks mode 0600, imports on a second app with its own data and keychain and
-  checks that no secret arrived.
+  its secret reference, exports, greps the file for both (and for "secret"),
+  checks mode 0600, imports on a second app with its own data and secret store
+  and checks that no secret arrived.
 - **Importers**: the fixtures in `internal/importer/hostfile/testdata` are
   hand-written (`README.md` there); `FuzzParse` and `FuzzParseITerm` run in
   `make fuzz`; a round-trip test proves nothing secret survives export.
@@ -115,6 +115,9 @@ Tako's log file.
 
 - Tests use `t.Context()`, `t.TempDir()`, `-race`, and `goleak` where goroutines
   are started. Never sleep to wait for a condition when it can be polled.
-- No test touches the user's real home, keychain or `~/.ssh`: the app takes its
-  directories and keychain as options.
+- No test touches the user's real home, credential store or `~/.ssh`: the app
+  takes its directories as options, and tests use the encrypted file under a
+  temp directory or an in-memory store. They do not need a keychain or a
+  Secret Service. The production path does not call MyGo's credential store;
+  `cmd/tako/keychain.go` exists only for `tako --migrate-keychain`.
 - Never put real credentials in fixtures.

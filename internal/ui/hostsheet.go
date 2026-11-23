@@ -194,7 +194,7 @@ func (a *App) storeSecrets(ctx context.Context, h *model.Host, persist bool) err
 		}
 		if persist && s.remember {
 			if err := a.d.Secrets.Set(ctx, ref, []byte(v)); err != nil && !isNotPersisted(err) {
-				return fmt.Errorf("saving to the keychain: %w", err)
+				return fmt.Errorf("saving the secret: %w", err)
 			}
 			return nil
 		}
@@ -283,8 +283,8 @@ func (a *App) runTest() {
 		s.testErr, s.testOK = a.formError(err), ""
 		return
 	}
-	// The test must not touch the keychain or the saved host: use session-only
-	// secrets under a throwaway reference.
+	// The test must not change the saved host or its stored secret: use
+	// session-only secrets under a throwaway reference.
 	h.ID = model.NewID()
 	if err := a.storeSecretsTest(&h); err != nil {
 		s.testErr = err.Error()
@@ -503,8 +503,8 @@ func (a *App) secretField(c *ui.Context, label string) {
 				s.showSecret = !s.showSecret
 			}
 			ui.Row(c).Gap(8).Children(func() {
-				ui.Switch(c, &s.remember).Label(a.T(kRememberKeychain))
-				ui.Text(c, a.T(kRememberKeychain)).FontSize(12)
+				ui.Switch(c, &s.remember).Label(a.T(kRemember))
+				ui.Text(c, a.T(kRemember)).FontSize(12)
 			})
 		})
 		if s.editing != "" && s.secret == "" {

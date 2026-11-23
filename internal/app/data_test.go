@@ -12,7 +12,7 @@ import (
 func TestLookup_AppliesTheKeepaliveSetting(t *testing.T) {
 	t.Parallel()
 	a, err := New(t.Context(), Options{
-		Dirs: store.Dirs{Config: t.TempDir(), State: t.TempDir()}, Keychain: secrets.NewMemory(),
+		Dirs: store.Dirs{Config: t.TempDir(), State: t.TempDir()}, Secrets: secrets.NewMemory(),
 		Locale: "en_US.UTF-8", Version: "test", Home: t.TempDir(),
 	})
 	if err != nil {

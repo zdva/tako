@@ -16,7 +16,7 @@ ui ─▶ app ─▶ workspace, session, hostlib, settings, inputbus, layout, mo
               │
               ├─ transport        (port: Transport, Shell, Prompter)
               │   └─ transport/ssh   (adapter: golang.org/x/crypto/ssh)
-              ├─ secrets          (port + system keychain adapter)
+              ├─ secrets          (port + encrypted file)
               └─ store            (atomic JSON documents, lock, backups)
 ```
 

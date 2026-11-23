@@ -8,6 +8,12 @@ All notable changes are recorded here. The format follows
 
 ### Changed
 
+- Passwords, key passphrases and proxy credentials are stored in Tako's
+  encrypted file (`secrets.enc` in the config directory, mode 0600) instead of
+  the system keychain, Credential Manager or Secret Service. Launching the app
+  no longer asks the OS to unlock a credential store. There is no master
+  password. Older values can be copied once with `tako --migrate-keychain`
+  (that command may prompt) or typed again. See ADR 0023.
 - Visual v2: design tokens (colors, radii, shadows, type), chrome spacing, and
   a full redraw of UI glyphs plus OS marks (`iconSync`, faceless Linux Tux,
   four-pane Windows, Apple silhouette). App icon is a geometric coral octopus

@@ -155,7 +155,7 @@ const (
 	kProxyUser            = "proxy.user"
 	kReconnectNow         = "banner.reconnectnow"
 	kReject               = "hostkey.reject"
-	kRememberKeychain     = "remember.keychain"
+	kRemember             = "remember.tako"
 	kRemoveHop            = "sheet.removehop"
 	kRemoveTag            = "sheet.removetag"
 	kRenameHint           = "menu.renamehint"

@@ -254,7 +254,7 @@ func TestLibrary_ExportHasNoSecretRefs(t *testing.T) {
 		t.Fatal(err)
 	}
 	if strings.Contains(string(data), "secretRef") || strings.Contains(string(data), "host/h_1") {
-		t.Errorf("export leaks keychain references:\n%s", data)
+		t.Errorf("export leaks secret references:\n%s", data)
 	}
 }
 

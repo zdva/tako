@@ -17,7 +17,7 @@ const (
 // Dirs are the directories Tako stores data in.
 type Dirs struct {
 	// Config holds what the user would back up or move: hosts, settings,
-	// known_hosts.
+	// known_hosts and the encrypted secret store.
 	Config string
 	// State holds what can be rebuilt: the restored session and logs.
 	State string
@@ -86,6 +86,9 @@ func (d Dirs) Session() string { return filepath.Join(d.State, "session.json") }
 
 // KnownHosts is Tako's own OpenSSH-format known_hosts file.
 func (d Dirs) KnownHosts() string { return filepath.Join(d.Config, "known_hosts") }
+
+// Secrets is the encrypted password store. It is not part of an export.
+func (d Dirs) Secrets() string { return filepath.Join(d.Config, "secrets.enc") }
 
 // Logs is the log directory.
 func (d Dirs) Logs() string { return filepath.Join(d.State, "logs") }

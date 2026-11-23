@@ -53,7 +53,7 @@ Tako 是管理一群服务器的桌面终端。它把许多 SSH（和本地）�
 - **SSH**：密码、公钥（OpenSSH、PEM、PuTTY `.ppk`）、SSH Agent、键盘交互认证；跳板机链；SOCKS5 和 HTTP 代理；保活；服务器 MaxSessions 不够时自动多开一条连接。
 - **不怕断线的面板**：链路断开时，块里显示重连横幅，滚动历史保留，按 1、2、5、10、30 秒退避重试，断线期间敲的键**不会**在恢复后补发。见 [ADR 0006](docs/adr/0006-session-pane-contract.md)。
 - **主机密钥**：Tako 自己的 `known_hosts`；密钥变了**一律拒绝**并显示新旧指纹。见 [ADR 0004](docs/adr/0004-host-key-policy.md)。
-- **秘密**只放系统钥匙串，不进文件和日志。见 [ADR 0003](docs/adr/0003-secrets-in-keychain.md)。
+- **秘密**放在 Tako 自己的加密文件（`secrets.enc`，权限 0600）里，不进 `hosts.json`、日志和导出，也不进系统钥匙串。见 [ADR 0023](docs/adr/0023-encrypted-secret-store.md)。
 - **块网格**：1 / 2 / 2×2 / 3×2 / 超出后滚动；每块多标签页；本地终端；右键菜单；命令面板；中英文；浅色与深色。
 - **导入** `~/.ssh/config`（支持 `Include`、`ProxyJump`、`IdentityFile`）。
 - **会话恢复**：正常退出或崩溃（包括 `kill -9`）后，块和标签页会恢复并自动重连，通常不到一秒。
@@ -99,10 +99,16 @@ Linux 和 Windows 的主修饰键是 `Ctrl+Shift`（这样单独的 `Ctrl+C` 还
 
 | | Linux | macOS | Windows |
 |---|---|---|---|
-| 配置（`hosts.json`、`known_hosts`、`settings.json`） | `~/.config/tako` | `~/Library/Application Support/Tako` | `%AppData%\Tako` |
+| 配置（`hosts.json`、`secrets.enc`、`known_hosts`、`settings.json`） | `~/.config/tako` | `~/Library/Application Support/Tako` | `%AppData%\Tako` |
 | 状态（`session.json`、日志、锁） | `~/.local/state/tako` | 同配置目录 | `%LocalAppData%\Tako` |
 
-可用 `TAKO_CONFIG_DIR`、`TAKO_STATE_DIR` 改位置。没有系统凭据库的机器（比如没有 Secret Service 的无桌面 Linux），“记住密码”只在本次运行内有效，Tako 会明确告知。
+可用 `TAKO_CONFIG_DIR`、`TAKO_STATE_DIR` 改位置。
+
+密码、私钥口令和代理密码加密写在 `secrets.enc`（权限 0600）。密钥绑在这台机器上，所以文件拿到另一台电脑解不开。如果读不到机器标识，密钥会放在旁边的 `secrets.key`（同样是 0600），两份文件一起拷走就能解开。`hosts.json`、`session.json`、日志和导出里都没有秘密本身。Tako 不使用 macOS 钥匙串、Windows 凭据管理器或 Linux Secret Service，所以启动时不会要求登录这些系统存储。
+
+没有主密码，启动时也不再弹解锁框。威胁模型是说清楚的：这能挡住随手同步、拷贝或误提交配置目录，以及其他系统用户读取密码；挡不住已经以你的用户身份在跑的程序。详见 [ADR 0023](docs/adr/0023-encrypted-secret-store.md) 和 [SECURITY.md](SECURITY.md)。
+
+旧版本把密码放在系统凭据库里，服务名是 `dev.tako.app`。这一版启动时不读它们，因为一读就会弹出钥匙串登录框（未签名的 `go run` 每次路径都变，更容易弹）。下次连接时再输入一次，并选择“在 Tako 中记住”。也可以退出 Tako 后运行一次 `tako --migrate-keychain`：系统可能会按每条密码询问一次，复制成功后会从系统凭据库删掉这些条目。`hosts.json` 里已经没有引用的旧条目需要你在钥匙串访问、凭据管理器或 Secret Service 里自行删除。
 
 ## 开发
 

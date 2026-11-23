@@ -3,7 +3,7 @@
 // sessions (.ini files or an exported .xml) and a Termius CSV, and reads
 // Tako's own export.
 //
-// Parsing is a pure function of the bytes: it never touches the keychain or
+// Parsing is a pure function of the bytes: it never touches the secret store or
 // the network. Passwords in these files are encrypted with the other
 // program's keys and are never imported or decoded; the result says how many
 // hosts had one so the user can type them again. Anything that cannot be

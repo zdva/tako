@@ -8,7 +8,7 @@ decision that is replaced is marked *Superseded by* and kept.
 |---|---|---|
 | [0001](0001-mygo-only-ui.md) | MyGo is the only UI toolkit | Accepted |
 | [0002](0002-ports-and-adapters.md) | Ports-and-adapters package layout | Accepted |
-| [0003](0003-secrets-in-keychain.md) | Secrets live in the system keychain only | Accepted |
+| [0003](0003-secrets-in-keychain.md) | Secrets live in the system keychain only | Superseded by 0023 |
 | [0004](0004-host-key-policy.md) | Host-key policy: Tako's own known_hosts, never silently accept a change | Accepted |
 | [0005](0005-utf8-only.md) | UTF-8 only | Accepted |
 | [0006](0006-session-pane-contract.md) | `session.Pane` never reaches EOF while a link is down | Accepted |
@@ -28,3 +28,4 @@ decision that is replaced is marked *Superseded by* and kept.
 | [0020](0020-crash-reports-and-diagnostics.md) | Crash reports from the Go runtime; scrubbed diagnostics on request | Accepted |
 | [0021](0021-unsigned-releases-and-signed-updates.md) | Unsigned installers, ed25519-signed updates from GitHub Releases | Accepted |
 | [0022](0022-license-gpl-3-or-later.md) | License: GPL-3.0-or-later, dependency compatibility, DCO | Accepted |
+| [0023](0023-encrypted-secret-store.md) | Secrets live in Tako's encrypted file | Accepted |

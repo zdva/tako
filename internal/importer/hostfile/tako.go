@@ -8,7 +8,7 @@ import (
 )
 
 // export is the document hostlib.Library.Export writes: hosts.json without
-// keychain references.
+// secret references.
 type export struct {
 	Version int          `json:"version"`
 	Hosts   []model.Host `json:"hosts"`

@@ -88,7 +88,8 @@ Windows, no GPU, no GitHub repository):
 - [ ] **Run on a real Mac** (Apple silicon and Intel if possible): install the dmg,
       open, connect, paste, IME (Pinyin / Japanese), dark mode switch, the
       macOS menu bar and ⌘ shortcuts, Settings window, window dragging with the
-      hidden title bar, keychain prompts, sleep/wake reconnect.
+      hidden title bar, confirming launch does not ask for the system keychain
+      (the optional `tako --migrate-keychain` command may), sleep/wake reconnect.
 - [ ] **Run on real Windows 10/11**: install the NSIS setup, uninstall, connect,
       PowerShell host monitoring (CIM), ConPTY-free terminals, IME, High-DPI,
       SmartScreen path, file transfer to and from a Windows OpenSSH server.

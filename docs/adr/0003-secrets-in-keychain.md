@@ -1,6 +1,9 @@
 # 0003. Secrets live in the system keychain only
 
-Status: Accepted (M1)
+Status: Superseded by [0023](0023-encrypted-secret-store.md)
+
+This decision was accepted for M1 and replaced when a launch on macOS asked
+the user to sign in to the keychain. The text below is the original decision.
 
 ## Context
 
