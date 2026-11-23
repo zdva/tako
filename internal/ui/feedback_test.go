@@ -256,3 +256,64 @@ func TestLayout_LongNameAndManyTabsKeepTheHeaderButtons(t *testing.T) {
 		}
 	}
 }
+
+// TestMinimap_OpacitySliderPreviewsWhileUsed is feedback item 5: the panel
+// is forced opaque while the pointer is over it, so moving its own opacity
+// slider showed no change. While the slider is in use the panel shows the
+// chosen opacity; elsewhere on the panel it is still opaque.
+func TestMinimap_OpacitySliderPreviewsWhileUsed(t *testing.T) {
+	h := newHarness(t, harnessOpts{})
+	h.openAll(2)
+	h.tt.SetDark(true)
+	area := h.mmArea()
+	px, py := area.X+area.W/2, area.Y-3 // the gap between header and squares
+
+	// Opaque while hovering the panel away from the slider.
+	h.tt.Move(px, py)
+	h.tt.Frame()
+	h.tt.Advance(400 * time.Millisecond)
+	h.tt.Frame()
+	opaque := h.pixel(px, py)
+
+	info, ok := h.tt.AccessByRole(ui.RoleSlider, "Minimap opacity")
+	if !ok {
+		t.Fatal("no opacity slider")
+	}
+	sx, sy := float32(info.Bounds.X+1), float32(info.Bounds.Y+info.Bounds.H/2)
+	// Press at the lowest opacity and keep holding the thumb.
+	h.tt.Move(sx, sy)
+	h.tt.Frame()
+	h.tt.Press(sx, sy)
+	h.tt.Frame()
+	h.tt.Advance(400 * time.Millisecond)
+	h.tt.Frame()
+	if got := h.app.Model.MinimapPrefs().Opacity; got > 0.4 {
+		t.Fatalf("opacity = %v after pressing the left end", got)
+	}
+	low := h.pixel(px, py)
+	if dist(low, opaque) < 3 {
+		t.Errorf("while the slider is held at 35%% the panel pixel %v should differ from the opaque %v", low, opaque)
+	}
+
+	// Drag to the right end: the preview follows.
+	ex := float32(info.Bounds.X + info.Bounds.W - 1)
+	h.tt.Move(ex, sy)
+	h.tt.Frame()
+	h.tt.Advance(400 * time.Millisecond)
+	h.tt.Frame()
+	high := h.pixel(px, py)
+	if dist(high, low) < 3 {
+		t.Errorf("dragging the slider to 100%% should change the panel: %v vs %v", high, low)
+	}
+	h.tt.Release(ex, sy)
+	h.tt.Frame()
+
+	// Back on the panel away from the slider, it is opaque again.
+	h.tt.Move(px, py)
+	h.tt.Frame()
+	h.tt.Advance(400 * time.Millisecond)
+	h.tt.Frame()
+	if got := h.pixel(px, py); dist(got, opaque) > 3 {
+		t.Errorf("hovering the panel should make it opaque again: %v vs %v", got, opaque)
+	}
+}
