@@ -176,8 +176,7 @@ func TestSettings_ImportITermColorsAddsSelectsAndRemovesTheScheme(t *testing.T) 
 		t.Fatal(err)
 	}
 	h.reveal("Import iTerm2 colors")
-	h.tt.Key(ui.Ctrl, ui.KeyA)
-	h.typeInto("Path to a .itermcolors file", bad)
+	h.replaceField("Path to a .itermcolors file", bad)
 	h.click("Import")
 	h.waitText("Could not import the colors")
 	if len(h.prefs().Terminal.Custom) != 1 {
@@ -215,12 +214,14 @@ func TestSettings_TerminalOptionsAreSaved(t *testing.T) {
 func (h *harness) exportTo(path string) {
 	h.t.Helper()
 	h.openSettings("data")
-	h.tt.Frame()
-	info, _ := h.tt.AccessByRole(ui.RoleTextField, "Where to save the file")
-	h.tt.ClickAt(float32(info.Bounds.X+info.Bounds.W/2), float32(info.Bounds.Y+info.Bounds.H/2))
-	h.tt.Key(ui.Ctrl, ui.KeyA)
-	h.tt.Type(path)
-	h.tt.Frame()
+	// The field already holds the default path. On macOS Ctrl+A moves the
+	// caret to the start, so the typed absolute path was inserted in front
+	// of it and the two paths were written as one.
+	h.replaceField("Where to save the file", path)
+	got, ok := h.tt.AccessByRole(ui.RoleTextField, "Where to save the file")
+	if !ok || got.Value != path {
+		h.t.Fatalf("export path = %q, want %q", got.Value, path)
+	}
 	h.click("Export")
 	h.waitText("Exported")
 }

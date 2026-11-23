@@ -15,12 +15,7 @@ import (
 	"github.com/zdva/tako/internal/workspace"
 )
 
-const (
-	mmAreaLabel = "Minimap: click a block to toggle sync, drag to select several"
-	allSyncKey  = ui.KeyA // Ctrl+Shift+Alt+A off macOS
-)
-
-var ctrlAlt = ui.Ctrl | ui.Shift | ui.Alt
+const mmAreaLabel = "Minimap: click a block to toggle sync, drag to select several"
 
 // mmArea returns the squares area of the minimap in window coordinates.
 func (h *harness) mmArea() layout.Rect {
@@ -290,7 +285,7 @@ func TestMinimap_OpacitySliderAndToggle(t *testing.T) {
 	if h.tt.HasText("Sync 0 / 2") {
 		t.Fatal("the minimap should be hidden")
 	}
-	h.tt.Key(ctrlAlt, ui.KeyG)
+	h.press("minimap")
 	h.tt.Frame()
 	if !h.tt.HasText("Sync 0 / 2") {
 		t.Fatal("the shortcut should show it again")
@@ -528,7 +523,7 @@ func TestLayout_ZoomShortcutAndHeaderDoubleClick(t *testing.T) {
 	h := newHarness(t, harnessOpts{})
 	h.openAll(3)
 	b := h.app.Model.Focused()
-	h.tt.Key(ui.Ctrl|ui.Shift, ui.KeyEnter)
+	h.press("zoom")
 	h.tt.Frame()
 	if h.app.Model.Zoomed() != b {
 		t.Fatal("the zoom shortcut should zoom the focused block")
@@ -543,7 +538,7 @@ func TestLayout_ZoomShortcutAndHeaderDoubleClick(t *testing.T) {
 		t.Fatalf("only the zoomed block should be built, saw %d block headers", chips)
 	}
 	h.shot("zoomed")
-	h.tt.Key(ui.Ctrl|ui.Shift, ui.KeyEnter)
+	h.press("zoom")
 	h.tt.Frame()
 	if h.app.Model.Zoomed() != nil {
 		t.Fatal("zoom again to bring the layout back")
@@ -558,23 +553,23 @@ func TestLayout_ZoomShortcutAndHeaderDoubleClick(t *testing.T) {
 func TestShortcuts_SyncAllAndSyncBlock(t *testing.T) {
 	h := newHarness(t, harnessOpts{})
 	h.openAll(3)
-	h.tt.Key(ctrlAlt, ui.KeyS)
+	h.press("sync-block")
 	h.tt.Frame()
 	if h.app.Model.SyncedCount() != 1 {
 		t.Fatal("the block shortcut toggles the focused block")
 	}
-	h.tt.Key(ctrlAlt, allSyncKey)
+	h.press("sync-all")
 	h.tt.Frame()
 	if h.app.Model.SyncedCount() != 3 {
 		t.Fatalf("the all-sync shortcut turns every block on, got %d", h.app.Model.SyncedCount())
 	}
-	h.tt.Key(ctrlAlt, allSyncKey)
+	h.press("sync-all")
 	h.tt.Frame()
 	if h.app.Model.SyncedCount() != 0 {
 		t.Fatal("and off when all were on")
 	}
 	// Through the palette too.
-	h.tt.Key(primary, ui.KeyP)
+	h.press("palette")
 	h.waitText("Commands")
 	h.tt.Type("all blocks")
 	h.tt.Key(0, ui.KeyEnter)
@@ -590,12 +585,12 @@ func TestShortcuts_FocusMovesBySpace(t *testing.T) {
 	bs := h.app.Model.Blocks()
 	h.app.Model.Focus(bs[0])
 	h.tt.Frame()
-	h.tt.Key(ctrlAlt, ui.KeyRight)
+	h.press("focus-right")
 	h.tt.Frame()
 	if h.app.Model.Focused() != bs[1] {
 		t.Fatal("right from web-01 is web-02")
 	}
-	h.tt.Key(ctrlAlt, ui.KeyDown)
+	h.press("focus-down")
 	h.tt.Frame()
 	if h.app.Model.Focused() != bs[3] {
 		t.Fatal("down from web-02 is web-04")
@@ -605,7 +600,7 @@ func TestShortcuts_FocusMovesBySpace(t *testing.T) {
 func TestShortcuts_MonitorOpensAndCloseBlockUsesTheDesignKey(t *testing.T) {
 	h := newHarness(t, harnessOpts{})
 	h.openAll(2)
-	h.tt.Key(ctrlAlt, ui.KeyM)
+	h.press("monitor")
 	h.waitText("Back to terminals")
 	h.tt.Key(0, ui.KeyEscape)
 	h.tt.Frame()
@@ -613,7 +608,7 @@ func TestShortcuts_MonitorOpensAndCloseBlockUsesTheDesignKey(t *testing.T) {
 		t.Fatal("Escape did not close the monitor page")
 	}
 	n := len(h.app.Model.Blocks())
-	h.tt.Key(ctrlAlt, ui.KeyW)
+	h.press("close-block")
 	h.tt.Frame()
 	if len(h.app.Model.Blocks()) != n-1 {
 		t.Fatal("the close-block shortcut did not close the block")
@@ -637,8 +632,9 @@ func TestMenus_BlockHeaderRenameAndMoveTo(t *testing.T) {
 		t.Fatal(err)
 	}
 	h.waitText("Rename block")
-	h.tt.Key(ui.Ctrl, ui.KeyA)
-	h.tt.Type("api")
+	// Ctrl+A on macOS moves to the start of "web-02", so typing would leave
+	// "apiweb-02". Cmd+A replaces the name.
+	h.replaceField("Block name", "api")
 	h.tt.Key(0, ui.KeyEnter)
 	h.tt.Frame()
 	if got := blockNames(h)[1]; got != "api" {

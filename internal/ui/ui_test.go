@@ -17,6 +17,7 @@ import (
 	"github.com/zdva/tako/internal/store"
 	"github.com/zdva/tako/internal/testutil/memssh"
 	"github.com/zdva/tako/internal/transfer"
+	tui "github.com/zdva/tako/internal/ui"
 )
 
 func TestMain(m *testing.M) {
@@ -196,6 +197,33 @@ func (h *harness) typeInto(label, text string) {
 	}
 	h.tt.ClickAt(float32(info.Bounds.X+info.Bounds.W/2), float32(info.Bounds.Y+info.Bounds.H/2))
 	h.tt.Frame()
+	h.tt.Type(text)
+	h.tt.Frame()
+}
+
+// press sends the shortcut of name as this operating system binds it.
+func (h *harness) press(name string) {
+	h.t.Helper()
+	b, ok := tui.ShortcutBindingOf(name)
+	if !ok {
+		h.t.Fatalf("no shortcut %q", name)
+	}
+	h.tt.Key(b.Mods, b.Key)
+}
+
+// selectAll selects the focused field. MyGo uses Cmd (⌘ on macOS, Ctrl
+// elsewhere). On macOS, Ctrl+A moves to the start of the line, so the next
+// typing is inserted into the text already there.
+func (h *harness) selectAll() {
+	h.t.Helper()
+	h.tt.Key(ui.Cmd, ui.KeyA)
+}
+
+// replaceField focuses the named field and replaces its whole value.
+func (h *harness) replaceField(label, text string) {
+	h.t.Helper()
+	h.typeInto(label, "")
+	h.selectAll()
 	h.tt.Type(text)
 	h.tt.Frame()
 }

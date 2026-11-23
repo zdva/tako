@@ -6,6 +6,8 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/egoist/mygo/ui"
+
 	tui "github.com/zdva/tako/internal/ui"
 )
 
@@ -73,6 +75,61 @@ func TestShortcuts_MatchTheDesignTable(t *testing.T) {
 			t.Errorf("%q is %q off macOS: Alt is %v, want %v", s.Group, s.Label, got, second)
 		}
 	}
+}
+
+func TestShortcutBinding_FollowsTheRunningOS(t *testing.T) {
+	t.Cleanup(tui.SetGOOS("darwin"))
+	b, ok := tui.ShortcutBindingOf("palette")
+	if !ok || b.Mods != ui.Super || b.Key != ui.KeyP {
+		t.Fatalf("darwin palette = %+v %v", b, ok)
+	}
+	b, ok = tui.ShortcutBindingOf("sync-all")
+	if !ok || b.Mods != ui.Super|ui.Alt|ui.Shift || b.Key != ui.KeyS {
+		t.Fatalf("darwin sync-all = %+v", b)
+	}
+	b, ok = tui.ShortcutBindingOf("close-block")
+	if !ok || b.Mods != ui.Super|ui.Shift || b.Key != ui.KeyW {
+		t.Fatalf("darwin close-block = %+v", b)
+	}
+	b, ok = tui.ShortcutBindingOf("close-tab")
+	if !ok || b.Mods != ui.Super || b.Key != ui.KeyW {
+		t.Fatalf("darwin close-tab = %+v", b)
+	}
+	b, ok = tui.ShortcutBindingOf("focus-right")
+	if !ok || b.Mods != ui.Super|ui.Alt || b.Key != ui.KeyRight {
+		t.Fatalf("darwin focus-right = %+v", b)
+	}
+	tui.SetGOOS("linux")
+	b, ok = tui.ShortcutBindingOf("palette")
+	if !ok || b.Mods != ui.Ctrl|ui.Shift || b.Key != ui.KeyP {
+		t.Fatalf("linux palette = %+v", b)
+	}
+	b, ok = tui.ShortcutBindingOf("sync-all")
+	if !ok || b.Mods != ui.Ctrl|ui.Shift|ui.Alt || b.Key != ui.KeyA {
+		t.Fatalf("linux sync-all = %+v", b)
+	}
+	b, ok = tui.ShortcutBindingOf("close-block")
+	if !ok || b.Mods != ui.Ctrl|ui.Shift|ui.Alt || b.Key != ui.KeyW {
+		t.Fatalf("linux close-block = %+v", b)
+	}
+	b, ok = tui.ShortcutBindingOf("zoom")
+	if !ok || b.Mods != ui.Ctrl|ui.Shift || b.Key != ui.KeyEnter {
+		t.Fatalf("linux zoom = %+v", b)
+	}
+	if _, ok := tui.ShortcutBindingOf("nope"); ok {
+		t.Fatal("an unknown action has a binding")
+	}
+}
+
+func TestShortcuts_DarwinBindingOpensThePalette(t *testing.T) {
+	t.Cleanup(tui.SetGOOS("darwin"))
+	h := newHarness(t, harnessOpts{})
+	h.press("palette")
+	h.waitText("Commands")
+	h.tt.Key(0, ui.KeyEscape)
+	h.waitGone("Commands")
+	h.press("add-host")
+	h.waitText("Test connection")
 }
 
 // Two shortcuts must not share keys, on either convention.

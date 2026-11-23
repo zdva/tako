@@ -24,11 +24,24 @@ func fillBasics(h *harness, name string) {
 	addr, port := h.addr()
 	h.typeInto("Name", name)
 	h.typeInto("Address", addr)
-	h.typeInto("Port", "")
-	// The port field starts at 22; select all and replace.
-	h.tt.Key(ui.Ctrl, ui.KeyA)
-	h.tt.Type(strconv.Itoa(port))
+	// The port field starts at 22. Select all (Cmd+A; on macOS Ctrl+A only
+	// moves to the start) or the typed port is inserted into "22" and the
+	// form rejects it as "Enter a valid port or interval."
+	h.replaceField("Port", strconv.Itoa(port))
 	h.typeInto("User", "tako")
+}
+
+func TestTextField_CommandKeyReplacesTheWholeValue(t *testing.T) {
+	h := newHarness(t, harnessOpts{})
+	openAddSheet(h)
+	h.typeInto("Name", "web-02")
+	h.selectAll()
+	h.tt.Type("api")
+	h.tt.Frame()
+	got, ok := h.tt.AccessByRole(ui.RoleTextField, "Name")
+	if !ok || got.Value != "api" {
+		t.Fatalf("name = %q, want api (ok=%v)", got.Value, ok)
+	}
 }
 
 func TestAddHost_PasswordTestConnectionAndSave(t *testing.T) {
