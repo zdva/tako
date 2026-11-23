@@ -100,16 +100,15 @@ func (a *App) duplicateTab(b *workspace.Block) {
 	a.focusBlock(b)
 }
 
-// tabMenu is the menu of one tab chip.
-func (a *App) tabMenu(m *ui.Menu, b *workspace.Block, i int) {
+// tabMenu is the menu of one tab chip. It reports whether Close was chosen;
+// the header closes the tab once all its chips are built.
+func (a *App) tabMenu(m *ui.Menu, b *workspace.Block, i int) (closeIt bool) {
 	if m.Item(a.T(kMenuDuplicateTab)).Chosen() {
 		a.d.Model.SetActive(b, i)
 		a.duplicateTab(b)
 	}
 	m.Separator()
-	if m.Item(a.T(kCloseTab)).Chosen() {
-		a.d.Model.CloseTab(b, i)
-	}
+	return m.Item(a.T(kCloseTab)).Chosen()
 }
 
 // tagMenu is the menu of a tag heading in the sidebar.

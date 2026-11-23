@@ -50,6 +50,10 @@ type minimapState struct {
 	menuIdx int
 	offset  ui.Point
 	boxMods ui.Modifiers
+	// sliding is whether the opacity slider was hovered or held in the
+	// last frame: the panel then previews its resting opacity instead of
+	// turning opaque, so moving the slider shows what it does.
+	sliding bool
 }
 
 // minimap draws the floating panel in the main area: one square per block,
@@ -64,9 +68,15 @@ func (a *App) minimap(c *ui.Context, vp layout.Size) {
 		return
 	}
 	mm := &a.mm
-	sqH := min(max(float32(math.Round(float64(mmSquaresW*vp.H/vp.W))), mmMinSquares), mmMaxSquares)
+	// The squares map the blocks' whole layout, which is taller than the
+	// window when the grid scrolls.
+	content := vp
+	if m.Zoomed() == nil {
+		content = m.Content()
+	}
+	sqH := min(max(float32(math.Round(float64(mmSquaresW*content.H/content.W))), mmMinSquares), mmMaxSquares)
 	panelW, panelH := float32(mmWidth), float32(mmPad*2+mmHeaderH+6)+sqH
-	a.mmGeometry(sqH, vp)
+	a.mmGeometry(sqH, content)
 
 	areaSize := layout.Size{W: vp.W + 2*areaPad, H: vp.H + 2*areaPad}
 	corners := layout.CornerOrigins(areaSize, layout.Size{W: panelW, H: panelH}, mmMargin)
@@ -81,12 +91,15 @@ func (a *App) minimap(c *ui.Context, vp layout.Size) {
 	}
 
 	panel := ui.Column(c).Key("minimap").Absolute().Left(0).Top(0).Size(panelW, panelH).ZIndex(10)
-	hot := panel.Hovered() || mm.mode != mmIdle
+	hot := (panel.Hovered() && !mm.sliding) || mm.mode != mmIdle
 	target := float32(prefs.Opacity)
 	if hot {
 		target = 1
 	}
 	op := panel.AnimateTo("opacity", target, ui.Animation{Duration: mmFade, Ease: motionEase, NonMotion: true})
+	if mm.sliding {
+		op = target // follow the thumb without lag
+	}
 	panel.Radius(22).Background(a.tk.Glass3.Alpha(op)).Border(1, a.tk.BorderStrong.Alpha(max(op, 0.6)))
 	a.tk.ShadowMd(panel)
 	panel.Padding(mmPad).Gap(6)
@@ -152,7 +165,8 @@ func (a *App) mmHeader(c *ui.Context, prefs workspace.Minimap) {
 		ui.Text(c, a.T(kMMTitle, m.SyncedCount(), len(m.Blocks()))).FontSize(11).Bold().TextColor(a.tk.Text2).NoWrap()
 		ui.Spacer(c)
 		v := float64(prefs.Opacity)
-		ui.Slider(c, &v, float64(workspace.MinOpacity), 1).Label(a.T(kMMOpacity)).Width(48)
+		s := ui.Slider(c, &v, float64(workspace.MinOpacity), 1).Label(a.T(kMMOpacity)).Width(48)
+		a.mm.sliding = s.Hovered() || s.Pressed() || s.Dragging()
 		if float32(v) != prefs.Opacity {
 			prefs.Opacity = float32(v)
 			m.SetMinimap(prefs)

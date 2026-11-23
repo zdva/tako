@@ -49,7 +49,29 @@ func (a *App) main(c *ui.Context) {
 	area := ui.Box(c).Key("main-area").Grow(1).MinWidth(0).MinHeight(0)
 	zoomed := m.Zoomed()
 	place := m.Placement()
+	// When the window cannot hold the automatic grid at the blocks' minimum
+	// size, the grid is taller than the window and scrolls; the minimap
+	// stays put above it.
+	scrolls := zoomed == nil && m.Scrolls()
+	blocksIn := func(fn func()) { fn() }
+	if scrolls {
+		content := m.Content()
+		blocksIn = func(fn func()) {
+			ui.Scroll(c).Key("main-scroll").Absolute().Left(0).Top(0).Right(0).Bottom(0).Children(func() {
+				ui.Box(c).Key("main-content").Height(content.H + 2*areaPad).Shrink(0).Children(fn)
+			})
+		}
+	}
 	area.Children(func() {
+		blocksIn(a.mainBlocks(c, blocks, place, zoomed, vp, instant, scrolls))
+		a.minimap(c, vp)
+	})
+}
+
+// mainBlocks draws the blocks in their places and, unless the grid scrolls
+// or a block is zoomed, the dividers between them.
+func (a *App) mainBlocks(c *ui.Context, blocks []*workspace.Block, place layout.Placement, zoomed *workspace.Block, vp layout.Size, instant, scrolls bool) func() {
+	return func() {
 		for _, b := range blocks {
 			cell, ok := place.Rect(string(b.ID))
 			if zoomed != nil {
@@ -65,14 +87,13 @@ func (a *App) main(c *ui.Context) {
 			cell.Y += areaPad
 			a.block(c, b, cell, instant)
 		}
-		if zoomed == nil {
+		if zoomed == nil && !scrolls {
 			for _, d := range place.Dividers {
 				a.divider(c, d)
 			}
 			a.guideLine(c)
 		}
-		a.minimap(c, vp)
-	})
+	}
 }
 
 // viewport is the room the blocks share: the window minus the sidebar,

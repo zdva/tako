@@ -80,23 +80,35 @@ func (a *App) blockHeader(c *ui.Context, b *workspace.Block, link session.StateC
 	}
 	head.Children(func() {
 		a.osTile(c, b.OS, b.Kind == workspace.KindLocal, 22)
-		ui.Text(c, b.Name).Bold().FontSize(13).NoWrap()
+		// A long host name is shortened, and the tabs scroll sideways, so
+		// that the new-tab, sync and more buttons always stay in the block.
+		ui.Text(c, b.Name).Bold().FontSize(13).NoWrap().MinWidth(0).Shrink(1).
+			MaxWidth(max(cellW*0.3, 60)).Ellipsis("…")
 		if col, show := a.blockDot(link); show {
 			dot(c, col, 7)
 		}
-		ui.Row(c).Gap(4).Grow(1).MinWidth(0).Children(func() {
+		ui.ScrollHorizontal(c).Key("tabs").Gap(4).Grow(1).Shrink(1).MinWidth(0).AlignItems(ui.Center).Children(func() {
+			// Closing a tab edits b.Tabs, so it waits until every chip of
+			// this frame is built: removing one in the middle of the loop
+			// shifted the slice under it and left a nil tab to draw.
+			closeAt := -1
 			for i, t := range b.Tabs {
-				a.tabChip(c, b, i, t, titleMax)
-			}
-			if a.iconButton(c, iconPlus, a.T(kNewTab), 22).Clicked() {
-				if err := a.d.Model.AddTab(b); err != nil {
-					a.toast(a.T(kErrOpenLocal, err))
+				if a.tabChip(c, b, i, t, titleMax) {
+					closeAt = i
 				}
-				a.focusBlock(b)
+			}
+			if closeAt >= 0 {
+				a.d.Model.CloseTab(b, closeAt)
 			}
 		})
+		if a.iconButton(c, iconPlus, a.T(kNewTab), 22).Shrink(0).Clicked() {
+			if err := a.d.Model.AddTab(b); err != nil {
+				a.toast(a.T(kErrOpenLocal, err))
+			}
+			a.focusBlock(b)
+		}
 		a.syncChip(c, b)
-		more := a.iconButton(c, iconMore, a.T(kMoreActions), 24)
+		more := a.iconButton(c, iconMore, a.T(kMoreActions), 24).Shrink(0)
 		more.PopoverMenuButton(func(m *ui.Menu) { a.blockMenu(m, b) })
 	})
 }
@@ -114,7 +126,9 @@ func (a *App) blockDot(link session.StateChange) (col ui.Color, show bool) {
 	return ui.Color{}, false
 }
 
-func (a *App) tabChip(c *ui.Context, b *workspace.Block, i int, t *workspace.Tab, titleMax float32) {
+// tabChip draws one tab and reports whether its × was clicked; the caller
+// closes it once the header is built.
+func (a *App) tabChip(c *ui.Context, b *workspace.Block, i int, t *workspace.Tab, titleMax float32) (closeIt bool) {
 	active := i == b.Active
 	chip := ui.Row(c).Key(t.ID).Height(24).Padding(0, 4, 0, 10).Gap(4).Radius(12).Cursor(ui.CursorPointer).
 		Focusable().Role(ui.RoleTab).AccessSelected(active).Label(t.Title())
@@ -128,14 +142,19 @@ func (a *App) tabChip(c *ui.Context, b *workspace.Block, i int, t *workspace.Tab
 		}
 		ui.Text(c, t.Title()).FontSize(11.5).Bold().TextColor(col).SingleLine().MaxWidth(titleMax).Ellipsis("…")
 		if a.iconButton(c, iconClose, a.T(kCloseTab), 16).Clicked() {
-			a.d.Model.CloseTab(b, i)
+			closeIt = true
 		}
 	})
-	if chip.Clicked() {
+	if !closeIt && chip.Clicked() {
 		a.d.Model.SetActive(b, i)
 		a.focusBlock(b)
 	}
-	chip.ContextMenu(func(m *ui.Menu) { a.tabMenu(m, b, i) })
+	chip.ContextMenu(func(m *ui.Menu) {
+		if a.tabMenu(m, b, i) {
+			closeIt = true
+		}
+	})
+	return closeIt
 }
 
 // syncChip is the one small control that shows and toggles a block's sync:
@@ -150,7 +169,7 @@ func (a *App) syncChip(c *ui.Context, b *workspace.Block) {
 	case b.Synced:
 		fg, bg, border = a.tk.Accent, a.tk.AccentSoft, a.tk.SyncBorder
 	}
-	chip := ui.Row(c).Key("sync").Height(24).Padding(0, 9).Gap(4).Radius(8).Background(bg).Border(1, border).
+	chip := ui.Row(c).Key("sync").Height(24).Shrink(0).Padding(0, 9).Gap(4).Radius(8).Background(bg).Border(1, border).
 		Cursor(ui.CursorPointer).Focusable().Role(ui.RoleButton).Label(a.T(kToggleSync))
 	if paused {
 		chip.BorderStyle(ui.BorderDashed)
