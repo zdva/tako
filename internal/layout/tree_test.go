@@ -385,3 +385,34 @@ func centerAlong(p Placement, d Divider) float32 {
 	}
 	return 0
 }
+
+func TestAutoFitDropsColumnsAndScrolls(t *testing.T) {
+	t.Parallel()
+	const gap = 12
+	minCell := Size{W: 240, H: 168}
+	// Wide enough: the same as Auto.
+	tr, content := AutoFit(ids(6), vp, minCell, gap)
+	if content != vp || len(tr.Place(content, gap).Cells) != 6 {
+		t.Fatalf("wide viewport changed: content %v", content)
+	}
+	if got := tr.Place(content, gap).Cells[0].Rect.W; !near(got, (vp.W-2*gap)/3) {
+		t.Fatalf("cell width %v, want three columns", got)
+	}
+	// Narrow: one column that keeps the minimum width, taller than the
+	// viewport.
+	narrow := Size{W: 447, H: 384}
+	tr, content = AutoFit(ids(6), narrow, minCell, gap)
+	cells := tr.Place(content, gap).Cells
+	if content.W != narrow.W || content.H <= narrow.H {
+		t.Fatalf("content %v should be taller than %v", content, narrow)
+	}
+	for _, c := range cells {
+		if c.Rect.W < minCell.W || c.Rect.H < minCell.H-0.01 {
+			t.Fatalf("cell %v under the minimum %v", c.Rect, minCell)
+		}
+	}
+	// No minimum is Auto.
+	if tr, content = AutoFit(ids(5), vp, Size{}, gap); content != vp || len(tr.IDs()) != 5 {
+		t.Fatal("a zero minimum should be the plain automatic grid")
+	}
+}

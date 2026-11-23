@@ -64,9 +64,15 @@ func (a *App) minimap(c *ui.Context, vp layout.Size) {
 		return
 	}
 	mm := &a.mm
-	sqH := min(max(float32(math.Round(float64(mmSquaresW*vp.H/vp.W))), mmMinSquares), mmMaxSquares)
+	// The squares map the blocks' whole layout, which is taller than the
+	// window when the grid scrolls.
+	content := vp
+	if m.Zoomed() == nil {
+		content = m.Content()
+	}
+	sqH := min(max(float32(math.Round(float64(mmSquaresW*content.H/content.W))), mmMinSquares), mmMaxSquares)
 	panelW, panelH := float32(mmWidth), float32(mmPad*2+mmHeaderH+6)+sqH
-	a.mmGeometry(sqH, vp)
+	a.mmGeometry(sqH, content)
 
 	areaSize := layout.Size{W: vp.W + 2*areaPad, H: vp.H + 2*areaPad}
 	corners := layout.CornerOrigins(areaSize, layout.Size{W: panelW, H: panelH}, mmMargin)

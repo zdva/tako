@@ -43,11 +43,31 @@ func (m *Model) Manual() bool { return m.manual }
 // Tree returns the layout of the blocks: the manual tree, or the automatic
 // grid of the blocks in order.
 func (m *Model) Tree() layout.Tree {
-	if m.manual {
-		return m.tree
-	}
-	return layout.Auto(m.blockIDs(), m.view.Size, m.view.Gap)
+	t, _ := m.treeAndContent()
+	return t
 }
+
+// treeAndContent returns the layout and the size it is placed in: the
+// viewport, or for an automatic grid whose blocks do not fit at their
+// minimum size, a taller content area the view scrolls.
+func (m *Model) treeAndContent() (layout.Tree, layout.Size) {
+	if m.manual {
+		return m.tree, m.view.Size
+	}
+	return layout.AutoFit(m.blockIDs(), m.view.Size, m.view.Min, m.view.Gap)
+}
+
+// Content is the size the blocks are laid out in: taller than the viewport
+// only when the automatic grid scrolls (see [Model.Scrolls]).
+func (m *Model) Content() layout.Size {
+	_, c := m.treeAndContent()
+	return c
+}
+
+// Scrolls reports whether the blocks are taller than the viewport, so the
+// view scrolls them. Dividers are not dragged then: the splits of a grid
+// that does not fit cannot be resized within the window.
+func (m *Model) Scrolls() bool { return m.Content().H > m.view.Size.H+0.5 }
 
 func (m *Model) blockIDs() []string {
 	ids := make([]string, len(m.blocks))
@@ -58,12 +78,18 @@ func (m *Model) blockIDs() []string {
 }
 
 // Placement returns where every block is in the current viewport.
-func (m *Model) Placement() layout.Placement { return m.Tree().Place(m.view.Size, m.view.Gap) }
+func (m *Model) Placement() layout.Placement {
+	t, content := m.treeAndContent()
+	return t.Place(content, m.view.Gap)
+}
 
 // DragDivider moves the divider at path to pos (a coordinate in the viewport)
 // and returns the guide line to draw. The first drag turns the automatic grid
 // into a manual layout. snap is false while ⌥ is held.
 func (m *Model) DragDivider(path string, pos float32, snap bool) layout.Guide {
+	if m.Scrolls() {
+		return layout.Guide{}
+	}
 	next, guide := m.Tree().DragDivider(path, pos, layout.DragOptions{
 		Viewport: m.view.Size, Gap: m.view.Gap, Min: m.view.Min, Snap: snap, Threshold: snapThreshold,
 	})

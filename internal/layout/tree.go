@@ -550,11 +550,29 @@ func (t Tree) Reconcile(ids []string, viewport Size, gap float32) Tree {
 // every cell the size [Compute] would give it, so switching from the grid to
 // a manual layout moves nothing.
 func Auto(ids []string, viewport Size, gap float32) Tree {
+	cols, _ := Dims(len(ids))
+	return autoCols(ids, cols, viewport, gap)
+}
+
+// AutoFit is [Auto] for blocks that must stay at least minCell: like
+// [Compute], it drops the columns that would make them narrower than
+// minCell.W, and when the rows do not fit at minCell.H it lays them out in
+// a content area taller than the viewport, which the caller scrolls. It
+// returns the tree and the size to place it in. A zero minCell is Auto.
+func AutoFit(ids []string, viewport, minCell Size, gap float32) (Tree, Size) {
+	if len(ids) == 0 {
+		return Tree{}, viewport
+	}
+	g := Compute(len(ids), viewport, minCell, gap)
+	content := Size{W: viewport.W, H: max(viewport.H, g.Content.H)}
+	return autoCols(ids, g.Cols, content, gap), content
+}
+
+func autoCols(ids []string, cols int, viewport Size, gap float32) Tree {
 	n := len(ids)
 	if n == 0 {
 		return Tree{}
 	}
-	cols, _ := Dims(n)
 	var rows []*Node
 	for start := 0; start < n; start += cols {
 		end := min(start+cols, n)

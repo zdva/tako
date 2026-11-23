@@ -92,3 +92,7 @@ func (a *App) PaneFolders() (src, dst string) { return a.xfer.src.path, a.xfer.d
 func (a *App) OpenSettings(page string) {
 	a.settings.open, a.settings.page = true, page
 }
+
+// MinBlockWidth is the narrowest a block may get without the compact
+// setting.
+const MinBlockWidth = 240

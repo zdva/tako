@@ -7,6 +7,9 @@ import (
 	"time"
 
 	"github.com/egoist/mygo/ui"
+
+	"github.com/zdva/tako/internal/settings"
+	tui "github.com/zdva/tako/internal/ui"
 )
 
 // closeTabButtons returns the tabs on screen, left to right. Each tab's ×
@@ -158,5 +161,98 @@ func TestTabs_CloseFromTheTabMenu(t *testing.T) {
 	h.tt.Frame()
 	if len(b.Tabs) != 2 {
 		t.Fatalf("tabs = %d, want 2", len(b.Tabs))
+	}
+}
+
+// TestLayout_NarrowWindowKeepsBlocksUsable opens six blocks in the smallest
+// window Tako allows (720×480): the automatic grid must drop columns rather
+// than squeeze blocks under their minimum width, and every block's header
+// controls must stay inside the block.
+func TestLayout_NarrowWindowKeepsBlocksUsable(t *testing.T) {
+	h := newHarness(t, harnessOpts{})
+	h.openAll(6)
+	h.tt.SetSize(720, 480)
+	h.tt.Frame()
+	h.tt.Advance(500 * time.Millisecond)
+	h.tt.Frame()
+	if !h.app.Model.Scrolls() {
+		t.Error("six blocks at their minimum size cannot fit 720×480: the grid should scroll")
+	}
+	place := h.app.Model.Placement()
+	if len(place.Cells) != 6 {
+		t.Fatalf("%d cells", len(place.Cells))
+	}
+	for _, c := range place.Cells {
+		if c.Rect.W < tui.MinBlockWidth-0.5 {
+			t.Errorf("block %s is %.0f wide, under the minimum %d", c.ID, c.Rect.W, tui.MinBlockWidth)
+		}
+	}
+	// Every "More actions" button sits inside its block's cell.
+	var mores []ui.AccessInfo
+	for _, info := range h.tt.AccessAll() {
+		if info.Name == "More actions" {
+			mores = append(mores, info)
+		}
+	}
+	if len(mores) != 6 {
+		t.Fatalf("%d block headers, want 6", len(mores))
+	}
+	areaRight := float32(720 - tui.AreaPad)
+	for _, m := range mores {
+		if r := float32(m.Bounds.X + m.Bounds.W); r > areaRight+0.5 {
+			t.Errorf("a header's More button ends at %.0f, past the main area (%.0f)", r, areaRight)
+		}
+	}
+	// A split of a grid that does not fit cannot be resized in the window.
+	if d := h.app.UI.Dividers(); len(d) > 0 {
+		h.app.Model.DragDivider(d[0].Path, d[0].Rect.Y+40, true)
+		if h.app.Model.Manual() {
+			t.Error("dragging a divider while the grid scrolls should change nothing")
+		}
+	}
+
+	// The compact setting lets blocks get narrower, so two columns fit.
+	if err := h.app.Settings.Update(func(v *settings.Values) { v.CompactBlocks = true }); err != nil {
+		t.Fatal(err)
+	}
+	h.tt.Frame()
+	h.tt.Frame()
+	xs := map[float32]bool{}
+	for _, c := range h.app.Model.Placement().Cells {
+		xs[c.Rect.X] = true
+	}
+	if len(xs) != 2 {
+		t.Errorf("compact blocks: %d columns, want 2", len(xs))
+	}
+}
+
+// TestLayout_LongNameAndManyTabsKeepTheHeaderButtons gives a narrow block a
+// long name and six tabs: the new-tab, sync and more buttons must stay inside
+// the block.
+func TestLayout_LongNameAndManyTabsKeepTheHeaderButtons(t *testing.T) {
+	h := newHarness(t, harnessOpts{})
+	h.openAll(1)
+	b := h.app.Model.Blocks()[0]
+	h.app.Model.Rename(b, "production-database-primary-replica-eu-west-1")
+	for range 5 {
+		if err := h.app.Model.AddTab(b); err != nil {
+			t.Fatal(err)
+		}
+	}
+	h.tt.SetSize(720, 480)
+	h.tt.Frame()
+	h.tt.Advance(500 * time.Millisecond)
+	h.tt.Frame()
+	cell, _ := h.app.Model.Placement().Rect(string(b.ID))
+	left := float32(tui.SidebarWidth+1+tui.AreaPad) + cell.X
+	right := left + cell.W
+	for _, name := range []string{"New tab", "Toggle input sync for this block", "More actions"} {
+		info, ok := h.tt.Access(name)
+		if !ok {
+			t.Fatalf("no %q", name)
+		}
+		if l, r := float32(info.Bounds.X), float32(info.Bounds.X+info.Bounds.W); l < left || r > right+0.5 {
+			t.Errorf("%q spans %.0f–%.0f, outside the block %.0f–%.0f", name, l, r, left, right)
+		}
 	}
 }
