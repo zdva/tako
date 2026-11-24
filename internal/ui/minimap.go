@@ -165,7 +165,7 @@ func (a *App) mmHeader(c *ui.Context, prefs workspace.Minimap) {
 		ui.Text(c, a.T(kMMTitle, m.SyncedCount(), len(m.Blocks()))).FontSize(11).Bold().TextColor(a.tk.Text2).NoWrap()
 		ui.Spacer(c)
 		v := float64(prefs.Opacity)
-		s := ui.Slider(c, &v, float64(workspace.MinOpacity), 1).Label(a.T(kMMOpacity)).Width(48)
+		s := ui.Slider(c.Key("minimap-opacity"), &v, float64(workspace.MinOpacity), 1).Label(a.T(kMMOpacity)).Width(48)
 		a.mm.sliding = s.Hovered() || s.Pressed() || s.Dragging()
 		if float32(v) != prefs.Opacity {
 			prefs.Opacity = float32(v)

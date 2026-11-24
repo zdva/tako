@@ -61,6 +61,21 @@ func TestA11y_TabVisitsTheMainControlsAndShiftTabComesBack(t *testing.T) {
 	}
 }
 
+func TestSettings_CompactBlocksStartsOff(t *testing.T) {
+	h := newHarness(t, harnessOpts{})
+	if h.prefs().CompactBlocks {
+		t.Fatal("compact blocks is on before settings is opened")
+	}
+	h.openSettings("general")
+	sw, ok := h.tt.AccessByRole(ui.RoleSwitch, "Compact blocks")
+	if !ok {
+		t.Fatal("no compact-blocks switch")
+	}
+	if sw.Checked {
+		t.Fatal("compact blocks reads as on; the default is off")
+	}
+}
+
 func TestA11y_SettingsKeepsKeyboardFocusInsideTheWindow(t *testing.T) {
 	h := newHarness(t, harnessOpts{})
 	h.openSettings("")

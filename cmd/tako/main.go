@@ -94,8 +94,9 @@ func run(exitAfter time.Duration) error {
 	started := time.Now()
 	mygo.App.WhenReady(func() {
 		slog.Info("runtime ready", "since_start", time.Since(started))
+		w, h := windowSize()
 		win := mygo.NewWindow(mygo.WindowOptions{
-			Title: "Tako", Width: defaultWidth, Height: defaultHeight,
+			Title: "Tako", Width: w, Height: h,
 			MinWidth: minWidth, MinHeight: minHeight,
 			// The page owns the whole window: the brand row and the toolbar
 			// are its title bar, the window controls sit over it.

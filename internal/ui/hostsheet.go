@@ -419,17 +419,21 @@ func (a *App) sheetBasics(c *ui.Context) {
 	a.section(c, a.T(kSecBasics), "")
 	ui.Row(c).Gap(12).AlignItems(ui.Start).Children(func() {
 		a.field(c, a.T(kFName), func() {
-			ui.TextInput(c, &s.name).Label(a.T(kFName)).AutoFocus().Placeholder("web-01")
+			ui.TextInput(c.Key("field-name"), &s.name).Label(a.T(kFName)).AutoFocus().Placeholder("web-01")
 		})
 		a.field(c, a.T(kFTags), func() { a.tagEditor(c) })
 	})
 	ui.Row(c).Gap(12).AlignItems(ui.Start).Children(func() {
-		a.field(c, a.T(kFAddr), func() { ui.TextInput(c, &s.addr).Label(a.T(kFAddr)).Placeholder("10.0.1.13") })
+		a.field(c, a.T(kFAddr), func() {
+			ui.TextInput(c.Key("field-addr"), &s.addr).Label(a.T(kFAddr)).Placeholder("10.0.1.13")
+		})
 		ui.Column(c).Width(90).Gap(5).Children(func() {
 			ui.Text(c, a.T(kFPort)).FontSize(12).Bold().TextColor(a.tk.Text2)
-			ui.TextInput(c, &s.port).Label(a.T(kFPort))
+			ui.TextInput(c.Key("field-port"), &s.port).Label(a.T(kFPort))
 		})
-		a.field(c, a.T(kFUser), func() { ui.TextInput(c, &s.user).Label(a.T(kFUser)).Placeholder("ubuntu") })
+		a.field(c, a.T(kFUser), func() {
+			ui.TextInput(c.Key("field-user"), &s.user).Label(a.T(kFUser)).Placeholder("ubuntu")
+		})
 	})
 	a.field(c, a.T(kFOS), func() {
 		ui.Segmented(c, &s.os, "Linux", "macOS", "Windows").Label(a.T(kFOS))
@@ -461,12 +465,12 @@ func (a *App) tagEditor(c *ui.Context) {
 func (a *App) sheetAuth(c *ui.Context) {
 	s := &a.sheet
 	a.section(c, a.T(kSecAuth), a.T(kSecAuthHint))
-	ui.Segmented(c, &s.auth, a.T(kAuthPassword), a.T(kAuthKey), a.T(kAuthAgent), a.T(kAuthKI)).Label(a.T(kSecAuth))
+	ui.Segmented(c.Key("field-auth"), &s.auth, a.T(kAuthPassword), a.T(kAuthKey), a.T(kAuthAgent), a.T(kAuthKI)).Label(a.T(kSecAuth))
 	switch s.auth {
 	case authKey:
 		a.field(c, a.T(kFKeyFile), func() {
 			ui.Row(c).Gap(8).Children(func() {
-				ui.TextInput(c, &s.keyPath).Label(a.T(kFKeyFile)).Placeholder("~/.ssh/id_ed25519").Grow(1)
+				ui.TextInput(c.Key("field-key"), &s.keyPath).Label(a.T(kFKeyFile)).Placeholder("~/.ssh/id_ed25519").Grow(1)
 				if a.d.PickFile != nil && ui.Button(c, a.T(kChoose)).Clicked() {
 					go a.pickKey()
 				}
@@ -618,7 +622,7 @@ func (a *App) sheetFooter(c *ui.Context) {
 			s.saveErr = ""
 			a.runTest()
 		}
-		save := ui.PrimaryButton(c, a.T(kSaveConnect))
+		save := ui.PrimaryButton(c.Key("host-save"), a.T(kSaveConnect))
 		if save.Clicked() {
 			s.saveErr = ""
 			if h, ok := a.saveSheet(); ok {

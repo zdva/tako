@@ -200,7 +200,7 @@ func (a *App) renameView(c *ui.Context) {
 		a.tk.ShadowLg(rename)
 		rename.Children(func() {
 			ui.Text(c, a.T(kRenameTitle)).Bold().FontSize(18)
-			in := ui.TextInput(c, &r.text).Placeholder(a.T(kRenameHint)).Label(a.T(kRenameHint)).AutoFocus()
+			in := ui.TextInput(c.Key("rename-name"), &r.text).Placeholder(a.T(kRenameHint)).Label(a.T(kRenameHint)).AutoFocus()
 			done := func() {
 				a.d.Model.Rename(r.b, r.text)
 				*r = renameState{}
@@ -213,7 +213,7 @@ func (a *App) renameView(c *ui.Context) {
 				if ui.Button(c, a.T(kCancel)).Clicked() {
 					*r = renameState{}
 				}
-				if ui.PrimaryButton(c, a.T(kDone)).Clicked() {
+				if ui.PrimaryButton(c.Key("rename-done"), a.T(kDone)).Clicked() {
 					done()
 				}
 			})

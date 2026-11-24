@@ -55,7 +55,7 @@ func (a *App) brandRow(c *ui.Context) {
 func (a *App) filterRow(c *ui.Context) {
 	ui.Row(c).Padding(4, 12, 10).Gap(8).Children(func() {
 		ui.SearchField(c, &a.filter).Placeholder(a.T(kSidebarFilter)).Label(a.T(kSidebarFilter)).Grow(1)
-		add := ui.PrimaryButton(c, "").Label(a.T(kAddHost)).Tooltip(a.T(kAddHost)).Size(34, 34).Padding(0)
+		add := ui.PrimaryButton(c.Key("add-host"), "").Label(a.T(kAddHost)).Tooltip(a.T(kAddHost)).Size(34, 34).Padding(0)
 		add.Children(func() { ui.Icon(c, iconPlus).FontSize(18).TextColor(ui.RGB(255, 255, 255)) })
 		if add.Clicked() {
 			a.openAddHost()
@@ -204,19 +204,19 @@ func sshCommand(h model.Host) string {
 
 func (a *App) sidebarFooter(c *ui.Context) {
 	ui.Column(c).Padding(8, 10, 10).Gap(2).Children(func() {
-		a.footerButton(c, iconTerminal, a.T(kNewLocalShort), hint(actNewTab), func() { a.openLocal() })
-		a.footerButton(c, iconSettings, a.T(kSettings), hint(actSettings), func() { a.settings.open = true })
+		a.footerButton(c, "local", iconTerminal, a.T(kNewLocalShort), hint(actNewTab), func() { a.openLocal() })
+		a.footerButton(c, "settings", iconSettings, a.T(kSettings), hint(actSettings), func() { a.settings.open = true })
 	})
 }
 
-func (a *App) footerButton(c *ui.Context, ic *ui.SVG, label, key string, fn func()) {
-	row := ui.Row(c).Key("footer:"+label).Height(34).Padding(0, 8).Gap(10).Radius(8).Cursor(ui.CursorPointer).
+func (a *App) footerButton(c *ui.Context, id string, ic *ui.SVG, label, shortcut string, fn func()) {
+	row := ui.Row(c).Key("footer:"+id).Height(34).Padding(0, 8).Gap(10).Radius(8).Cursor(ui.CursorPointer).
 		Focusable().Role(ui.RoleButton).Label(label)
 	row.Children(func() {
 		ui.Icon(c, ic).FontSize(15).TextColor(a.tk.Text2)
 		ui.Text(c, label).FontSize(12.5).Grow(1).MinWidth(0).NoWrap()
 		ui.Box(c).Padding(1, 6).Shrink(0).Radius(5).Background(a.tk.Surface3).Children(func() {
-			ui.Text(c, key).FontSize(10.5).TextColor(a.tk.Text2).NoWrap()
+			ui.Text(c, shortcut).FontSize(10.5).TextColor(a.tk.Text2).NoWrap()
 		})
 	})
 	if row.Clicked() {

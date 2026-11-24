@@ -9,6 +9,7 @@ their own targets.
 | Coverage gate | `make cover` | Core packages (`model`, `hostlib`, `session`, `layout`, `inputbus`, `workspace`, `transport/ssh`, `store`, `secrets`, `importer/sshconfig`, `settings`, `monitor`, `transfer`) ≥ 80% in total | — |
 | Integration | `make integration` (`-tags integration`) | Auth × jump × proxy matrix, `vim`/`top`, MaxSessions, host-key change, outage and reconnect; the Linux collector against the system tools and its cost on the remote; SFTP relay throughput and memory, resume after a cut link (files and directories), same-name policies, direct mode and its clean-up — against a **real OpenSSH** | Linux; `scripts/fetch-sshd.sh` or `/usr/sbin/sshd` |
 | End to end | `make e2e` (`-tags e2e`) | The packaged app in a real window under Xvfb: nine idle blocks (CPU, memory), cold start, `kill -9` recovery; nine synced blocks flooding (frame rate ≥ 18/s, read from `MYGO_FRAME_STATS`); a dragged divider surviving `kill -9`; minimap translucent at rest, opaque on hover; nine hosts monitored at the default interval (idle CPU, no redraws, bars present) | Linux, `xvfb-run`/`DISPLAY`, `xdotool`, Python PIL (screenshots only) |
+| Window automation | `make e2e-auto` (`-tags e2e`, `./test/automation`) | The e2e-tagged app in a real window, driven by MyGo's automation socket: no credential-store prompt, narrow layout, close a tab, compact blocks left off, minimap opacity, input sync across local shells and a loopback SSH server | A display. macOS and Windows natively; Linux via `DISPLAY` or `xvfb-run -a` |
 
 Also: `make fuzz` (PPK parser, ssh-config parser), `make vuln` (govulncheck),
 `make lint`.
@@ -100,10 +101,97 @@ e2e screenshots and the frame-rate check use a display of your own:
 `MYGO_FRAME_STATS=all`, which makes the toolkit log one line per frame to
 Tako's log file.
 
+## Real-window automation (macOS, Windows, Linux)
+
+`make e2e` stays the Linux Xvfb suite (xdotool, idle CPU, cold start). It
+does not drive a Mac or a Windows desktop. `make e2e-auto` does: it builds
+Tako with MyGo's automation plugin and drives the real window over a Unix
+socket. The same test runs on darwin, windows and linux. On Linux it needs
+a display (`xvfb-run -a make e2e-auto`).
+
+The plugin is linked only with `-tags e2e` (`cmd/tako/automation_e2e.go`).
+A normal `go build` does not include it. `mygo build` (what `make build-all`
+and the installers use) also passes `-tags mygo_noinspector`, which drops
+the plugin even if the file is imported, so do not use `mygo build` for
+this. The process listens only when `MYGO_AUTOMATION` is set.
+
+What `make e2e-auto` checks, through element keys and bounds (captures are
+written to `$TMPDIR/tako-e2e-fail` only when a test fails):
+
+- Launch reaches a window without a system credential-store dialog. Logs
+  must not mention a keychain or Secret Service. Data stays under
+  `TAKO_CONFIG_DIR` / `TAKO_STATE_DIR`.
+- Compact blocks stays off. The test does not turn it on.
+- At 720×480, block headers stay inside the window, with gaps, and do not
+  overlap. The size comes from `TAKO_WINDOW`, which only the e2e build reads.
+- Closing a tab from its × leaves the process answering.
+- The minimap opacity slider moves its value, the panel pixel changes while
+  the thumb is held, and `session.json` stores the new opacity.
+- Input sync: local↔local and local↔a loopback SSH server the test starts
+  (`memssh`, public key minted in a temp directory, no password and no real
+  host). A block left out of the group does not receive the line. An
+  inactive tab does not either.
+
+### On a Mac, after pulling
+
+From the repository:
+
+```sh
+go build -tags e2e -o tako ./cmd/tako
+go install github.com/egoist/mygo/plugins/automation/cmd/mygo-automation
+```
+
+`go install` from this directory builds the `mygo-automation` that matches
+`go.mod`. Run the suite (it builds the same binary itself when `TAKO_BIN`
+is unset, starts Tako, and drives it):
+
+```sh
+make e2e-auto
+```
+
+To drive a window yourself, point the socket at a short path only you can
+use (macOS limits a Unix socket path to about 100 bytes; `/tmp/tako.sock`
+is a safe choice) and give the e2e build its own directories so it does
+not open your real library:
+
+```sh
+export MYGO_AUTOMATION=/tmp/tako.sock
+export TAKO_CONFIG_DIR="$(mktemp -d)"
+export TAKO_STATE_DIR="$(mktemp -d)"
+export TAKO_WINDOW=1100x720
+./tako
+```
+
+On Windows the same variables work; put the socket under `%TEMP%`.
+
+In another terminal, `mygo-automation skills` prints the command guide for
+the version you installed. Then:
+
+```sh
+mygo-automation open --socket "$MYGO_AUTOMATION"
+mygo-automation snapshot -i
+mygo-automation press key=footer:local --settle
+mygo-automation screenshot "$HOME/Library/Caches/tako.png"
+mygo-automation close
+```
+
+`close` ends the client session and leaves Tako running. Stable keys the
+suite uses, so it does not depend on the language: `footer:local`,
+`footer:settings`, `settings-compact`, `settings-done`, `minimap-opacity`,
+`tab-new`, `block-more`, `sync`, `pal:rename`, `rename-name`, `rename-done`,
+`add-host`, `field-name`, `field-addr`, `field-port`, `field-user`,
+`field-auth`, `field-key`, `host-save`. `act` by key needs the key to be
+unique in the window; repeated ones (`sync`, `tab-new`) are chosen by id
+from `snapshot`.
+
+Windows is the same `make e2e-auto`. The socket path can be under
+`%TEMP%`. `TAKO_WINDOW` is `WxH` in DIPs, at least 720×480.
+
 ## Manual and not covered
 
-- GPU rendering and real macOS/Windows runs cannot be exercised on a CI box
-  (M1 criterion 9 is **not done**; see the changelog).
+- GPU rendering and a CI box still cannot open a macOS or Windows window
+  (M1 criterion 9 is **not done**; see the changelog). `make e2e-auto` is
+  the check to run on those machines; it needs a display of their own.
 - The e2e RSS figure is measured under Mesa's software renderer in Xvfb; a
   real GPU driver changes it.
 - The 18 frames/s budget is measured on the software renderer; on a machine
