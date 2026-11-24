@@ -1,242 +1,86 @@
-# Tako (章鱼终端)
+# Tako（章鱼终端）
 
-[English](README.md) · [简体中文](README.zh-CN.md)
+[简体中文](README.md) · [English](README.en.md)
 
 [![License: GPL-3.0-or-later](https://img.shields.io/badge/license-GPL--3.0--or--later-blue.svg)](LICENSE)
 [![CI](https://github.com/zdva/tako/actions/workflows/ci.yml/badge.svg)](https://github.com/zdva/tako/actions/workflows/ci.yml)
 [![Go 1.27](https://img.shields.io/badge/go-1.27-00ADD8.svg)](go.mod)
 
-Tako is a desktop terminal for a fleet of servers. It keeps many SSH (and local)
-terminals on one screen as a grid of *blocks*, reconnects the ones whose network
-dropped, and remembers what you had open. It is written in Go with the
-[MyGo](https://github.com/egoist/mygo) native UI toolkit, for macOS, Windows and Linux.
+Tako 是给一群服务器用的桌面 SSH 终端。同一窗口里并排打开多台机器（每一格叫一个「块」），断线后保留画面并重连，退出后再打开会回到上次的块和标签页。界面用 [MyGo](https://github.com/egoist/mygo)，语言有简体中文和 English。
 
-> **Status: v0.4.0, the first release candidate.** Everything in the plan is
-> built and tested on Linux; it has **not** yet been run on real macOS or Windows
-> machines, nothing is published and the installers are unsigned. See
-> [docs/RELEASE.md](docs/RELEASE.md) for the checklist that needs a person, and
-> [docs/SPEC.md](docs/SPEC.md) and [docs/TECH-PLAN.md](docs/TECH-PLAN.md) for the plan.
+## 能做什么
 
-![Main window, dark](docs/screenshots/m4/main-dark-zh.png)
+- **多台机器同屏**。块里可以再开标签页，也可以开本地终端。拖分隔线调整比例，会吸附到 ½、⅓、⅔。
+- **同步输入**。若干块打开同步后，在一块里打的字会发到其他同步块。掉线的块会暂停，断线期间的输入不会在恢复后补发。
+- **小地图**。看哪些块在同步，可以点选、框选，也可以拖动重排。
+- **SSH**。密码、公钥（OpenSSH、PEM、PuTTY `.ppk`）、SSH Agent、键盘交互；跳板链；SOCKS5 与 HTTP 代理。
+- **主机密钥**。使用 Tako 自己的 `known_hosts`。密钥变了就拒绝连接，并显示新旧指纹。
+- **监控**。不在服务器上安装程序。块底部显示 CPU、内存、磁盘；主机上有 `nvidia-smi` 或 `rocm-smi` 时也显示 GPU。点底部进入监控页。
+- **传文件**。上传、下载，以及两台服务器之间互传（经本机中转，或在设置里允许后用 `scp` / `rsync` 直连）。有队列，可以暂停和续传。
+- **主机库**。从 `~/.ssh/config`、Xshell、SecureCRT、Termius 导入。导出文件不含密码。
+- **设置立即生效**。语言、浅色/深色、终端配色（含导入 iTerm2 `.itermcolors`）、字体、保活、监控和传输。
 
-| Light, Solarized Light terminals | Dark, Dracula terminals | Settings, Terminal page |
-|---|---|---|
-| ![light](docs/screenshots/m4/main-light-solarized-en.png) | ![dracula](docs/screenshots/m4/main-dark-dracula-en.png) | ![settings](docs/screenshots/m4/settings-terminal-dark-en.png) |
+编码只有 UTF-8。
 
-More in [docs/screenshots/m4](docs/screenshots/m4) (earlier milestones:
-[m3](docs/screenshots/m3), [m2](docs/screenshots/m2), [m1](docs/screenshots/m1)).
+## 现状
 
-## What works in M4
+源码里的版本号是 **0.4.0**。仓库有标签 [`v0.4.0`](https://github.com/zdva/tako/tree/v0.4.0)，**没有 GitHub Release，也没有可下载的安装包**。请从下面的源码构建。
 
-- **Settings window** (`Ctrl+Shift+,`): language, appearance, terminal color
-  scheme, font, keepalive, monitoring, transfers, data and About. Everything
-  applies at once, with no restart. See [ADR 0017](docs/adr/0017-settings-window-and-schemes.md).
-- **Dark mode and color schemes**: the dark theme follows the design mockup;
-  eight schemes (Tako, Solarized Dark / Light, Dracula, Nord, One Dark, Gruvbox
-  Dark, Tokyo Night) and import of iTerm2 `.itermcolors`. Open terminals recolor
-  live.
-- **English and 简体中文**, complete. A pseudo-locale test fails on any string
-  that bypasses the tables or does not fit; numbers, dates and the clock follow the
-  system region. See [ADR 0019](docs/adr/0019-i18n-pseudo-and-regional-formats.md).
-- **Import and export**: hosts from Xshell, SecureCRT, Termius and `~/.ssh/config`;
-  export without any secret and import it on another computer. Saved passwords are
-  never imported. See [docs/IMPORT.md](docs/IMPORT.md) and
-  [ADR 0018](docs/adr/0018-host-importers.md).
-  **The parsers were written from public documentation, not from real exports.**
-- **Accessibility and input methods**: roles, names and Tab stops everywhere,
-  keyboard activation, IME composition in fields and terminals.
-- **Crash reports and "Copy diagnostics"** (scrubbed, nothing is uploaded),
-  [ADR 0020](docs/adr/0020-crash-reports-and-diagnostics.md).
-- **Packaging and updates**: tar.gz + install script, `.deb`, `.rpm`, PKGBUILD,
-  dmg and NSIS installers built by CI, signed (ed25519) auto-update from GitHub
-  Releases; no Apple or Windows certificates,
-  [ADR 0021](docs/adr/0021-unsigned-releases-and-signed-updates.md),
-  [docs/RELEASE.md](docs/RELEASE.md).
-- Not supported on purpose: encodings other than UTF-8 ([ADR 0005](docs/adr/0005-utf8-only.md)).
+`main` 比标签 `v0.4.0` 新。已经合入、尚未单独发布的变化写在 [CHANGELOG.md](CHANGELOG.md) 的 Unreleased，其中包括密码改存 Tako 自己的加密文件。
 
-## What works in M3
+构建目标包含 macOS、Windows 和 Linux。打包配置里的 macOS 最低系统版本是 13.0。发布验收记录来自 Linux；macOS 与 Windows 还没有在真机上安装并完成验收的记录。持续集成的结果以 [Actions](https://github.com/zdva/tako/actions/workflows/ci.yml) 为准。
 
-| Monitor page | Transfer sheet |
-|---|---|
-| ![monitor](docs/screenshots/m3/tester/monitor-page.png) | ![transfers](docs/screenshots/m3/tester/transfer-queue.png) |
+## 从源码运行
 
-The monitor page above shows a GPU machine from a Tester run with seeded
-history; the real-window shots are in [docs/screenshots/m3](docs/screenshots/m3).
-
-- **Monitoring with nothing installed on the server.** Every SSH block's
-  footer shows CPU, memory, disk and (when `nvidia-smi` or `rocm-smi` exist) GPU
-  bars; click it (or `Ctrl+Shift+Alt+M`) for the monitor page: stat cards,
-  CPU / memory / network charts for the last 1, 5, 15 or 60 minutes, per-GPU
-  status, disks and a description of the machine. Linux reads `/proc` and `df`,
-  macOS `top`, `vm_stat`, `iostat`, Windows PowerShell CIM; one command per
-  sample over the session the shell already uses. The window is redrawn only
-  when a footer visibly changes. See [ADR 0012](docs/adr/0012-agentless-monitoring.md).
-  **The macOS, Windows and GPU parsers are tested with fixtures composed by
-  hand from the tools' documented formats, not with recordings; only Linux was
-  measured on a real machine.**
-- **File transfer** (`Ctrl+Shift+Alt+T`, host menu *Transfer files…*, or drop
-  files on the target pane): upload, download and server to server, through
-  this computer (the bytes are never written to disk here) or, if you allow it
-  in Settings, directly with `scp`/`rsync` using your SSH agent for that one
-  command. Part files, automatic retry, resume after a lost connection with a
-  checksum check, same-name policy (ask / overwrite / skip), a queue with
-  speed, time left, pause, resume and cancel. See
-  [ADR 0013](docs/adr/0013-transfer-queue-and-resume.md) and
-  [ADR 0015](docs/adr/0015-direct-server-to-server.md).
-- **Folders from OSC 7**: the transfer sheet opens in the folder your shell
-  reports ([docs/OSC7.md](docs/OSC7.md)).
-
-## What works in M2
-
-- **Synchronized input**: a synced block has a coral border and a small chip.
-  Turn sync on from the chip, the minimap, the command palette, the shortcuts
-  or the right-click menus; all on/off with `Ctrl+Shift+Alt+A`. A block whose
-  connection is down is paused and the others carry on. See
-  [ADR 0010](docs/adr/0010-sync-ui-and-minimap.md).
-- **Minimap**: a floating 176 px panel that is translucent at rest and opaque
-  under the pointer. Click a square to toggle sync, drag a box to select
-  (`⇧` adds, `⌥` inverts), drag squares to reorder, drag the panel to a corner,
-  opacity slider.
-- **Split layouts**: drag a divider; it snaps to ½, ⅓, ⅔ with a guide line
-  (`⌥` turns snapping off). The layout and sync state survive a restart.
-  See [ADR 0009](docs/adr/0009-manual-layout-tree.md).
-- Full [keyboard shortcuts](docs/SHORTCUTS.md), right-click menus (block
-  header, tab, sidebar host and tag, minimap), block rename, zoom a block,
-  search in the terminal, and a custom title bar.
-
-## Also in M1
-
-- **SSH**: password, public key (OpenSSH, PEM, PuTTY `.ppk`), SSH agent and
-  keyboard-interactive authentication; jump-host chains; SOCKS5 and HTTP
-  proxies; keep-alives; MaxSessions fallback (opens an extra connection).
-- **Resilient panes**: when the link drops, the block shows a reconnect banner,
-  keeps its scrollback, retries with backoff (1, 2, 5, 10, 30 s) and never
-  replays what you typed during the outage. See [ADR 0006](docs/adr/0006-session-pane-contract.md).
-- **Host keys**: Tako's own `known_hosts`; a changed key is always refused
-  with both fingerprints shown. See [ADR 0004](docs/adr/0004-host-key-policy.md).
-- **Secrets** in Tako's own encrypted file (`secrets.enc`, mode 0600), never in
-  `hosts.json`, logs or exports, and not in the system keychain.
-  See [ADR 0023](docs/adr/0023-encrypted-secret-store.md).
-- **Grid of blocks**: 1 / 2 / 2×2 / 3×2 / scrolling, tabs per block, local
-  shells, right-click menus, command palette, English and 简体中文, light and dark.
-- **Import** hosts from `~/.ssh/config` (`Include`, `ProxyJump`, `IdentityFile`).
-- **Session restore**: quit or crash (even `kill -9`) and the blocks and tabs
-  come back and reconnect, usually well under a second.
-
-## Install and run
-
-Release builds are not published yet (see [docs/RELEASE.md](docs/RELEASE.md)). Build from source
-(Go 1.27.3 or newer):
+需要 Go 1.27.3 或更新（`go.mod` 的 toolchain 是 `go1.27.4`），以及能开窗口的图形环境。
 
 ```sh
-git clone <repository-url> tako && cd tako
-make run            # go run ./cmd/tako
-make build          # ./tako (a plain build downloads libghostty-vt on first use)
-make package-linux  # packaged app in build/linux-amd64 (libghostty-vt bundled)
-make build-all      # Windows, macOS (universal) and Linux, amd64 and arm64
+git clone https://github.com/zdva/tako.git
+cd tako
+make run
 ```
 
-Packaged builds (`mygo build`) ship the terminal engine next to the executable
-and work offline. A plain `go build` binary fetches `libghostty-vt` from the
-MyGo releases into your user cache the first time a terminal opens, and checks
-its SHA-256.
+`make build` 生成当前平台的 `./tako`。这种普通构建在第一次打开终端时，会从 MyGo 的发布页下载 `libghostty-vt` 到用户缓存，并校验 SHA-256。
 
-Binaries are **not code-signed** (a decision, see
-[ADR 0021](docs/adr/0021-unsigned-releases-and-signed-updates.md)): macOS Gatekeeper
-and Windows SmartScreen will warn the first time; [docs/MANUAL.md](docs/MANUAL.md)
-says how to open the app, and [docs/RELEASE.md](docs/RELEASE.md) how to add signing later.
-Updates are verified with an ed25519 signature regardless.
+`make package-linux` 打出 `build/linux-amd64`，把 `libghostty-vt` 放在可执行文件旁边，之后可以离线开终端。`make build-all` 交叉编译 Windows、macOS（universal）和 Linux 的二进制，不打安装包、不签名。
 
-### Keyboard
+打上版本标签后，发布工作流会生成安装包草稿（tar.gz、deb、rpm、PKGBUILD、dmg、NSIS），需要人核对再公开。二进制不做 Apple / Windows 代码签名，Gatekeeper 和 SmartScreen 会提示。打开方式见 [docs/MANUAL.md](docs/MANUAL.md)，以后如何加签名见 [docs/RELEASE.md](docs/RELEASE.md)。
 
-The complete table is in [docs/SHORTCUTS.md](docs/SHORTCUTS.md).
+Linux 上开窗口需要图形环境。本仓库的 RPM 配方声明依赖 `gtk3`。deb 的系统依赖不在本仓库里列出。
 
-The primary modifier is `Ctrl+Shift` on Linux and Windows (so plain `Ctrl+C`
-still reaches the shell) and `⌘` on macOS.
+## 开始用
 
-| Keys | Action |
-|---|---|
-| `Ctrl+Shift+P` | Command palette (hosts, commands) |
-| `Ctrl+Shift+N` | Add host |
-| `Ctrl+Shift+T` | New tab / local terminal |
-| `Ctrl+Shift+W` | Close tab · `Ctrl+Shift+Alt+W` close block |
-| `Ctrl+Shift+1…9` | Switch tab |
-| `Ctrl+Shift+Alt+←↑→↓` | Move focus between blocks |
-| `Ctrl+Shift+Alt+S` | Toggle synchronized input for the focused block |
-| `Ctrl+Shift+Alt+A` | Sync all blocks on / off |
-| `Ctrl+Shift+Alt+G` | Show / hide the minimap |
-| `Ctrl+Shift+F` | Search in the terminal |
-| `Ctrl+Shift+B` | Toggle the sidebar |
-| `Ctrl+Shift+,` | Settings |
+1. 第一次打开可以选择添加主机、本地终端，以及（本机有 `~/.ssh/config` 时）导入。
+2. 第一次连接时确认主机指纹。以后这台机器的密钥变了，Tako 会拒绝。
+3. 密码、私钥口令和代理密码写在配置目录的 `secrets.enc`（权限 0600）。Tako 不使用系统钥匙串，文件里也没有主密码。
+4. 打开设置：Linux / Windows 为 `Ctrl+Shift+,`，macOS 为 `⌘,`。
 
-### Where data lives
+Linux / Windows 的主键是 `Ctrl+Shift`，单独的 `Ctrl+C` 仍交给 shell。macOS 用 `⌘`。快捷键表是 [docs/SHORTCUTS.md](docs/SHORTCUTS.md)。操作说明是 [docs/MANUAL.md](docs/MANUAL.md)（英文）。文档地图是 [docs/README.md](docs/README.md)。
+
+### 数据目录
 
 | | Linux | macOS | Windows |
 |---|---|---|---|
-| Config (`hosts.json`, `secrets.enc`, `known_hosts`, `settings.json`) | `~/.config/tako` | `~/Library/Application Support/Tako` | `%AppData%\Tako` |
-| State (`session.json`, logs, lock) | `~/.local/state/tako` | same as config | `%LocalAppData%\Tako` |
+| 配置（`hosts.json`、`secrets.enc`、`known_hosts`、`settings.json`） | `~/.config/tako` | `~/Library/Application Support/Tako` | `%AppData%\Tako` |
+| 状态（`session.json`、日志） | `~/.local/state/tako` | 与配置同一目录 | `%LocalAppData%\Tako` |
 
-Override with `TAKO_CONFIG_DIR` and `TAKO_STATE_DIR`.
+可用 `TAKO_CONFIG_DIR` 和 `TAKO_STATE_DIR` 改位置。
 
-Passwords, key passphrases and proxy credentials are encrypted in `secrets.enc`
-(mode 0600). The key is bound to this machine, so the file does not decrypt on
-another one. If the machine id cannot be read, the key is the sibling file
-`secrets.key` (also mode 0600) and copying both files decrypts them. `hosts.json`,
-`session.json`, logs and exports never contain the secret. Tako does not use
-the macOS Keychain, Windows Credential Manager or Linux Secret Service, so
-launching it does not ask you to sign in to those.
+加密密钥绑在这台机器上。读不到机器标识时，密钥改放旁边的 `secrets.key`。只拷走 `secrets.enc`、没有这台机器的标识或 `secrets.key`，在另一台电脑上解不开。能挡住什么、挡不住什么，写在 [SECURITY.md](SECURITY.md)。
 
-There is no master password. The threat model is honest: this stops a casual
-copy, sync or commit of the config directory, and other users on the machine,
-from reading the password. It does not stop a program already running as you.
-Details are in [ADR 0023](docs/adr/0023-encrypted-secret-store.md) and
-[SECURITY.md](SECURITY.md).
+更早的构建曾把密码放在系统凭据库里，服务名是 `dev.tako.app`。那条决定（[ADR 0003](docs/adr/0003-secrets-in-keychain.md)）已经作废，现在的启动过程不读那些条目。下次连接时重新输入并选择记住，或退出后运行一次 `tako --migrate-keychain`（系统可能会按条目询问）。当前决定是 [ADR 0023](docs/adr/0023-encrypted-secret-store.md)。
 
-Passwords saved by an older Tako live in the system credential store under the
-service `dev.tako.app`. This version does not read them at startup, because
-that read is what shows the keychain dialog (worse for an unsigned `go run`
-binary, whose path changes every launch). Type the password the next time you
-connect and choose *Remember in Tako*. To copy the old values instead, quit
-Tako and run `tako --migrate-keychain` once. The system may ask you to allow
-it, once per saved password, and a successful copy deletes those items. Anything
-`hosts.json` no longer names has to be deleted by hand in Keychain Access,
-Credential Manager, or the Secret Service.
+## 使用前需要知道的限制
 
-## Develop
+- 监控在 Linux 上对过本机 OpenSSH。macOS、Windows 和 GPU 的解析器是按工具文档手写的样例，不是实机录制。
+- Xshell、SecureCRT、Termius 的导入按公开格式编写。仓库里的样例不是这些软件导出的真实文件。
+- 两台服务器直连拷贝目录时，不能从中途续传。直连需要本机 SSH Agent 里已经有源主机的密钥。
+- 崩溃报告和「复制诊断信息」不会上传。贴到 issue 之前请再看一眼内容。
 
-```sh
-make check          # gofmt, vet, golangci-lint, go test -race, coverage gate (80% core)
-make integration    # against a real OpenSSH (scripts/fetch-sshd.sh downloads a portable one)
-make e2e            # live window under Xvfb: idle CPU/RSS, cold start, kill -9 recovery
-make screenshots    # real-window screenshots into docs/screenshots/m4 (MILESTONE=m3 for an older set)
-make vuln           # govulncheck
-make fuzz           # the parsers: ssh_config, ppk, Xshell/SecureCRT/Termius files, iTerm2 colors
-make build-all      # every platform, cross-compiled
-```
+## 参与和安全
 
-Read [AGENTS.md](AGENTS.md) for the layout and conventions and
-[CONTRIBUTING.md](CONTRIBUTING.md) for how to send a change.
-[docs/TESTING.md](docs/TESTING.md) explains the test environments; the user guide is
-[docs/MANUAL.md](docs/MANUAL.md).
+提交修改见 [CONTRIBUTING.md](CONTRIBUTING.md)。仓库布局见 [AGENTS.md](AGENTS.md)，测试分层见 [docs/TESTING.md](docs/TESTING.md)。行为准则是 [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md)。漏洞不要开公开 issue，见 [SECURITY.md](SECURITY.md)。
 
-## Notes for maintainers
+## 许可证
 
-- The public repository and the Go module path are
-  <https://github.com/zdva/tako>.
-- The maintainer e-mail in `mygo.json` and `packaging/nfpm.yaml.tmpl`
-  (`tako@example.invalid`) is a **placeholder**; replace it with a real address
-  before the first public release.
-
-## License
-
-Tako is free software: you can redistribute it and/or modify it under the terms of
-the [GNU General Public License](LICENSE) as published by the Free Software
-Foundation, either version 3 of the License, or (at your option) any later version
-(**GPL-3.0-or-later**). It is distributed in the hope that it will be useful, but
-**without any warranty**; see the license for details.
-
-Third-party components keep their own licenses, all compatible with the GPL;
-they are listed with their notices in [THIRD_PARTY_LICENSES.md](THIRD_PARTY_LICENSES.md),
-and the reasoning is in [ADR 0022](docs/adr/0022-license-gpl-3-or-later.md).
-Contributions are accepted under the same license
-(see [CONTRIBUTING.md](CONTRIBUTING.md)).
+Tako 以 [GNU 通用公共许可证](LICENSE)第 3 版或（由你选择）任何更新版本分发（**GPL-3.0-or-later**），不提供任何担保。第三方组件各自的许可证见 [THIRD_PARTY_LICENSES.md](THIRD_PARTY_LICENSES.md)。

@@ -6,7 +6,15 @@ Guidance for AI coding agents and humans working in this repository.
 
 Tako: a desktop SSH fleet terminal in Go, UI **only** with MyGo
 (`github.com/egoist/mygo`, see [ADR 0001](docs/adr/0001-mygo-only-ui.md)).
-Read [docs/SPEC.md](docs/SPEC.md) first, then [docs/adr/](docs/adr).
+
+People using the app start at the repository [README](README.md) (简体中文;
+English is [README.en.md](README.en.md)) and the map in
+[docs/README.md](docs/README.md). This file stays at the repository root so
+coding agents can find it.
+
+For implementation, read [docs/SPEC.md](docs/SPEC.md), then [docs/adr/](docs/adr).
+An ADR marked *Superseded* is history. Secrets are Tako's encrypted file
+([ADR 0023](docs/adr/0023-encrypted-secret-store.md)); ADR 0003 is not current.
 
 ## Layout
 

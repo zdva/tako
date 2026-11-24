@@ -11,8 +11,9 @@ suites also `curl` + `dpkg` (portable OpenSSH), `xvfb` and `xdotool` (Linux).
 make check
 ```
 
-must pass before you open a pull request. Read [AGENTS.md](AGENTS.md) for the
-layout and rules and [docs/TESTING.md](docs/TESTING.md) for the test levels.
+must pass before you open a pull request. The documentation map is
+[docs/README.md](docs/README.md). Read [AGENTS.md](AGENTS.md) for the layout
+and rules and [docs/TESTING.md](docs/TESTING.md) for the test levels.
 
 ## Branches and commits
 

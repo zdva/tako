@@ -1,7 +1,9 @@
 # Releasing Tako
 
-Status of `v0.4.0` (first release candidate): built, tested and tagged locally.
-**Nothing has been pushed or published.** The list at the end needs a person.
+Status of `v0.4.0` (first release candidate): the tag is on the repository.
+**There is no GitHub Release and no installer has been published.** The list
+at the end needs a person. `main` has moved on since the tag; read
+[CHANGELOG.md](../CHANGELOG.md) Unreleased before cutting the next tag.
 
 ## What a release is
 
@@ -82,8 +84,8 @@ git push origin main vX.Y.Z
 
 ## Pre-release checklist (needs a person)
 
-Everything below could **not** be done on the build machine (Linux, no real Mac or
-Windows, no GPU, no GitHub repository):
+Everything below still needs a person. The notes were written from a Linux
+build machine, with no real Mac, Windows machine or GPU:
 
 - [ ] **Run on a real Mac** (Apple silicon and Intel if possible): install the dmg,
       open, connect, paste, IME (Pinyin / Japanese), dark mode switch, the
@@ -112,7 +114,10 @@ Windows, no GPU, no GitHub repository):
       appears in the `.deb`/`.rpm` metadata.
 - [ ] **Source offer**: the release tag in the public repository is the
       "corresponding source" of each binary; keep tags and releases in step.
-- [ ] **macOS and Windows CI** jobs have never run (`continue-on-error` in
-      `ci.yml`); make them blocking once they are green.
-- [ ] **Screenshots** in the README are from Linux (Xvfb); retake on macOS for
-      the store page / website.
+- [ ] **macOS and Windows CI** jobs run with `continue-on-error` in `ci.yml`
+      and are not blocking. On 2026-11-23 (`d3775bf`, the `main` CI run) both
+      `test (macos-latest)` and `test (windows-latest)` failed, as did `lint` and
+      `integration`. Make the platform jobs blocking once they are green.
+- [ ] **Screenshots** under `docs/screenshots/` are from Linux (Xvfb) and are
+      not on the repository homepage. Retake on macOS before a store page or
+      website.
