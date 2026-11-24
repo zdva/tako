@@ -1,5 +1,7 @@
 # Tako（章鱼终端）技术方案与里程碑
 
+> 这是 2026-11 的技术方案和里程碑计划，留作开发档案。文中的周期、原型数据和「待确认」不是当前承诺。与后文冲突时，以文首「定稿后的用户决定」和 [adr/](adr/README.md) 里状态为 Accepted 的记录为准。MyGo 版本以 `go.mod` 为准（成文时写的是 v0.8.3）。使用说明见 [MANUAL.md](MANUAL.md)。
+
 > 流程第 4 步。依据：产品规格 Page、`DESIGN.md`（定稿）、技术验证原型 `/workspace/tako-spike`（约 3700 行 Go，含测试与实测数据）。
 > 只用 **MyGo**（v0.8.3，Go 1.27.3）。Go 代码规范：samber 的 `golang-*` 技能（尤其 project-layout、design-patterns、error-handling、concurrency、context、security、testing、lint）和 JetBrains 的 `use-modern-go`。
 > 带 **【待确认】** 的地方，是我替你做了默认决定、但需要你点头的事，汇总在 §14。

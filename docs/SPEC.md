@@ -1,5 +1,10 @@
 # Product specification (summary)
 
+This is the product spec, including the milestone plan. How to use the app is
+[MANUAL.md](MANUAL.md). Where passwords are stored today is
+[ADR 0023](adr/0023-encrypted-secret-store.md). ADR 0003 (the system keychain)
+is superseded.
+
 The long-form design lives in [DESIGN.md](DESIGN.md) (interaction and visual
 spec, Chinese) and [TECH-PLAN.md](TECH-PLAN.md) (architecture and milestones,
 Chinese). This page is the short English version of *what Tako is for* and
@@ -58,8 +63,9 @@ machines at once, survives flaky networks and is honest about credentials.
 8. Race tests, lint and `govulncheck` are green; core coverage ≥ 80%.
 9. GPU rendering baseline on real macOS and Windows hardware.
 
-Results for the current tag are in [CHANGELOG.md](../CHANGELOG.md) and
-[TESTING.md](TESTING.md).
+Measurements recorded for those tags are in
+[history/acceptance.md](history/acceptance.md), not a promise about current
+`main`. The test layout is [TESTING.md](TESTING.md).
 
 ## Non-goals
 
