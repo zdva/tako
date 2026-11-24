@@ -86,8 +86,21 @@ func (a *App) choice(c *ui.Context, label, hint string, cur int, options []strin
 
 // toggle draws a labelled switch.
 func (a *App) toggle(c *ui.Context, label, hint string, cur bool, set func(bool)) {
+	a.toggleKey(c, "", label, hint, cur, set)
+}
+
+// toggleKey is toggle with a stable automation key on the switch. The key
+// is applied inside the control, after the row's label is built, so the
+// label does not take it.
+func (a *App) toggleKey(c *ui.Context, key, label, hint string, cur bool, set func(bool)) {
 	on := cur
-	a.setting(c, label, hint, func() { ui.Switch(c, &on).Label(label) })
+	a.setting(c, label, hint, func() {
+		ctx := c
+		if key != "" {
+			ctx = c.Key(key)
+		}
+		ui.Switch(ctx, &on).Label(label)
+	})
 	if on != cur {
 		set(on)
 	}
@@ -139,7 +152,7 @@ func (a *App) settingsView(c *ui.Context) {
 						ui.Column(c).Gap(16).Padding(0, 6, 0, 0).Children(func() { a.settingsPage(c, st.page) })
 					})
 					ui.Row(c).Justify(ui.End).Children(func() {
-						if ui.PrimaryButton(c, a.T(kDone)).Clicked() {
+						if ui.PrimaryButton(c.Key("settings-done"), a.T(kDone)).Clicked() {
 							st.open = false
 						}
 					})
@@ -212,7 +225,7 @@ func (a *App) generalPage(c *ui.Context, v settings.Values) {
 	a.choice(c, a.T(kSetAppearance), a.T(kSetAppearanceHint), slices.Index(apps, v.ResolveAppearance()),
 		[]string{a.T(kAppSystem), a.T(kAppLight), a.T(kAppDark)},
 		func(i int) { a.setPref(func(x *settings.Values) { x.Appearance = apps[i] }) })
-	a.toggle(c, a.T(kSetCompact), a.T(kSetCompactHint), v.CompactBlocks,
+	a.toggleKey(c, "settings-compact", a.T(kSetCompact), a.T(kSetCompactHint), v.CompactBlocks,
 		func(on bool) { a.setPref(func(x *settings.Values) { x.CompactBlocks = on }) })
 }
 

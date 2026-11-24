@@ -101,14 +101,14 @@ func (a *App) blockHeader(c *ui.Context, b *workspace.Block, link session.StateC
 				a.d.Model.CloseTab(b, closeAt)
 			}
 		})
-		if a.iconButton(c, iconPlus, a.T(kNewTab), 22).Shrink(0).Clicked() {
+		if a.iconButton(c, iconPlus, a.T(kNewTab), 22).Key("tab-new").Shrink(0).Clicked() {
 			if err := a.d.Model.AddTab(b); err != nil {
 				a.toast(a.T(kErrOpenLocal, err))
 			}
 			a.focusBlock(b)
 		}
 		a.syncChip(c, b)
-		more := a.iconButton(c, iconMore, a.T(kMoreActions), 24).Shrink(0)
+		more := a.iconButton(c, iconMore, a.T(kMoreActions), 24).Key("block-more").Shrink(0)
 		more.PopoverMenuButton(func(m *ui.Menu) { a.blockMenu(m, b) })
 	})
 }
@@ -141,7 +141,7 @@ func (a *App) tabChip(c *ui.Context, b *workspace.Block, i int, t *workspace.Tab
 			col = a.tk.Text
 		}
 		ui.Text(c, t.Title()).FontSize(11.5).Bold().TextColor(col).SingleLine().MaxWidth(titleMax).Ellipsis("…")
-		if a.iconButton(c, iconClose, a.T(kCloseTab), 16).Clicked() {
+		if a.iconButton(c, iconClose, a.T(kCloseTab), 16).Key("tab-close").Clicked() {
 			closeIt = true
 		}
 	})

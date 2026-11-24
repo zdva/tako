@@ -1,7 +1,7 @@
 .DEFAULT_GOAL := help
 MILESTONE ?= m4
 
-.PHONY: help screenshots package-linux build run test race cover lint vuln fmt tidy integration e2e fuzz build-all check clean
+.PHONY: help screenshots package-linux build run test race cover lint vuln fmt tidy integration e2e e2e-auto fuzz build-all check clean
 
 PLATFORMS ?= windows/amd64,windows/arm64,darwin/universal,linux/amd64,linux/arm64
 COVER_PKGS := ./internal/model/... ./internal/hostlib/... ./internal/session/... ./internal/layout/... \
@@ -54,6 +54,9 @@ screenshots: package-linux ## Real-window screenshots into docs/screenshots/$(MI
 e2e: package-linux ## Live-window checks under Xvfb: idle CPU/RSS, cold start, kill -9 recovery
 	sh scripts/fetch-sshd.sh
 	TAKO_BIN=$(CURDIR)/build/linux-amd64/tako xvfb-run -a go test -count=1 -tags e2e -v ./test/e2e/...
+
+e2e-auto: ## Real-window automation on macOS, Windows and Linux (MYGO_AUTOMATION). Needs a display; on Linux use xvfb-run -a.
+	go test -count=1 -tags e2e -timeout 20m -v ./test/automation/...
 
 fuzz: ## Short fuzz run of the parsers
 	go test -run '^$$' -fuzz FuzzReadPPK -fuzztime 20s ./internal/transport/ssh

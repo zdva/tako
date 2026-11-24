@@ -21,11 +21,21 @@ type paletteState struct {
 
 // paletteItem is one row of the command palette.
 type paletteItem struct {
+	// id is the stable automation key ("pal:" + id). Empty keeps a key
+	// built from the visible section and title, which for a host is its name.
+	id      string
 	section string
 	title   string
 	sub     string
 	hint    string
 	run     func()
+}
+
+func (it paletteItem) key() string {
+	if it.id != "" {
+		return "pal:" + it.id
+	}
+	return "pal:" + it.section + ":" + it.title
 }
 
 const maxPaletteHosts = 8
@@ -100,7 +110,7 @@ func (a *App) commands() []paletteItem {
 	if b := a.d.Model.Focused(); b != nil {
 		cmds = append(cmds,
 			paletteItem{section: sec, title: a.T(kPalToggleSync, b.Name), hint: hint(actSyncBlock), run: do(actSyncBlock)},
-			paletteItem{section: sec, title: a.T(kCmdRename), run: func() { a.startRename(b) }},
+			paletteItem{id: "rename", section: sec, title: a.T(kCmdRename), run: func() { a.startRename(b) }},
 			paletteItem{section: sec, title: a.T(kCmdZoom), hint: hint(actZoom), run: do(actZoom)},
 			paletteItem{section: sec, title: a.T(kCmdSearch), hint: hint(actFind), run: do(actFind)},
 			paletteItem{section: sec, title: a.T(kCmdCloseTab), hint: hint(actCloseTab), run: do(actCloseTab)},
@@ -176,7 +186,7 @@ func (a *App) paletteView(c *ui.Context) {
 
 func (a *App) paletteRow(c *ui.Context, i int, it paletteItem) {
 	sel := i == a.palette.sel
-	row := ui.Row(c).Key("pal:"+it.section+":"+it.title).Height(48).Padding(0, 10).Gap(12).Radius(10).AlignItems(ui.Center).Cursor(ui.CursorPointer).
+	row := ui.Row(c).Key(it.key()).Height(48).Padding(0, 10).Gap(12).Radius(10).AlignItems(ui.Center).Cursor(ui.CursorPointer).
 		Role(ui.RoleButton).Label(it.title)
 	if sel {
 		row.Background(a.tk.AccentSoft)
