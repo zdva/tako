@@ -104,7 +104,7 @@ func (a *App) emptyState(c *ui.Context) {
 		}
 	}
 	ui.Column(c).Key("empty").Grow(1).Center().Gap(14).Children(func() {
-		if img := brand(); img != nil {
+		if img := brand(a.tk.Dark); img != nil {
 			ui.Image(c, img).Size(94, 94)
 		}
 		ui.Text(c, a.T(kWelcome)).Bold().FontSize(28)

@@ -279,7 +279,7 @@ func (a *App) transferBody(c *ui.Context) {
 	a.tk.ShadowLg(xfer)
 	xfer.Children(func() {
 		ui.Row(c).Padding(16, 20).Gap(12).Shrink(0).AlignItems(ui.Center).Children(func() {
-			ui.Box(c).Size(36, 36).Radius(10).Background(a.tk.Amber).Center().Children(func() {
+			ui.Box(c).Size(36, 36).Radius(10).Background(a.tk.Accent).Center().Children(func() {
 				ui.Icon(c, iconTransfer).FontSize(20).TextColor(ui.RGB(255, 255, 255))
 			})
 			ui.Column(c).Grow(1).Gap(2).Children(func() {

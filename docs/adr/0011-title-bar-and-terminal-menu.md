@@ -12,10 +12,11 @@ gives the page the whole window and keeps the system's window controls on top.
 
 - The window is created with `TitleBarStyle: TitleBarHidden`. The brand row
   and the toolbar are the drag handles (`Element.DragWindow`) and keep clear of
-  the controls using `Context.TitleBar()` (`Left` on macOS, `Right` elsewhere).
-  This works under X11 (checked under Xvfb: the controls draw top right and
-  the toolbar leaves room for them). Windows and macOS builds use the same
-  code but have not been run (no such hardware here).
+  the controls using `Context.TitleBar()`: the toolbar reserves `Right`, and
+  the sidebar moves its brand below `Bottom` when controls occupy `Left`.
+  This covers macOS traffic lights and Linux decorations configured on either
+  side; Windows caption buttons are on the right. The real-window behavior
+  still needs verification on native Windows and macOS.
 - The terminal's right-click menu stays MyGo's own (Copy, Paste, Select All,
   Clear). The terminal view does not let an application add items, and it has
   no public selection API, so replacing the menu would lose Copy. The rest of

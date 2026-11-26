@@ -12,7 +12,6 @@
   "banner.retry": "Try again",
   "banner.seconds": "next try in %ds",
   "block.more": "More actions",
-  "brand.sub": "Octopus terminal",
   "cmd.closeblock": "Close focused block",
   "cmd.closetab": "Close current tab",
   "cmd.layoutauto": "Layout: automatic grid",
