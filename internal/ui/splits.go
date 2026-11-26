@@ -1,6 +1,8 @@
 package ui
 
 import (
+	"slices"
+
 	"github.com/egoist/mygo/ui"
 
 	"github.com/zdva/tako/internal/layout"
@@ -37,7 +39,10 @@ func (a *App) main(c *ui.Context) {
 		c.WriteClipboard(a.pendingClip)
 		a.pendingClip = ""
 	}
-	blocks := m.Blocks()
+	// Keep this frame's block list independent from workspace mutations caused
+	// by controls rendered below. Model removals delete from the backing array;
+	// iterating the live slice after a close can otherwise reach a nil tail.
+	blocks := slices.Clone(m.Blocks())
 	if len(blocks) == 0 {
 		a.emptyState(c)
 		return
