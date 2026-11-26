@@ -35,16 +35,23 @@ func (a *App) sidebar(c *ui.Context) {
 }
 
 func (a *App) brandRow(c *ui.Context) {
-	// The window controls sit over the page: on macOS they are at the start of
-	// this row, so the brand steps aside; the row drags the window.
+	// The window controls sit over the page. When a platform puts controls on
+	// the left, move the brand below their bottom edge instead of squeezing it
+	// into the same line. This covers macOS traffic lights and left-side Linux
+	// decorations; Windows and right-side Linux decorations keep the first row.
 	bar := c.TitleBar()
-	row := ui.Row(c).Key("brand").Height(max(54, bar.Height)).Padding(10, 16, 0, 16+bar.Left).Gap(9)
+	brandTop, brandHeight, brandLeft := float32(10), float32(54), 16+bar.Left
+	if bar.Left > 0 {
+		brandTop = max(bar.Bottom, bar.Height) + 6
+		brandHeight = brandTop + 42
+		brandLeft = 16
+	}
+	row := ui.Row(c).Key("brand").Height(brandHeight).Padding(brandTop, 16, 0, brandLeft).Gap(9)
 	row.DragWindow().Children(func() {
-		if img := brand(); img != nil {
+		if img := brand(a.tk.Dark); img != nil {
 			ui.Image(c, img).Size(34, 34).Radius(11)
 		}
 		ui.Text(c, "Tako").Bold().FontSize(15)
-		ui.Text(c, a.T(kBrandSub)).FontSize(11).TextColor(a.tk.Text3).MinWidth(0).NoWrap().Ellipsis("…")
 		ui.Spacer(c)
 		if a.iconButton(c, iconSidebar, a.T(kToggleSidebar), 26).Clicked() {
 			a.sidebarCollapsed = !a.sidebarCollapsed

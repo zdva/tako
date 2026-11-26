@@ -11,7 +11,7 @@ and the status bar.
 
 ## Decision
 
-- A synced block shows a 1 px coral border and one small chip in its header;
+- A synced block shows a 1 px indigo border and one small chip in its header;
   an unsynced block shows the chip as a grey outline. There is no big "syncing"
   button, no sidebar link icon, no toolbar button, no status-bar count.
 - Sync is turned on and off in these places only: the chip, the minimap, the

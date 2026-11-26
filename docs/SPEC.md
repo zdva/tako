@@ -15,7 +15,7 @@ machines at once, survives flaky networks and is honest about credentials.
 ## Principles
 
 1. Quiet, native look; the terminal content is the star.
-2. Coral means "synchronized / primary action" and nothing else.
+2. Indigo means "synchronized / primary action" and nothing else.
 3. State is readable at a glance: synced, disconnected (amber), online (green),
    with the same colour in block header, sidebar, minimap and status bar.
 4. The terminal theme follows the app (white terminal in light mode).

@@ -742,6 +742,22 @@ func TestTitleBar_KeepsClearOfTheWindowControls(t *testing.T) {
 	}
 }
 
+func TestTitleBar_BrandMovesBelowLeftWindowControls(t *testing.T) {
+	h := newHarness(t, harnessOpts{})
+	h.tt.SetTitleBar(ui.TitleBar{Height: 40, Left: 78, Bottom: 52})
+	h.tt.Frame()
+	r, ok := h.tt.Find("Tako")
+	if !ok {
+		t.Fatalf("no brand label: %q", h.tt.Texts())
+	}
+	if r.Y < 52 {
+		t.Fatalf("brand label starts at y=%v, it should move below the left-side controls", r.Y)
+	}
+	if r.X < 16 || r.X > 78 {
+		t.Fatalf("brand label x=%v, it should keep the sidebar inset instead of following the control width", r.X)
+	}
+}
+
 func TestDividers_AreInsetByTheGap(t *testing.T) {
 	h := newHarness(t, harnessOpts{})
 	h.openAll(4)

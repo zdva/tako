@@ -30,6 +30,7 @@ func TestTokensMatchDesignDoc(t *testing.T) {
 		"--accent": {light.Accent, dark.Accent},
 		"--green":  {light.Green, dark.Green}, "--amber": {light.Amber, dark.Amber}, "--red": {light.Red, dark.Red},
 		"--blue": {light.Blue, dark.Blue}, "--purple": {light.Purple, dark.Purple}, "--teal": {light.Teal, dark.Teal},
+		"--disk": {light.Disk, dark.Disk},
 	}
 	row := regexp.MustCompile("(?m)^\\| `(--[a-z0-9-]+)` \\| `(#[0-9A-Fa-f]{6})` \\| `(#[0-9A-Fa-f]{6})` \\|")
 	seen := 0
@@ -62,6 +63,34 @@ func TestUIThemeFollowsTokens(t *testing.T) {
 			t.Errorf("dark=%v: terminal background %v", tk.Dark, got.Background)
 		}
 	}
+}
+
+func TestAccentSupportsWhiteActionText(t *testing.T) {
+	t.Parallel()
+	for _, tk := range []theme.Tokens{theme.Light(), theme.Dark()} {
+		if got := contrastRatio(tk.Accent, ui.RGB(255, 255, 255)); got < 4.5 {
+			t.Errorf("dark=%v: accent/white contrast %.2f, want at least 4.5", tk.Dark, got)
+		}
+	}
+}
+
+func contrastRatio(a, b ui.Color) float64 {
+	la, lb := relativeLuminance(a), relativeLuminance(b)
+	if la < lb {
+		la, lb = lb, la
+	}
+	return (la + 0.05) / (lb + 0.05)
+}
+
+func relativeLuminance(c ui.Color) float64 {
+	channel := func(v uint8) float64 {
+		x := float64(v) / 255
+		if x <= 0.03928 {
+			return x / 12.92
+		}
+		return ((x + 0.055) / 1.055) * ((x + 0.055) / 1.055) * ((x + 0.055) / 1.055)
+	}
+	return 0.2126*channel(c.R) + 0.7152*channel(c.G) + 0.0722*channel(c.B)
 }
 
 func TestHexPanicsOnGarbage(t *testing.T) {

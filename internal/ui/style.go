@@ -11,24 +11,33 @@ import (
 	"github.com/zdva/tako/internal/theme"
 )
 
-//go:embed assets/brand.png
+//go:embed assets/brand.png assets/brand-light.png
 var assetFS embed.FS
 
 var (
-	brandOnce sync.Once
-	brandImg  ui.ImageSource
+	brandOnce       sync.Once
+	brandDarkImage  ui.ImageSource
+	brandLightImage ui.ImageSource
 )
 
-// brand returns the octopus logo, decoded once.
-func brand() ui.ImageSource {
+// brand returns the octopus logo for the current appearance, decoded once.
+func brand(dark bool) ui.ImageSource {
 	brandOnce.Do(func() {
-		data, err := assetFS.ReadFile("assets/brand.png")
-		if err != nil {
-			return
+		for path, target := range map[string]*ui.ImageSource{
+			"assets/brand.png":       &brandDarkImage,
+			"assets/brand-light.png": &brandLightImage,
+		} {
+			data, err := assetFS.ReadFile(path)
+			if err != nil {
+				continue
+			}
+			*target, _ = ui.DecodeImage(data)
 		}
-		brandImg, _ = ui.DecodeImage(data)
 	})
-	return brandImg
+	if dark {
+		return brandDarkImage
+	}
+	return brandLightImage
 }
 
 // Metrics from DESIGN.md §2.3.
