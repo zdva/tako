@@ -88,7 +88,7 @@ history; the real-window shots are in [docs/screenshots/m3](docs/screenshots/m3)
 
 ## What works in M2
 
-- **Synchronized input**: a synced block has a coral border and a small chip.
+- **Synchronized input**: a synced block has an indigo border and a small chip.
   Turn sync on from the chip, the minimap, the command palette, the shortcuts
   or the right-click menus; all on/off with `Ctrl+Shift+Alt+A`. A block whose
   connection is down is paused and the others carry on. See

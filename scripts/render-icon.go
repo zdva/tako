@@ -1,7 +1,7 @@
 //go:build ignore
 
-// Command render-icon draws the Tako app icon from one geometric master and
-// writes the platform files DESIGN.md §4.3 lists. Run from the module root:
+// Command render-icon prepares the supplied icon artwork and writes the
+// platform files listed in docs/DESIGN.md. Run from the module root:
 //
 //	go run scripts/render-icon.go
 package main
@@ -12,19 +12,16 @@ import (
 	"fmt"
 	"image"
 	"image/color"
+	imagedraw "image/draw"
 	"image/png"
 	"math"
 	"os"
 	"strings"
 
-	"github.com/egoist/mygo/ui"
+	"golang.org/x/image/draw"
 )
 
-const (
-	cream = "#FFF5F0"
-	eye   = "#7A1E18"
-	hi    = "#FFE8E0"
-)
+const sourcePath = "resources/icon-source.png"
 
 func main() {
 	if err := run(); err != nil {
@@ -34,67 +31,51 @@ func main() {
 }
 
 func run() error {
-	full := masterSVG(true)
-	plain := masterSVG(false)
+	source, err := loadSource(sourcePath)
+	if err != nil {
+		return err
+	}
+	png1024 := resize(source, 1024)
+	png512 := resize(source, 512)
+	png256 := resize(source, 256)
+	png128 := resize(source, 128)
+	png64 := resize(source, 64)
+	png48 := resize(source, 48)
+	png32 := resize(source, 32)
+	png24 := resize(source, 24)
+	png16 := resize(source, 16)
+	lightSource := recolorLight(source)
+	lightBrand := resize(lightSource, 256)
+
 	if err := os.MkdirAll("resources/icons", 0o755); err != nil {
 		return err
 	}
-	if err := os.WriteFile("resources/icon.svg", []byte(full), 0o644); err != nil {
-		return err
-	}
-	png1024, err := raster(full, 1024)
+	svg, err := vectorSVG(source)
 	if err != nil {
 		return err
 	}
-	png256, err := raster(full, 256)
-	if err != nil {
-		return err
+	for _, path := range []string{"resources/icon.svg", "resources/icons/tako.svg"} {
+		if err := os.WriteFile(path, []byte(svg), 0o644); err != nil {
+			return err
+		}
 	}
-	png512, err := raster(full, 512)
-	if err != nil {
-		return err
+	for path, img := range map[string]image.Image{
+		"resources/icon.png":                 png1024,
+		"resources/icons/icon-16.png":        png16,
+		"resources/icons/icon-32.png":        png32,
+		"resources/icons/icon-256.png":       png256,
+		"resources/icons/icon-512.png":       png512,
+		"internal/ui/assets/brand.png":       png256,
+		"internal/ui/assets/brand-light.png": lightBrand,
+	} {
+		if err := writePNG(path, img); err != nil {
+			return err
+		}
 	}
-	png128, err := raster(plain, 128)
-	if err != nil {
-		return err
-	}
-	png64, err := raster(plain, 64)
-	if err != nil {
-		return err
-	}
-	png48, err := raster(plain, 48)
-	if err != nil {
-		return err
-	}
-	png32, err := raster(plain, 32)
-	if err != nil {
-		return err
-	}
-	// 16 and 24 are drawn on the pixel grid. 32 and up are the master,
-	// which still reads once the arms are this thick.
-	png16 := pixel16()
-	png24 := scaleBox(png16, 24)
-	if err := writePNG("resources/icon.png", png1024); err != nil {
-		return err
-	}
-	if err := writePNG("resources/icons/icon-16.png", png16); err != nil {
-		return err
-	}
-	if err := writePNG("resources/icons/icon-32.png", png32); err != nil {
-		return err
-	}
-	if err := writePNG("resources/icons/icon-256.png", png256); err != nil {
-		return err
-	}
-	if err := writePNG("resources/icons/icon-512.png", png512); err != nil {
-		return err
-	}
-	if err := writePNG("internal/ui/assets/brand.png", png256); err != nil {
-		return err
-	}
+
 	icns, err := buildICNS(map[string]image.Image{
-		"ic11": scaleNN(png16, 2), // 16 pt @2x, the simplified masses, crisp
-		"ic12": png64,             // 32 pt @2x, the master
+		"ic11": png32,
+		"ic12": png64,
 		"ic07": png128,
 		"ic08": png256,
 		"ic13": png256,
@@ -109,11 +90,11 @@ func run() error {
 		return err
 	}
 	ico, err := buildICO([]icoImg{
-		{16, png16},
-		{24, png24},
-		{32, png32},
-		{48, png48},
-		{256, png256},
+		{size: 16, img: png16},
+		{size: 24, img: png24},
+		{size: 32, img: png32},
+		{size: 48, img: png48},
+		{size: 256, img: png256},
 	})
 	if err != nil {
 		return err
@@ -125,231 +106,310 @@ func run() error {
 	return nil
 }
 
-// masterSVG is the 1024 master. highlight is the tiny eye glint, drawn only
-// at 256 px and above.
-func masterSVG(highlight bool) string {
-	var b strings.Builder
-	b.WriteString(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">`)
-	b.WriteString(`<defs><linearGradient id="g" x1="0" y1="0" x2="0" y2="1">`)
-	b.WriteString(`<stop offset="0" stop-color="#FF8A7A"/><stop offset="1" stop-color="#E34A40"/>`)
-	b.WriteString(`</linearGradient><clipPath id="sq"><path d="`)
-	b.WriteString(squircle(1024, 5))
-	b.WriteString(`"/></clipPath></defs>`)
-	b.WriteString(`<path d="`)
-	b.WriteString(squircle(1024, 5))
-	b.WriteString(`" fill="url(#g)"/>`)
-	b.WriteString(`<g clip-path="url(#sq)" fill="` + cream + `" stroke="` + cream + `" stroke-linecap="round" stroke-linejoin="round">`)
-	for _, t := range tentacles() {
-		fmt.Fprintf(&b, `<path d="%s" fill="none" stroke-width="%g"/>`, t.d, t.w)
+func recolorLight(src image.Image) *image.NRGBA {
+	bounds := src.Bounds()
+	out := image.NewNRGBA(image.Rect(0, 0, bounds.Dx(), bounds.Dy()))
+	lightPalette := [...]color.NRGBA{
+		{R: 240, G: 241, B: 244, A: 255},
+		{R: 32, G: 34, B: 40, A: 255},
+		{R: 177, G: 181, B: 191, A: 255},
+		{R: 17, G: 139, B: 108, A: 255},
 	}
-	b.WriteString(`<circle cx="512" cy="392" r="176"/>`)
-	b.WriteString(`</g>`)
-	b.WriteString(`<g clip-path="url(#sq)">`)
-	b.WriteString(`<circle cx="446" cy="378" r="34" fill="` + eye + `"/>`)
-	b.WriteString(`<circle cx="578" cy="378" r="34" fill="` + eye + `"/>`)
-	if highlight {
-		b.WriteString(`<circle cx="434" cy="364" r="8" fill="` + hi + `"/>`)
-		b.WriteString(`<circle cx="566" cy="364" r="8" fill="` + hi + `"/>`)
-	}
-	b.WriteString(`</g></svg>`)
-	return b.String()
-}
-
-type tentacle struct {
-	d string
-	w float64
-}
-
-// tentacles are eight symmetric rounded arms. They are stroked under the
-// head so the body reads as one solid shape.
-func tentacles() []tentacle {
-	type arm struct {
-		x0, y0, c1x, c1y, c2x, c2y, x1, y1, w float64
-	}
-	// Left half, from the center outward. The right half mirrors on x=512.
-	left := []arm{
-		{478, 530, 468, 680, 470, 800, 462, 900, 86},
-		{430, 510, 390, 660, 400, 820, 388, 910, 82},
-		{372, 478, 300, 600, 250, 740, 268, 860, 78},
-		{328, 440, 200, 500, 150, 660, 210, 790, 74},
-	}
-	var out []tentacle
-	add := func(a arm, x func(float64) float64) {
-		out = append(out, tentacle{
-			d: fmt.Sprintf("M%.1f %.1f C%.1f %.1f %.1f %.1f %.1f %.1f",
-				x(a.x0), a.y0, x(a.c1x), a.c1y, x(a.c2x), a.c2y, x(a.x1), a.y1),
-			w: a.w,
-		})
-	}
-	for _, a := range left {
-		add(a, func(x float64) float64 { return x })
-		add(a, func(x float64) float64 { return 1024 - x })
+	for y := range bounds.Dy() {
+		for x := range bounds.Dx() {
+			c := color.NRGBAModel.Convert(src.At(bounds.Min.X+x, bounds.Min.Y+y)).(color.NRGBA)
+			if c.A == 0 {
+				continue
+			}
+			out.SetNRGBA(x, y, lightPalette[nearestColor(c)-1])
+		}
 	}
 	return out
 }
 
-// squircle is a superellipse of exponent n filling a size×size box, as a
-// closed SVG path. n≈5 is the continuous corner of a squircle, not a circle
-// and not a rounded square.
-func squircle(size, n float64) string {
-	const steps = 48
+func loadSource(path string) (*image.NRGBA, error) {
+	f, err := os.Open(path)
+	if err != nil {
+		return nil, fmt.Errorf("open icon source: %w", err)
+	}
+	defer f.Close()
+
+	source, err := png.Decode(f)
+	if err != nil {
+		return nil, fmt.Errorf("decode icon source: %w", err)
+	}
+	bounds := source.Bounds()
+	img := image.NewNRGBA(image.Rect(0, 0, bounds.Dx(), bounds.Dy()))
+	imagedraw.Draw(img, img.Bounds(), source, bounds.Min, imagedraw.Src)
+	removeEdgeBackground(img)
+	return cropOpaque(img), nil
+}
+
+// removeEdgeBackground makes only the white background connected to an edge
+// transparent, preserving the white octopus inside the black tile.
+func removeEdgeBackground(img *image.NRGBA) {
+	bounds := img.Bounds()
+	visited := make([]bool, bounds.Dx()*bounds.Dy())
+	queue := make([]image.Point, 0, bounds.Dx()+bounds.Dy())
+	add := func(p image.Point) {
+		if !p.In(bounds) {
+			return
+		}
+		i := p.Y*bounds.Dx() + p.X
+		if visited[i] || !isBackground(img.NRGBAAt(p.X, p.Y)) {
+			return
+		}
+		visited[i] = true
+		queue = append(queue, p)
+	}
+	for x := bounds.Min.X; x < bounds.Max.X; x++ {
+		add(image.Point{X: x, Y: bounds.Min.Y})
+		add(image.Point{X: x, Y: bounds.Max.Y - 1})
+	}
+	for y := bounds.Min.Y; y < bounds.Max.Y; y++ {
+		add(image.Point{X: bounds.Min.X, Y: y})
+		add(image.Point{X: bounds.Max.X - 1, Y: y})
+	}
+	for head := 0; head < len(queue); head++ {
+		p := queue[head]
+		img.SetNRGBA(p.X, p.Y, color.NRGBA{})
+		add(image.Point{X: p.X - 1, Y: p.Y})
+		add(image.Point{X: p.X + 1, Y: p.Y})
+		add(image.Point{X: p.X, Y: p.Y - 1})
+		add(image.Point{X: p.X, Y: p.Y + 1})
+	}
+}
+
+func isBackground(c color.NRGBA) bool {
+	return c.A != 0 && c.R >= 220 && c.G >= 220 && c.B >= 220
+}
+
+func cropOpaque(img *image.NRGBA) *image.NRGBA {
+	bounds := img.Bounds()
+	minX, minY := bounds.Max.X, bounds.Max.Y
+	maxX, maxY := bounds.Min.X, bounds.Min.Y
+	for y := bounds.Min.Y; y < bounds.Max.Y; y++ {
+		for x := bounds.Min.X; x < bounds.Max.X; x++ {
+			if img.NRGBAAt(x, y).A == 0 {
+				continue
+			}
+			minX = min(minX, x)
+			minY = min(minY, y)
+			maxX = max(maxX, x+1)
+			maxY = max(maxY, y+1)
+		}
+	}
+	if minX >= maxX || minY >= maxY {
+		return img
+	}
+	width, height := maxX-minX, maxY-minY
+	size := max(width, height)
+	out := image.NewNRGBA(image.Rect(0, 0, size, size))
+	offsetX := (size - width) / 2
+	offsetY := (size - height) / 2
+	imagedraw.Draw(out, image.Rect(offsetX, offsetY, offsetX+width, offsetY+height), img, image.Point{X: minX, Y: minY}, imagedraw.Src)
+	return out
+}
+
+func resize(src image.Image, size int) *image.NRGBA {
+	dst := image.NewNRGBA(image.Rect(0, 0, size, size))
+	draw.CatmullRom.Scale(dst, dst.Bounds(), src, src.Bounds(), draw.Src, nil)
+	return dst
+}
+
+type point struct{ x, y int }
+
+type edge struct {
+	from  point
+	to    point
+	dir   int
+	class uint8
+}
+
+var iconPalette = []color.NRGBA{
+	{R: 16, G: 17, B: 21, A: 255},
+	{R: 255, G: 253, B: 249, A: 255},
+	{R: 83, G: 85, B: 96, A: 255},
+	{R: 66, G: 230, B: 184, A: 255},
+}
+
+func vectorSVG(img image.Image) (string, error) {
+	bounds := img.Bounds()
+	width, height := bounds.Dx(), bounds.Dy()
+	labels := make([]uint8, width*height)
+	for y := range height {
+		for x := range width {
+			c := color.NRGBAModel.Convert(img.At(bounds.Min.X+x, bounds.Min.Y+y)).(color.NRGBA)
+			if c.A != 0 {
+				labels[y*width+x] = nearestColor(c)
+			}
+		}
+	}
+
 	var b strings.Builder
-	p := 2 / n
-	for i := range steps * 4 {
-		ang := float64(i) / float64(steps*4) * 2 * math.Pi
-		c, s := math.Cos(ang), math.Sin(ang)
-		x := math.Copysign(math.Pow(math.Abs(c), p), c)
-		y := math.Copysign(math.Pow(math.Abs(s), p), s)
-		px, py := (x+1)*0.5*size, (y+1)*0.5*size
-		if i == 0 {
-			fmt.Fprintf(&b, "M%.2f %.2f", px, py)
+	fmt.Fprintf(&b, `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 %d %d">`, width, height)
+	for class, fill := range iconPalette {
+		loops := contours(labels, width, height, uint8(class+1))
+		if len(loops) == 0 {
 			continue
 		}
-		fmt.Fprintf(&b, "L%.2f %.2f", px, py)
+		fmt.Fprintf(&b, `<path fill="#%02X%02X%02X" fill-rule="evenodd" d="`, fill.R, fill.G, fill.B)
+		for _, loop := range loops {
+			loop = simplifyClosed(loop, 1.2)
+			if len(loop) < 3 {
+				continue
+			}
+			fmt.Fprintf(&b, "M%d %d", loop[0].x, loop[0].y)
+			for _, p := range loop[1:] {
+				fmt.Fprintf(&b, "L%d %d", p.x, p.y)
+			}
+			b.WriteByte('Z')
+		}
+		b.WriteString(`"/>`)
 	}
-	b.WriteByte('Z')
-	return b.String()
+	b.WriteString(`</svg>`)
+	return b.String(), nil
 }
 
-// pixel16 is the 16 px octopus: head, body and four tentacle masses, on the
-// coral squircle. It is the same figure as the master, with the arms collapsed
-// into the masses that still read at this size.
-func pixel16() *image.NRGBA {
-	// 16 rows. C coral, W cream, E eye, . outside the squircle.
-	// Traced from the master: a round head, two eyes, and the arm masses
-	// pulled apart so the coral shows between them. A plain downsample of
-	// the master closes those gaps and becomes one blob.
-	rows := []string{
-		"..CCCCCCCCCCCC..",
-		".CCCCCCCCCCCCCC.",
-		"CCCCCCWWWWCCCCCC",
-		"CCCWWWWWWWWWWCCC",
-		"CCWWWEEWWEEWWWCC",
-		"CCWWWWWWWWWWWWCC",
-		"CCCWWWWWWWWWWCCC",
-		"CCCCWWWWWWWWCCCC",
-		"CCWWCWWWWWWCWWCC",
-		"CWWCCWWWWWWCCWWC",
-		"CWWCCWWCCWWCCWWC",
-		"CWWCCWWCCWWCCWWC",
-		"CCWCCWWCCWWCCWCC",
-		"CCCCCWWCCWWCCCCC",
-		"....CCCCCCCC....",
-		"......CCCC......",
-	}
-	// The grid above is a sketch; the renderer below uses an explicit mask
-	// so the arms stay separated. Rebuild from a cleaner drawing.
-	return draw16(rows)
-}
-
-func draw16(rows []string) *image.NRGBA {
-	const n = 16
-	for i, row := range rows {
-		if len(row) != n {
-			panic(fmt.Sprintf("pixel16 row %d has %d columns", i, len(row)))
+func nearestColor(c color.NRGBA) uint8 {
+	best, bestDistance := uint8(1), math.MaxFloat64
+	for i, candidate := range iconPalette {
+		dr := float64(c.R) - float64(candidate.R)
+		dg := float64(c.G) - float64(candidate.G)
+		db := float64(c.B) - float64(candidate.B)
+		distance := dr*dr + dg*dg + db*db
+		if distance < bestDistance {
+			best, bestDistance = uint8(i+1), distance
 		}
 	}
-	img := image.NewNRGBA(image.Rect(0, 0, n, n))
-	coralTop := color.NRGBA{R: 0xFF, G: 0x8A, B: 0x7A, A: 0xFF}
-	coralBot := color.NRGBA{R: 0xE3, G: 0x4A, B: 0x40, A: 0xFF}
-	creamC := color.NRGBA{R: 0xFF, G: 0xF5, B: 0xF0, A: 0xFF}
-	eyeC := color.NRGBA{R: 0x7A, G: 0x1E, B: 0x18, A: 0xFF}
-	for y := range n {
-		t := float64(y) / float64(n-1)
-		bg := mix(coralTop, coralBot, t)
-		row := rows[y]
-		for x := range n {
-			switch row[x] {
-			case '.':
-				// outside
-			case 'C', 'c':
-				img.SetNRGBA(x, y, bg)
-			case 'W':
-				img.SetNRGBA(x, y, creamC)
-			case 'E':
-				img.SetNRGBA(x, y, eyeC)
-			default:
-				img.SetNRGBA(x, y, bg)
+	return best
+}
+
+func contours(labels []uint8, width, height int, target uint8) [][]point {
+	labelAt := func(x, y int) uint8 {
+		if x < 0 || y < 0 || x >= width || y >= height {
+			return 0
+		}
+		return labels[y*width+x]
+	}
+	edges := make([]edge, 0, width*2)
+	for y := range height {
+		for x := range width {
+			if labelAt(x, y) != target {
+				continue
+			}
+			if labelAt(x, y-1) != target {
+				edges = append(edges, edge{point{x, y}, point{x + 1, y}, 0, target})
+			}
+			if labelAt(x+1, y) != target {
+				edges = append(edges, edge{point{x + 1, y}, point{x + 1, y + 1}, 1, target})
+			}
+			if labelAt(x, y+1) != target {
+				edges = append(edges, edge{point{x + 1, y + 1}, point{x, y + 1}, 2, target})
+			}
+			if labelAt(x-1, y) != target {
+				edges = append(edges, edge{point{x, y + 1}, point{x, y}, 3, target})
 			}
 		}
 	}
-	return img
-}
-
-func mix(a, b color.NRGBA, t float64) color.NRGBA {
-	lerp := func(x, y uint8) uint8 {
-		return uint8(math.Round(float64(x)*(1-t) + float64(y)*t))
+	starts := make(map[point][]int, len(edges))
+	for i, e := range edges {
+		starts[e.from] = append(starts[e.from], i)
 	}
-	return color.NRGBA{R: lerp(a.R, b.R), G: lerp(a.G, b.G), B: lerp(a.B, b.B), A: 0xFF}
-}
-
-func raster(svg string, size int) (*image.RGBA, error) {
-	s, err := ui.ParseSVG([]byte(svg))
-	if err != nil {
-		return nil, err
-	}
-	return s.Image(size, size, nil), nil
-}
-
-// downNN samples src down to size×size by nearest neighbor, so a thick
-// master stays crisp instead of blurring into one mass.
-func downNN(src image.Image, size int) *image.NRGBA {
-	b := src.Bounds()
-	dst := image.NewNRGBA(image.Rect(0, 0, size, size))
-	for y := range size {
-		for x := range size {
-			sx := b.Min.X + (x*b.Dx()+b.Dx()/2)/size
-			sy := b.Min.Y + (y*b.Dy()+b.Dy()/2)/size
-			if sx >= b.Max.X {
-				sx = b.Max.X - 1
-			}
-			if sy >= b.Max.Y {
-				sy = b.Max.Y - 1
-			}
-			dst.SetNRGBA(x, y, color.NRGBAModel.Convert(src.At(sx, sy)).(color.NRGBA))
+	used := make([]bool, len(edges))
+	loops := make([][]point, 0)
+	for start := range edges {
+		if used[start] {
+			continue
 		}
-	}
-	return dst
-}
-
-func scaleNN(src image.Image, factor int) *image.NRGBA {
-	b := src.Bounds()
-	dst := image.NewNRGBA(image.Rect(0, 0, b.Dx()*factor, b.Dy()*factor))
-	for y := range b.Dy() {
-		for x := range b.Dx() {
-			c := color.NRGBAModel.Convert(src.At(b.Min.X+x, b.Min.Y+y)).(color.NRGBA)
-			for dy := range factor {
-				for dx := range factor {
-					dst.SetNRGBA(x*factor+dx, y*factor+dy, c)
-				}
+		loop := []point{edges[start].from}
+		current := start
+		for {
+			if used[current] {
+				break
+			}
+			used[current] = true
+			e := edges[current]
+			loop = append(loop, e.to)
+			if e.to == loop[0] {
+				loops = append(loops, loop[:len(loop)-1])
+				break
+			}
+			current = nextEdge(starts[e.to], edges, used, e.dir)
+			if current < 0 {
+				break
 			}
 		}
 	}
-	return dst
+	return loops
 }
 
-// scaleBox fits the 16 px design into size×size with nearest-neighbor, centered
-// on a coral field so 24 px still shows the same masses.
-func scaleBox(src image.Image, size int) *image.NRGBA {
-	// 16 → 24 is 1.5. Draw each source pixel as a 1 or 2 device pixel.
-	b := src.Bounds()
-	dst := image.NewNRGBA(image.Rect(0, 0, size, size))
-	for y := range size {
-		for x := range size {
-			sx := b.Min.X + x*b.Dx()/size
-			sy := b.Min.Y + y*b.Dy()/size
-			dst.SetNRGBA(x, y, color.NRGBAModel.Convert(src.At(sx, sy)).(color.NRGBA))
+func nextEdge(candidates []int, edges []edge, used []bool, dir int) int {
+	for _, turn := range [...]int{1, 0, 3, 2} {
+		for _, candidate := range candidates {
+			if !used[candidate] && (edges[candidate].dir-dir+4)%4 == turn {
+				return candidate
+			}
 		}
 	}
-	return dst
+	return -1
+}
+
+func simplifyClosed(points []point, tolerance float64) []point {
+	if len(points) < 4 {
+		return points
+	}
+	open := append(append([]point{}, points...), points[0])
+	keep := make([]bool, len(open))
+	keep[0], keep[len(keep)-1] = true, true
+	simplifyRange(open, 0, len(open)-1, tolerance*tolerance, keep)
+	out := make([]point, 0, len(open))
+	for i, p := range open[:len(open)-1] {
+		if keep[i] {
+			out = append(out, p)
+		}
+	}
+	return out
+}
+
+func simplifyRange(points []point, first, last int, tolerance2 float64, keep []bool) {
+	if last-first < 2 {
+		return
+	}
+	maxDistance, index := 0.0, 0
+	for i := first + 1; i < last; i++ {
+		distance := segmentDistanceSquared(points[i], points[first], points[last])
+		if distance > maxDistance {
+			maxDistance, index = distance, i
+		}
+	}
+	if maxDistance <= tolerance2 {
+		return
+	}
+	keep[index] = true
+	simplifyRange(points, first, index, tolerance2, keep)
+	simplifyRange(points, index, last, tolerance2, keep)
+}
+
+func segmentDistanceSquared(p, a, b point) float64 {
+	dx, dy := float64(b.x-a.x), float64(b.y-a.y)
+	if dx == 0 && dy == 0 {
+		dx, dy = float64(p.x-a.x), float64(p.y-a.y)
+		return dx*dx + dy*dy
+	}
+	t := (float64(p.x-a.x)*dx + float64(p.y-a.y)*dy) / (dx*dx + dy*dy)
+	t = max(0, min(1, t))
+	dx = float64(p.x-a.x) - t*dx
+	dy = float64(p.y-a.y) - t*dy
+	return dx*dx + dy*dy
 }
 
 func writePNG(path string, img image.Image) error {
-	var buf bytes.Buffer
-	if err := png.Encode(&buf, img); err != nil {
+	data, err := pngBytes(img)
+	if err != nil {
 		return err
 	}
-	return os.WriteFile(path, buf.Bytes(), 0o644)
+	return os.WriteFile(path, data, 0o644)
 }
 
 func pngBytes(img image.Image) ([]byte, error) {
@@ -360,10 +420,6 @@ func pngBytes(img image.Image) ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
-// buildICNS writes an icns whose payloads are PNG, the sizes macOS reads as
-// PNG (ic07 and up, including the @2x 16 pt and 32 pt slots). icp4 and icp5
-// are omitted: IconServices treats those slots as legacy ARGB, so a PNG there
-// draws as noise. The 16 px simplified art is what ic11 scales from.
 func buildICNS(byType map[string]image.Image) ([]byte, error) {
 	order := []string{"ic11", "ic12", "ic07", "ic08", "ic13", "ic09", "ic14", "ic10"}
 	var body bytes.Buffer
@@ -372,13 +428,13 @@ func buildICNS(byType map[string]image.Image) ([]byte, error) {
 		if img == nil {
 			return nil, fmt.Errorf("icns missing %s", kind)
 		}
-		p, err := pngBytes(img)
+		data, err := pngBytes(img)
 		if err != nil {
 			return nil, err
 		}
 		body.WriteString(kind)
-		_ = binary.Write(&body, binary.BigEndian, uint32(len(p)+8))
-		body.Write(p)
+		_ = binary.Write(&body, binary.BigEndian, uint32(len(data)+8))
+		body.Write(data)
 	}
 	var out bytes.Buffer
 	out.WriteString("icns")
@@ -395,11 +451,11 @@ type icoImg struct {
 func buildICO(images []icoImg) ([]byte, error) {
 	payloads := make([][]byte, len(images))
 	for i, im := range images {
-		p, err := pngBytes(im.img)
+		data, err := pngBytes(im.img)
 		if err != nil {
 			return nil, err
 		}
-		payloads[i] = p
+		payloads[i] = data
 	}
 	var out bytes.Buffer
 	_ = binary.Write(&out, binary.LittleEndian, [3]uint16{0, 1, uint16(len(images))})
@@ -414,40 +470,8 @@ func buildICO(images []icoImg) ([]byte, error) {
 		_ = binary.Write(&out, binary.LittleEndian, [2]uint32{uint32(len(payloads[i])), uint32(offset)})
 		offset += len(payloads[i])
 	}
-	for _, p := range payloads {
-		out.Write(p)
+	for _, data := range payloads {
+		out.Write(data)
 	}
 	return out.Bytes(), nil
-}
-
-func contact(imgs []image.Image) *image.NRGBA {
-	gap := 16
-	h := 0
-	w := gap
-	for _, im := range imgs {
-		b := im.Bounds()
-		w += b.Dx() + gap
-		if b.Dy() > h {
-			h = b.Dy()
-		}
-	}
-	dst := image.NewNRGBA(image.Rect(0, 0, w, h+gap*2))
-	for i := range dst.Pix {
-		dst.Pix[i] = 0x22
-		if i%4 == 3 {
-			dst.Pix[i] = 0xFF
-		}
-	}
-	x := gap
-	for _, im := range imgs {
-		b := im.Bounds()
-		y := gap + (h-b.Dy())/2
-		for yy := range b.Dy() {
-			for xx := range b.Dx() {
-				dst.Set(x+xx, y+yy, im.At(b.Min.X+xx, b.Min.Y+yy))
-			}
-		}
-		x += b.Dx() + gap
-	}
-	return dst
 }

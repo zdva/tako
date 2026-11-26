@@ -304,8 +304,8 @@ macOS 实际路径是 `~/Library/Application Support/Tako/`，Windows 是 `%AppD
     }
   ],
   "tags": [
-    { "name": "生产", "color": "#E39A12" },
-    { "name": "GPU 集群", "color": "#0FA3B1" }
+    { "name": "生产", "color": "#A36E16" },
+    { "name": "GPU 集群", "color": "#0C8F99" }
   ]
 }
 ```
@@ -435,7 +435,7 @@ Connected ──(Transport.Done)──▶ Reconnecting(attempt=1) ──成功�
 
 ## 10. 主题与设计 token
 
-- `internal/theme` 提供 `Tokens` 结构，**字段名与 `DESIGN.md` §2.1 的 CSS 变量一一对应**（`Bg`、`Sidebar`、`Surface`、`Surface2…4`、`Border`、`BorderStrong`、`Text`、`Text2`、`Text3`、`Accent`、`AccentSoft`、`AccentRing`、`Green`、`Amber`、`Red`、`Blue`、`Purple`、`Teal`、`TermBg`、`TermFg`、`TermDim`），以及定稿新增的 `SyncBorder`、`Glass2`、`Glass3`（定义在 `src/final.css` / `src/lib3.js`，M1 前需补进 `DESIGN.md` §2.1 的表），以及尺寸常量（侧栏 248、块头 38、块脚 32、状态栏 28、圆角 6/8/12/14/16、间距基数 4）。
+- `internal/theme` 提供 `Tokens` 结构，**字段名与 `DESIGN.md` §2.1 的 CSS 变量一一对应**（`Bg`、`Sidebar`、`Surface`、`Surface2…4`、`Border`、`BorderStrong`、`Text`、`Text2`、`Text3`、`Accent`、`AccentSoft`、`AccentRing`、`Green`、`Amber`、`Red`、`Blue`、`Purple`、`Teal`、`Disk`、`TermBg`、`TermFg`、`TermDim`），以及定稿新增的 `SyncBorder`、`Glass2`、`Glass3`（定义在 `src/final.css` / `src/lib3.js`，M1 前需补进 `DESIGN.md` §2.1 的表），以及尺寸常量（侧栏 248、块头 38、块脚 32、状态栏 28、圆角 6/8/12/14/16、间距基数 4）。
 - `Light` 与 `Dark` 两份值直接抄 `DESIGN.md` 的表；**一个测试**把 `theme` 里的值与 `DESIGN.md` 表格解析出的值逐项比对，防止设计和代码漂移。
 - 外观跟随系统（`platform` 读取并订阅变化），设置里可强制；切换时只换 token，不重建控件树。
 - 终端配色独立于应用主题（设置里选内置方案或导入 iTerm2 配色）；默认随应用明暗切换。

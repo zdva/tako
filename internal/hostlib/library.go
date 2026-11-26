@@ -30,7 +30,7 @@ var (
 )
 
 // tagPalette is the design's tag color cycle (DESIGN.md §2.1).
-var tagPalette = []string{"#E39A12", "#0FA3B1", "#3B7BF6", "#9C9CA6", "#8A63D2", "#E5484D"}
+var tagPalette = []string{"#A36E16", "#0C8F99", "#2776C5", "#9C9CA6", "#8056C7", "#D4474D"}
 
 // file is the hosts.json document.
 type file struct {

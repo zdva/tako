@@ -35,6 +35,47 @@ func TestIconsParseAndPaint(t *testing.T) {
 	}
 }
 
+func TestIconsUseSuppliedThemeColor(t *testing.T) {
+	t.Parallel()
+	icons := []*ui.SVG{
+		iconPlus, iconSearch, iconClose, iconChevronR, iconChevronD, iconChevronU,
+		iconMore, iconGrip, iconSidebar, iconMinimap, iconTerminal, iconSettings,
+		iconSync, iconTransfer, iconUp, iconDown, iconSwap, iconRefresh,
+		iconPause, iconPlay, iconEye, iconLock, iconLink, iconFolder, iconFile,
+		iconChip, iconCheck, iconAlert, iconLinux, iconWindows, iconApple, iconServer,
+	}
+	for i, ic := range icons {
+		light := ic.Image(24, 24, color.NRGBA{R: 24, G: 24, B: 32, A: 255})
+		dark := ic.Image(24, 24, color.NRGBA{R: 242, G: 242, B: 245, A: 255})
+		different := false
+		for p := range light.Pix {
+			if light.Pix[p] != dark.Pix[p] {
+				different = true
+				break
+			}
+		}
+		if !different {
+			t.Errorf("icon %d did not change with the supplied theme color", i)
+		}
+	}
+}
+
+func TestBrandHasLightAndDarkVariants(t *testing.T) {
+	t.Parallel()
+	for name, image := range map[string]ui.ImageSource{
+		"light": brand(false),
+		"dark":  brand(true),
+	} {
+		if image == nil {
+			t.Errorf("%s brand image is nil", name)
+			continue
+		}
+		if width, height := ui.ImageSize(image); width != 256 || height != 256 {
+			t.Errorf("%s brand image size = %gx%g, want 256x256", name, width, height)
+		}
+	}
+}
+
 // TestSyncIsNotTheChainIcon is the §4.5 rule that sync uses cycling arrows.
 func TestSyncIsNotTheChainIcon(t *testing.T) {
 	t.Parallel()
@@ -55,9 +96,8 @@ func TestSyncIsNotTheChainIcon(t *testing.T) {
 	}
 }
 
-// TestLinuxMarkIsSingleFillPath keeps the penguin a faceless silhouette:
-// one filled path, no stroke cutouts that would read as eyes or a beak.
-func TestLinuxMarkIsSingleFillPath(t *testing.T) {
+// TestLinuxMarkRendersTux ensures the imported Tux mark remains visible.
+func TestLinuxMarkRendersTux(t *testing.T) {
 	t.Parallel()
 	img := iconLinux.Image(24, 24, color.NRGBA{R: 208, G: 212, B: 220, A: 255})
 	opaque := 0
@@ -69,7 +109,7 @@ func TestLinuxMarkIsSingleFillPath(t *testing.T) {
 			}
 		}
 	}
-	if opaque < 80 {
-		t.Fatalf("linux silhouette is too thin (%d opaque px)", opaque)
+	if opaque < 20 {
+		t.Fatalf("linux mark is too thin (%d opaque px)", opaque)
 	}
 }

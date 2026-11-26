@@ -158,8 +158,8 @@ func (a *App) tabChip(c *ui.Context, b *workspace.Block, i int, t *workspace.Tab
 }
 
 // syncChip is the one small control that shows and toggles a block's sync:
-// coral when on, a gray outline when off, a dashed coral outline while the
-// connection is down and sync waits.
+// indigo when on, a gray outline when off, and a dashed indigo outline while
+// the connection is down and sync waits.
 func (a *App) syncChip(c *ui.Context, b *workspace.Block) {
 	label, fg, bg, border := a.T(kSync), a.tk.Text3, ui.Transparent, a.tk.BorderStrong
 	paused := a.d.Model.SyncPaused(b)

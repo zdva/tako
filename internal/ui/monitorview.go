@@ -179,7 +179,7 @@ func (a *App) statCards(c *ui.Context, p monitor.Sample, info monitor.Info, gpus
 		if p.DiskSplit {
 			sub = a.T(kMonRW, a.humanBytes(p.DiskRead), a.humanBytes(p.DiskWrite))
 		}
-		a.card(c, "io", a.tk.Amber, a.T(kMonCardDisk), ioV, ioU+"/s", sub)
+		a.card(c, "io", a.tk.Disk, a.T(kMonCardDisk), ioV, ioU+"/s", sub)
 		netV, netU := a.splitBytes(p.NetRx + p.NetTx)
 		a.card(c, "net", a.tk.Green, a.T(kMonCardNet), netV, netU+"/s", a.T(kMonDownUp, a.humanRate(p.NetRx), a.humanRate(p.NetTx)))
 	})

@@ -166,6 +166,49 @@ func TestTabs_CloseFromTheTabMenu(t *testing.T) {
 	}
 }
 
+func TestLocalTerminal_CloseDuringBlockFrame(t *testing.T) {
+	h := newHarness(t, harnessOpts{})
+	if _, err := h.app.Model.OpenLocal(""); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := h.app.Model.OpenLocal(""); err != nil {
+		t.Fatal(err)
+	}
+	h.waitFor("two local blocks", func() bool { return len(h.app.Model.Blocks()) == 2 })
+
+	// Closing one local tab must leave the block snapshot used by the current
+	// frame valid while the model removes the block from its backing slice.
+	btns := h.closeTabButtons()
+	if len(btns) != 2 {
+		t.Fatalf("%d local tabs on screen, want 2", len(btns))
+	}
+	h.clickInfo(btns[0])
+	h.waitFor("one local block", func() bool { return len(h.app.Model.Blocks()) == 1 })
+
+	h.tt.Frame()
+	var more ui.AccessInfo
+	var found bool
+	for _, info := range h.tt.AccessAll() {
+		if info.Name == "More actions" {
+			more, found = info, true
+			break
+		}
+	}
+	if !found {
+		t.Fatal("no local block actions button")
+	}
+	h.tt.ClickAt(float32(more.Bounds.X+more.Bounds.W/2), float32(more.Bounds.Y+more.Bounds.H/2))
+	h.tt.Frame()
+	if err := h.tt.ChooseMenuItem("Close block"); err != nil {
+		t.Fatal(err)
+	}
+	h.tt.Frame()
+	h.tt.Frame()
+	if len(h.app.Model.Blocks()) != 0 {
+		t.Fatal("the last local block should be closed")
+	}
+}
+
 // TestLayout_NarrowWindowKeepsBlocksUsable opens six blocks in the smallest
 // window Tako allows (720×480): the automatic grid must drop columns rather
 // than squeeze blocks under their minimum width, and every block's header

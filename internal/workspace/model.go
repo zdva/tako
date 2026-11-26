@@ -534,9 +534,11 @@ func (m *Model) CloseTab(b *Block, i int) {
 	}
 	t := b.Tabs[i]
 	b.Tabs = slices.Delete(b.Tabs, i, i+1)
-	closeTab(t)
 	if len(b.Tabs) == 0 {
+		// Detach before closing the terminal: its exit hook is asynchronous and
+		// the current frame must not draw a terminal that is being freed.
 		m.removeBlock(b)
+		closeTab(t)
 		m.changed(true)
 		return
 	}
@@ -545,6 +547,7 @@ func (m *Model) CloseTab(b *Block, i int) {
 		active--
 	}
 	m.setActive(b, min(max(active, 0), len(b.Tabs)-1))
+	closeTab(t)
 	m.changed(true)
 }
 
@@ -559,11 +562,14 @@ func closeTab(t *Tab) {
 
 // CloseBlock closes a block and all its tabs.
 func (m *Model) CloseBlock(b *Block) {
-	for _, t := range b.Tabs {
+	tabs := b.Tabs
+	b.Tabs = nil
+	// Detach before closing terminals for the same reason as CloseTab: a
+	// terminal exit callback can arrive while the UI is finishing this frame.
+	m.removeBlock(b)
+	for _, t := range tabs {
 		closeTab(t)
 	}
-	b.Tabs = nil
-	m.removeBlock(b)
 	m.changed(true)
 }
 

@@ -22,7 +22,6 @@ const (
 	kAuthPassword         = "auth.password"
 	kBannerConnecting     = "banner.connecting"
 	kBannerReconnecting   = "banner.reconnecting"
-	kBrandSub             = "brand.sub"
 	kCancel               = "common.cancel"
 	kChoose               = "common.choose"
 	kCloseBlock           = "cmd.closeblock"

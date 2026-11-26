@@ -23,7 +23,7 @@ type Tokens struct {
 	Text, Text2, Text3             ui.Color
 	Accent, AccentSoft, AccentRing ui.Color
 	Green, Amber, Red              ui.Color
-	Blue, Purple, Teal             ui.Color
+	Blue, Purple, Teal, Disk       ui.Color
 	Scrim                          ui.Color
 	// SyncBorder is the 1px border of a block that takes part in input sync.
 	SyncBorder ui.Color
@@ -76,18 +76,18 @@ func Hex(s string) ui.Color {
 	return ui.RGB(uint8(v>>16), uint8(v>>8), uint8(v)) //nolint:gosec // v is parsed with 24 bits, each shift leaves at most 8
 }
 
-// Light is the light appearance (DESIGN.md §2.1, visual v2).
+// Light is the light appearance (DESIGN.md §2.1, indigo visual system).
 func Light() Tokens {
 	return Tokens{
 		Bg: Hex("#F4F4F6"), Sidebar: Hex("#ECECEF"),
 		Surface: Hex("#FFFFFF"), Surface2: Hex("#F6F6F8"), Surface3: Hex("#ECECF0"), Surface4: Hex("#E2E2E8"),
 		Border: ui.RGBA(24, 24, 32, 0.08), BorderStrong: ui.RGBA(24, 24, 32, 0.16),
 		Text: Hex("#1A1A1E"), Text2: Hex("#6A6A74"), Text3: Hex("#9797A1"),
-		Accent: Hex("#E85D50"), AccentSoft: ui.RGBA(232, 93, 80, 0.11), AccentRing: ui.RGBA(232, 93, 80, 0.30),
-		Green: Hex("#1EA672"), Amber: Hex("#E39A12"), Red: Hex("#E5484D"),
-		Blue: Hex("#3B7BF6"), Purple: Hex("#8A63D2"), Teal: Hex("#0FA3B1"),
+		Accent: Hex("#4A5FC7"), AccentSoft: ui.RGBA(74, 95, 199, 0.11), AccentRing: ui.RGBA(74, 95, 199, 0.30),
+		Green: Hex("#198A61"), Amber: Hex("#A36E16"), Red: Hex("#D4474D"),
+		Blue: Hex("#2776C5"), Purple: Hex("#8056C7"), Teal: Hex("#0C8F99"), Disk: Hex("#66778D"),
 		Scrim:      ui.RGBA(20, 20, 28, 0.28),
-		SyncBorder: ui.RGBA(232, 93, 80, 0.55),
+		SyncBorder: ui.RGBA(74, 95, 199, 0.55),
 		Glass3:     ui.RGBA(255, 255, 255, 0.97),
 		TermBg:     Hex("#FFFFFF"), TermFg: Hex("#2A2A30"), TermDim: Hex("#9A9AA6"),
 		TermRed: Hex("#D3403F"), TermGreen: Hex("#1F8F50"), TermYellow: Hex("#A56A00"),
@@ -95,7 +95,7 @@ func Light() Tokens {
 	}
 }
 
-// Dark is the dark appearance (DESIGN.md §2.1, visual v2).
+// Dark is the dark appearance (DESIGN.md §2.1, indigo visual system).
 func Dark() Tokens {
 	return Tokens{
 		Dark: true,
@@ -103,11 +103,11 @@ func Dark() Tokens {
 		Surface: Hex("#17171C"), Surface2: Hex("#1E1E24"), Surface3: Hex("#26262D"), Surface4: Hex("#32323A"),
 		Border: ui.RGBA(255, 255, 255, 0.08), BorderStrong: ui.RGBA(255, 255, 255, 0.16),
 		Text: Hex("#F2F2F5"), Text2: Hex("#A1A1AB"), Text3: Hex("#6E6E78"),
-		Accent: Hex("#FF6F61"), AccentSoft: ui.RGBA(255, 111, 97, 0.15), AccentRing: ui.RGBA(255, 111, 97, 0.38),
-		Green: Hex("#3DD68C"), Amber: Hex("#F5B83D"), Red: Hex("#FF6369"),
-		Blue: Hex("#5B9BFF"), Purple: Hex("#B18CFF"), Teal: Hex("#3CC9D6"),
+		Accent: Hex("#566FCB"), AccentSoft: ui.RGBA(86, 111, 203, 0.16), AccentRing: ui.RGBA(86, 111, 203, 0.40),
+		Green: Hex("#48C98C"), Amber: Hex("#D4A846"), Red: Hex("#F16C74"),
+		Blue: Hex("#6F9CEB"), Purple: Hex("#AA8BE8"), Teal: Hex("#42C7C6"), Disk: Hex("#95A9C7"),
 		Scrim:      ui.RGBA(0, 0, 0, 0.45),
-		SyncBorder: ui.RGBA(255, 111, 97, 0.60),
+		SyncBorder: ui.RGBA(86, 111, 203, 0.62),
 		Glass3:     ui.RGBA(23, 23, 28, 0.97),
 		TermBg:     Hex("#0C0C10"), TermFg: Hex("#D8D8DE"), TermDim: Hex("#6E6E78"),
 		TermRed: Hex("#FF6B6B"), TermGreen: Hex("#5FD38D"), TermYellow: Hex("#F0C45A"),
@@ -147,7 +147,7 @@ func (t Tokens) ShadowLg(el ui.Element) {
 }
 
 // TagPalette is the colors a tag can have, in the order DESIGN.md lists them.
-var TagPalette = []string{"#E39A12", "#0FA3B1", "#3B7BF6", "#9C9CA6", "#8A63D2", "#E5484D"}
+var TagPalette = []string{"#A36E16", "#0C8F99", "#2776C5", "#9C9CA6", "#8056C7", "#D4474D"}
 
 // UI returns the MyGo theme for the tokens.
 func (t Tokens) UI() *ui.Theme {
